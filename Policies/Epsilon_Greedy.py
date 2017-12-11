@@ -20,7 +20,6 @@ class EpsilonGreedyPolicy(PolicyBase):
             action = randint(self.numActions)
         else:
             action = np.random.choice(np.argwhere(q_value == np.max(q_value)).flatten(), size=1)[0]
-        # print(q_value, action)
         return action
 
     """" Returns the probability of a given action or of all the actions """
