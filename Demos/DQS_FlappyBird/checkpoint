@@ -1,2 +1,0 @@
-model_checkpoint_path: "/home/jfernando/PycharmProjects/RL_Experiments/Demos/DQS_FlappyBird/Deep_Flap.ckpt"
-all_model_checkpoint_paths: "/home/jfernando/PycharmProjects/RL_Experiments/Demos/DQS_FlappyBird/Deep_Flap.ckpt"

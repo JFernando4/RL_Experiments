@@ -128,7 +128,7 @@ def main():
         d0, m2 = (1, 1)
         m1 = env.get_num_actions()
         dimensions = [n1, n2, d0, f1, d1, f2, d2, m1, m2]
-        dim_out = [1000, 1000, 1000]
+        dim_out = [3000, 3000, 3000]
         gate = tf.nn.selu
         loss = tf.losses.mean_squared_error
         model = models.Model_FFF(name, dimensions, gate_fun=gate, loss_fun=loss, dim_out=dim_out)
@@ -175,7 +175,8 @@ def main():
     agent.average_reward_per_timestep = average_reward_per_timestep
 
     " Training "
-    training_loop(agent, iterations=1, episodes_per_iteration=10)
+    while env.frame_count < 1000000:
+        training_loop(agent, iterations=1, episodes_per_iteration=100, render=False)
 
     " Saving "
     model.save_graph(sourcepath=experiment_path, tf_sess=sess)
