@@ -140,7 +140,7 @@ import numpy as np
 import tensorflow as tf
 
 from Environments.OpenAI.OpenAI_FlappyBird import OpenAI_FlappyBird_vE
-from Function_Approximators.Neural_Networks.Fully_Connected.Feed_Forward_NN import FullyConnectedNN_FA
+from Function_Approximators.Neural_Networks.Neural_Network import FullyConnectedNN_FA
 from Function_Approximators.Neural_Networks.Models_and_Layers import models
 from Policies.Epsilon_Greedy import EpsilonGreedyPolicy
 from RL_Algorithms.Q_Sigma import QSigma

@@ -1,10 +1,11 @@
-from Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
 import numpy as np
 import tensorflow as tf
-from Function_Approximators.Neural_Networks.Fully_Connected.Experience_Replay_Buffer_FF import Buffer
+
+from Function_Approximators.Neural_Networks.Experience_Replay_Buffer import Buffer
+from Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
 
 " Fully Connected Neural Network Function Approximator "
-class FullyConnectedNN_FA(FunctionApproximatorBase):
+class NeuralNetwork_FA(FunctionApproximatorBase):
 
     """
     model               - deep learning model architecture
@@ -14,15 +15,14 @@ class FullyConnectedNN_FA(FunctionApproximatorBase):
     batch_size          - batch size for learning step
     alpha               - stepsize parameter
     environment         - self-explanatory
-    update_pnetwork     - how many times to update the network before copying the weights to the prediction network
-    store_loss_int      - how often to record the training loss
     """
     def __init__(self, model, optimizer, numActions=3, buffer_size=500, batch_size=20, alpha=0.01, environment=None,
-                 tf_session=None):
+                 tf_session=None, observation_dimensions=None):
 
         self.numActions = numActions
         self.batch_size = batch_size
         self.alpha = alpha
+        self.observation_dimensions = observation_dimensions
         self.model = model
         " Training and Learning Evaluation: Tensorflow and variables initializer "
         self.optimizer = optimizer(alpha/batch_size)
@@ -39,12 +39,14 @@ class FullyConnectedNN_FA(FunctionApproximatorBase):
         self.env = environment
         " Experience Replay Buffer "
         self.buffer_size = buffer_size
-        self.er_buffer = Buffer(buffer_size=self.buffer_size, dimensions=self.model.dimensions)
+        self.er_buffer = Buffer(buffer_size=self.buffer_size, observation_dimensions=self.observation_dimensions)
         super().__init__()
 
     def update(self, state, action, nstep_return, correction, current_estimate):
         value = nstep_return
-        buffer_entry = (state.reshape([1, state.size]),
+        dims = [1]
+        dims.extend(self.observation_dimensions)
+        buffer_entry = (state.reshape(dims),
                         np.zeros(shape=[1,1], dtype=int) + action,
                         value)
         self.er_buffer.add_to_buffer(buffer_entry)
@@ -55,8 +57,9 @@ class FullyConnectedNN_FA(FunctionApproximatorBase):
         return y_hat[action]
 
     def get_next_states_values(self, state):
-        n1, n2 = state.shape
-        feed_dictionary = {self.model.x_frames: state.reshape([1,n1*n2])}
+        dims = [1]
+        dims.extend(self.observation_dimensions)
+        feed_dictionary = {self.model.x_frames: state.reshape(dims)}
         y_hat = self.sess.run(self.model.y_hat, feed_dict=feed_dictionary)
         return y_hat[0]
 

@@ -14,7 +14,7 @@ def main():
 
     " Directories and Paths for Saving and Restoring "
     homepath = "/home/jfernando/"
-    srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/DQS_FlappyBird/"
+    srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Deep_Flap_Convolutional/"
     experiment_name = "Deep_Flap"
     experiment_path = srcpath+experiment_name
     restore = False
@@ -57,20 +57,20 @@ def main():
         model.restore_graph(experiment_path, sess)
 
     else:
-        " Environment Variables "
+        " Model variables and definition "
         action_repeat = 5
         frame_number = 0
 
-        " Model variables and definition "
         name = experiment_name
         height, width = env.frame_size
         channels = 1
+        filter1, filter2 = (8, 5)
         actions = env.get_num_actions()
-        dimensions = [height, width, channels, actions]
-        dim_out = [500, 500, 500]
-        gate = tf.nn.selu
+        dimensions = [height, width, channels, filter1, filter2, actions]
+        dim_out = [64, 32, 9000]
+        gate = tf.nn.relu
         loss = tf.losses.mean_squared_error
-        model = models.Model_FFF(name, dimensions, gate_fun=gate, loss_fun=loss, dim_out=dim_out)
+        model = models.Model_CPCPF(name, dimensions, gate_fun=gate, loss_fun=loss, dim_out=dim_out)
         sess = tf.Session()
 
         " FA variables "
@@ -79,7 +79,7 @@ def main():
         batch_size = 50
         alpha = 0.1
         loss_history = []
-        observation_dimensions = [height * width * channels]
+        observation_dimensions = [height, width, channels]
 
         " Agent variables "
         tpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=1)
@@ -117,7 +117,7 @@ def main():
 
     " Training "
     # while env.frame_count < 1000000:
-    training_loop(agent, iterations=1, episodes_per_iteration=100, render=False)
+    training_loop(agent, iterations=1, episodes_per_iteration=5, render=True)
 
     " Saving "
     model.save_graph(sourcepath=experiment_path, tf_sess=sess)
