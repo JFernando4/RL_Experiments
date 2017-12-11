@@ -62,7 +62,7 @@ class Model_CPCPF:
 
 """
 Three Fully connected"
-Fully Connected -> Fully Connected -> Fully Connected
+Fully Connected -> Fully Connected -> Fully Connected -> Fully Connected 
 """
 class Model_FFF:
 
