@@ -68,7 +68,8 @@ class QSigma(RL_ALgorithmBase):
                                                                             all_actions=False)
                         Pi[t % self.n] = self.tpolicy.probability_of_action(q_value=q_values, action=new_A,
                                                                             all_actions=False)
-                            # t_probabilities[new_A]
+                        if (Pi[t % self.n] == 0) or (Mu[t % self.n] == 0):
+                            print("Something's wrong!")
                         A = new_A
 
                 Tau = t - self.n + 1
@@ -76,12 +77,10 @@ class QSigma(RL_ALgorithmBase):
                     E = 1
                     G = Q[Tau % (self.n+1)]
                     Rho = 1
-                    for k in range(Tau, min(Tau + self.n, t)):
+                    for k in range(Tau, min(T-1, t)):
                         G += E * Delta[k % self.n]
                         E = self.gamma * E * ((1-self.sigma) * Pi[k % self.n] + self.sigma)
-                        Rho *= ((1-self.sigma) + self.sigma * (Pi[k % self.n] / Mu[k % self.n]))
-                        # print("Pi:", Pi[k % self.n], ", Mu:", Mu[k % self.n])
-                        # print("Pi / Mu:", Pi[k % self.n] / Mu[k % self.n])
+                        Rho *= (1-self.sigma) + (self.sigma * (Pi[k % self.n] / Mu[k % self.n]))
                     Qtau = self.fa.get_value(States[Tau % (self.n+1)], Actions[Tau % (self.n+1)])
                     self.fa.update(States[Tau % (self.n+1)], Actions[Tau % (self.n+1)],
                                    nstep_return=G, correction=Rho, current_estimate=Qtau)

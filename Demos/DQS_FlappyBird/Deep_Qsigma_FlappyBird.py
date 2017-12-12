@@ -76,7 +76,7 @@ def main():
         " FA variables "
         num_actions = env.get_num_actions()
         buffer_size = 2000
-        batch_size = 50
+        batch_size = 30
         alpha = 0.1
         loss_history = []
         observation_dimensions = [height * width * channels]
@@ -116,8 +116,8 @@ def main():
     agent.average_reward_per_timestep = average_reward_per_timestep
 
     " Training "
-    # while env.frame_count < 1000000:
-    training_loop(agent, iterations=1, episodes_per_iteration=100, render=False)
+    while env.frame_count < 1000000:
+        training_loop(agent, iterations=1, episodes_per_iteration=100, render=False)
 
     " Saving "
     model.save_graph(sourcepath=experiment_path, tf_sess=sess)
