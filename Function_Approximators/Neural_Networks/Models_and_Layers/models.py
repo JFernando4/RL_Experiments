@@ -21,9 +21,10 @@ class Model_CPCPF:
         self.dimensions = dimensions
         self.dim_out = dim_out
         self.loss_fun = loss_fun
-        self.x_frames = tf.placeholder(tf.float32, shape=(None, height, width, channels))     # input frames
+        self.x_frames = tf.placeholder(tf.float32, shape=(None, height, width, channels))   # input frames
         self.x_actions = tf.placeholder(tf.int32, shape=(None, 2))                          # input actions
-        self.y = tf.placeholder(tf.float32, shape=None)                                       # target
+        self.y = tf.placeholder(tf.float32, shape=None)                                     # target
+        self.isampling = tf.placeholder(tf.float32, shape=None)                             # importance sampling term
         self.gate_fun = gate_fun
 
         # layer 1: conv
@@ -59,7 +60,6 @@ class Model_CPCPF:
             name, "full_2", self.y_hat_3, do3, actions,
             tf.random_normal_initializer(stddev=1.0/np.sqrt(do3), seed=SEED), linear_transfer)
 
-
         y_hat = tf.gather_nd(self.y_hat, self.x_actions)
         # loss
         self.train_loss = tf.reduce_sum(loss_fun(y_hat, self.y))
@@ -90,9 +90,10 @@ class Model_FFF:
         self.dimensions = dimensions
         self.dim_out = dim_out
         self.loss_fun = loss_fun
-        self.x_frames = tf.placeholder(tf.float32, shape=(None, height * width * channels))     # input frames
-        self.x_actions = tf.placeholder(tf.int32, shape=(None, 2))                              # input actions
-        self.y = tf.placeholder(tf.float32, shape=None)                                         # target
+        self.x_frames = tf.placeholder(tf.float32, shape=(None, height * width * channels)) # input frames
+        self.x_actions = tf.placeholder(tf.int32, shape=(None, 2))                          # input actions
+        self.y = tf.placeholder(tf.float32, shape=None)                                     # target
+        self.isampling = tf.placeholder(tf.float32, shape=None)                             # importance sampling term
         self.gate_fun = gate_fun
 
         # layer 1: full

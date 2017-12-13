@@ -67,7 +67,7 @@ class OpenAI_FlappyBird_vE(EnvironmentBase):
         left = 60
         self.current_state = (np.sum(self.current_state, 2) / 3)[top:bottom]
         self.current_state = np.delete(self.current_state, range(0, left+1), 1) # Eliminates 60 columns from the left
-        self.current_state = block_reduce(self.current_state, (5,5), np.min)
+        self.current_state = block_reduce(self.current_state, (7,7), np.min)
 
     def get_num_actions(self):
         return len(self.actions)

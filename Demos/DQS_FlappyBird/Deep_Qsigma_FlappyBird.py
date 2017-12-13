@@ -67,7 +67,7 @@ def main():
         channels = 1
         actions = env.get_num_actions()
         dimensions = [height, width, channels, actions]
-        dim_out = [500, 500, 500]
+        dim_out = [1500, 1500, 1500]
         gate = tf.nn.selu
         loss = tf.losses.mean_squared_error
         model = models.Model_FFF(name, dimensions, gate_fun=gate, loss_fun=loss, dim_out=dim_out)
@@ -82,7 +82,7 @@ def main():
         observation_dimensions = [height * width * channels]
 
         " Agent variables "
-        tpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=1)
+        tpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.5)
         bpolicy = tpolicy
         gamma = 1
         n = 5
@@ -116,8 +116,8 @@ def main():
     agent.average_reward_per_timestep = average_reward_per_timestep
 
     " Training "
-    while env.frame_count < 1000000:
-        training_loop(agent, iterations=1, episodes_per_iteration=100, render=False)
+    while env.frame_count < 200000:
+        training_loop(agent, iterations=1, episodes_per_iteration=50, render=False)
 
     " Saving "
     model.save_graph(sourcepath=experiment_path, tf_sess=sess)

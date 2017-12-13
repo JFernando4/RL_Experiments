@@ -48,7 +48,8 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         dims.extend(self.observation_dimensions)
         buffer_entry = (state.reshape(dims),
                         np.zeros(shape=[1,1], dtype=int) + action,
-                        value)
+                        value,
+                        correction)
         self.er_buffer.add_to_buffer(buffer_entry)
         self.train()
 
@@ -67,11 +68,12 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         if self.er_buffer.current_buffer_size < self.batch_size:
             return
         else:
-            sample_frames, sample_actions, sample_labels = self.er_buffer.sample(self.batch_size)
+            sample_frames, sample_actions, sample_labels, sample_isampling = self.er_buffer.sample(self.batch_size)
             sample_actions = np.column_stack((np.arange(sample_actions.shape[0]), sample_actions))
             feed_dictionary = {self.model.x_frames: sample_frames,
                                self.model.x_actions: sample_actions,
-                               self.model.y: sample_labels}
+                               self.model.y: sample_labels,
+                               self.model.isampling: sample_isampling}
             train_loss, _ = self.sess.run((self.model.train_loss, self.train_step), feed_dict=feed_dictionary)
             self.train_loss_history.append(train_loss)
 

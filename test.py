@@ -140,22 +140,23 @@ import numpy as np
 import tensorflow as tf
 
 from Environments.OpenAI.OpenAI_FlappyBird import OpenAI_FlappyBird_vE
-from Function_Approximators.Neural_Networks.Neural_Network import FullyConnectedNN_FA
+from Function_Approximators.Neural_Networks.Neural_Network import NeuralNetwork_FA
 from Function_Approximators.Neural_Networks.Models_and_Layers import models
 from Policies.Epsilon_Greedy import EpsilonGreedyPolicy
 from RL_Algorithms.Q_Sigma import QSigma
 #
 " Environment "
-env = OpenAI_FlappyBird_vE(render=True, agent_render=False, action_repeat=5)
+env = OpenAI_FlappyBird_vE(render=True, agent_render=True, action_repeat=5)
 
 " Model definition "
 name = 'test'
-n1, n2 = env.frame_size
+height, width = env.frame_size
 f1, f2 = (5, 5)
 d1, d2 = (64, 64)
 d0, m2 = (1, 1)
-m1 = env.get_num_actions()
-dimensions = [n1, n2, d0, f1, d1, f2, d2, m1, m2]
+channels = 1
+actions = env.get_num_actions()
+dimensions = [height, width, channels, actions]
 dim_out = [500, 500, 500]
 gate = tf.nn.selu
 loss = tf.losses.mean_squared_error
@@ -163,6 +164,7 @@ loss = tf.losses.mean_squared_error
 model = models.Model_FFF(name, dimensions, gate_fun=gate, loss_fun=loss, dim_out=dim_out)
 " Optimizer "
 optimizer = tf.train.AdamOptimizer
+observation_dimensions = [height*width*channels]
 
 " Function Approximator "
 # fa = ConvolutionalNN_FA(numActions=env.get_num_actions(),
@@ -173,13 +175,14 @@ optimizer = tf.train.AdamOptimizer
 #                         alpha=0.0000001,
 #                         environment=env)
 
-fa = FullyConnectedNN_FA(numActions=env.get_num_actions(),
+fa = NeuralNetwork_FA(numActions=env.get_num_actions(),
                         model=model,
                         optimizer=optimizer,
                         buffer_size=2000,
-                        batch_size=10,
+                        batch_size=1000,
                         alpha=0.1,
-                        environment=env)
+                        environment=env,
+                      observation_dimensions=observation_dimensions)
 
 
 " Policies "
@@ -192,8 +195,8 @@ agent = QSigma(function_approximator=fa, environment=env, behavior_policy=tpolic
 total_episodes = 0
 
 # while env.frame_count < 1000000:
-train_episodes = 100
-iterations = 100
+train_episodes = 3
+iterations = 1
 for i in range(iterations):
     agent.train(train_episodes)
     total_episodes += train_episodes

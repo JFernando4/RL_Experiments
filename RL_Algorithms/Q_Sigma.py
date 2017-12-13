@@ -68,8 +68,6 @@ class QSigma(RL_ALgorithmBase):
                                                                             all_actions=False)
                         Pi[t % self.n] = self.tpolicy.probability_of_action(q_value=q_values, action=new_A,
                                                                             all_actions=False)
-                        if (Pi[t % self.n] == 0) or (Mu[t % self.n] == 0):
-                            print("Something's wrong!")
                         A = new_A
 
                 Tau = t - self.n + 1
