@@ -61,8 +61,10 @@ class Model_CPCPF:
             tf.random_normal_initializer(stddev=1.0/np.sqrt(do3), seed=SEED), linear_transfer)
 
         y_hat = tf.gather_nd(self.y_hat, self.x_actions)
+        y_hat = tf.multiply(y_hat, self.isampling)
+        y = tf.multiply(self.y, self.isampling)
         # loss
-        self.train_loss = tf.reduce_sum(loss_fun(y_hat, self.y))
+        self.train_loss = tf.reduce_sum(loss_fun(y_hat, y))
         self.train_vars = [W_1, b_1, W_2, b_2, W_3, b_3, W_4, b_4]
 
     def save_graph(self, sourcepath, tf_sess):
@@ -121,8 +123,10 @@ class Model_FFF:
             tf.random_normal_initializer(stddev=1.0 / np.sqrt(dim_full_1), seed=SEED), linear_transfer)
 
         y_hat = tf.gather_nd(self.y_hat, self.x_actions)
+        y_hat = tf.multiply(y_hat, self.isampling)
+        y = tf.multiply(self.y, self.isampling)
         # loss
-        self.train_loss = tf.reduce_sum(loss_fun(y_hat, self.y))
+        self.train_loss = tf.reduce_sum(loss_fun(y_hat, y))
         self.train_vars = [W_1, b_1, W_2, b_2, W_3, b_3, W_4, b_4]
 
     def save_graph(self, sourcepath, tf_sess):

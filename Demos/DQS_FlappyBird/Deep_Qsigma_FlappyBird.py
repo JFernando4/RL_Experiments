@@ -82,8 +82,8 @@ def main():
         observation_dimensions = [height * width * channels]
 
         " Agent variables "
-        tpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.5)
-        bpolicy = tpolicy
+        tpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.1)
+        bpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=1)
         gamma = 1
         n = 5
         beta = 1
@@ -109,7 +109,7 @@ def main():
     fa.train_loss_history = loss_history
 
     " Agent Definition "
-    agent = QSigma(function_approximator=fa, environment=env, behavior_policy=tpolicy, target_policy=bpolicy,
+    agent = QSigma(function_approximator=fa, environment=env, behavior_policy=bpolicy, target_policy=tpolicy,
                    gamma=gamma, n=n, beta=beta, sigma=sigma)
     agent.episode_number = episode_number
     agent.return_per_episode = return_per_episdoe
@@ -117,7 +117,7 @@ def main():
 
     " Training "
     while env.frame_count < 200000:
-        training_loop(agent, iterations=1, episodes_per_iteration=50, render=False)
+        training_loop(agent, iterations=1, episodes_per_iteration=20, render=False)
 
     " Saving "
     model.save_graph(sourcepath=experiment_path, tf_sess=sess)
