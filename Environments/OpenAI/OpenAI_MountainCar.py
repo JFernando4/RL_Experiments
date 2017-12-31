@@ -20,6 +20,9 @@ class OpenAI_MountainCar_vE(EnvironmentBase):
         self.render = render
         if self.render:
             self.env.render()
+        self.frame_count = 0
+        self.agent_render = None
+        self.action_repeat = None
         super().__init__()
 
     def reset(self):
@@ -33,6 +36,7 @@ class OpenAI_MountainCar_vE(EnvironmentBase):
         self.current_state, reward, termination, info = self.env.step(A)
         if self.render:
             self.env.render()
+        self.frame_count += 1
         return self.current_state, reward, termination
 
     def get_num_actions(self):

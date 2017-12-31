@@ -17,7 +17,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
     environment         - self-explanatory
     """
     def __init__(self, model, optimizer, numActions=3, buffer_size=500, batch_size=20, alpha=0.01, environment=None,
-                 tf_session=None, observation_dimensions=None):
+                 tf_session=None, observation_dimensions=None,restore=False):
 
         self.numActions = numActions
         self.batch_size = batch_size
@@ -25,15 +25,16 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         self.observation_dimensions = observation_dimensions
         self.model = model
         " Training and Learning Evaluation: Tensorflow and variables initializer "
-        self.optimizer = optimizer(alpha/batch_size)
+        self.optimizer = optimizer(alpha/batch_size, name=self.model.model_name)
         if tf_session is None:
             self.sess = tf.Session()
         else:
             self.sess = tf_session
         self.train_step = self.optimizer.minimize(self.model.train_loss,
                                                   var_list=self.model.train_vars)
-        for var in tf.global_variables():
-            self.sess.run(var.initializer)
+        if not restore:
+            for var in tf.global_variables():
+                self.sess.run(var.initializer)
         self.train_loss_history = []
         " Environment "
         self.env = environment

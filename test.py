@@ -3,7 +3,7 @@ from Function_Approximators.TileCoder.Tile_Coding_FA import TileCoderFA
 from Policies.Epsilon_Greedy import EpsilonGreedyPolicy
 from RL_Algorithms.Q_Sigma import QSigma
 
-env1 = OpenAI_MountainCar_vE(render=False)
+env1 = OpenAI_MountainCar_vE(render=True)
 state_space_range1 = env1.get_high() - env1.get_low()
 fa1 = TileCoderFA(numActions=env1.get_num_actions(), alpha=0.1, state_space_range=state_space_range1)
 tpolicy1 = EpsilonGreedyPolicy(env1.get_num_actions(), epsilon=0.1)
