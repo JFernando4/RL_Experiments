@@ -14,7 +14,7 @@ class NN_Agent_History:
 
     @staticmethod
     def save_training_history(agent, experiment_path):
-        " Agent's Variables and History "
+        """" Agent's Variables and History """
         agent_dictionary = {"n": agent.n,
                             "gamma": agent.gamma,
                             "beta": agent.beta,
@@ -31,18 +31,15 @@ class NN_Agent_History:
 
         " Model Variables "
         model_dictionary = {"name": agent.fa.model.model_name,
-                            "dimensions": agent.fa.model.dimensions,
-                            "dim_out": agent.fa.model.dim_out,
+                            "model_dimensions": agent.fa.model.model_dimensions,
                             "loss_fun": agent.fa.model.loss_fun,
                             "gate_fun": agent.fa.model.gate_fun}
 
         " Function Approximator's Variables and History "
-        fa_dictionary = {"num_actions": agent.fa.numActions,
-                         "batch_size": agent.fa.batch_size,
+        fa_dictionary = {"batch_size": agent.fa.batch_size,
                          "alpha": agent.fa.alpha,
                          "buffer_size": agent.fa.buffer_size,
-                         "loss_history": agent.fa.train_loss_history,
-                         "observation_dimensions": agent.fa.observation_dimensions}
+                         "loss_history": agent.fa.train_loss_history}
 
         history = {"agent": agent_dictionary,
                    "environment": env_dictionary,
@@ -72,20 +69,20 @@ class NN_Agent_History:
 
     def load_nn_agent_model_history(self):
         model_history = self.history['model']
-        name, dimensions, dim_out, loss_fun, gate_fun = (model_history['name'], model_history['dimensions'],
-                                                         model_history['dim_out'], model_history['loss_fun'],
-                                                         model_history['gate_fun'])
-        return name, dimensions, dim_out, loss_fun, gate_fun
+        name, model_dimensions, loss, gate = (model_history['name'],
+                                              model_history['model_dimensions'],
+                                              model_history['loss_fun'],
+                                              model_history['gate_fun'])
+        return name, model_dimensions, loss, gate
 
     def load_nn_agent_fa_history(self):
         fa_history = self.history['fa']
-        num_actions, batch_size, alpha, buffer_size, loss_history, observation_dimensions = \
-            (fa_history['num_actions'],
-             fa_history['batch_size'], fa_history['alpha'],
+        batch_size, alpha, buffer_size, loss_history = \
+            (fa_history['batch_size'],
+             fa_history['alpha'],
              fa_history['buffer_size'],
-             fa_history['loss_history'],
-             fa_history['observation_dimensions'])
-        return num_actions, batch_size, alpha, buffer_size, loss_history, observation_dimensions
+             fa_history['loss_history'])
+        return batch_size, alpha, buffer_size, loss_history
 
 
 def save_graph(sourcepath, tf_sess):

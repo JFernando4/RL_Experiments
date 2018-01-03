@@ -8,28 +8,31 @@ def linear_transfer(x):
 
 
 """
-Two convolutional layers and one fully connected
+Two convolutional layers and one fully connected + Output Layer
 Convolution -> Pool -> Convolution -> Pool -> Fully Connected -> Fully Connected
 """
 class Model_CPCPF:
-
-    def __init__(self, name, dimensions, gate_fun, loss_fun,  dim_out, SEED=None):
-        # placeholders
-        self.model_name = name
-        height, width, channels, filter1, filter2, actions = dimensions
-        do1, do2, do3 = dim_out
-        self.dimensions = dimensions
-        self.dim_out = dim_out
-        self.loss_fun = loss_fun
+    def __init__(self, name, model_dimensions, observation_dimensions, num_actions, gate_fun, loss_fun,
+                 SEED=None):
+        height, width, channels = observation_dimensions
+        actions = num_actions
+        dim_out1, dim_out2, dim_out3, filter1, filter2 = model_dimensions
+        row_and_action_number = 2
+        " Model Variables "
+        self.model_name = name                      # Stored for saving Purposes
+        self.model_dimensions = model_dimensions    # Stored for saving purposes
+        self.loss_fun = loss_fun                    # Stored for saving purposes
+        self.gate_fun = gate_fun                    # Stored for saving purposes
+        " Placehodler "
         self.x_frames = tf.placeholder(tf.float32, shape=(None, height, width, channels))   # input frames
-        self.x_actions = tf.placeholder(tf.int32, shape=(None, 2))                          # input actions
+        self.x_actions = tf.placeholder(tf.int32, shape=(None, row_and_action_number))      # input actions
         self.y = tf.placeholder(tf.float32, shape=None)                                     # target
         self.isampling = tf.placeholder(tf.float32, shape=None)                             # importance sampling term
-        self.gate_fun = gate_fun
+
 
         # layer 1: conv
         W_1, b_1, z_hat_1, r_hat_1 = layers.convolution_2d(
-            name, "conv_1", self.x_frames, filter1, channels, do1,
+            name, "conv_1", self.x_frames, filter1, channels, dim_out1,
             tf.random_normal_initializer(stddev=1.0/np.sqrt(filter1*filter1*channels+1), seed=SEED),
             gate_fun)
 
@@ -39,8 +42,8 @@ class Model_CPCPF:
 
         # layer 2: conv
         W_2, b_2, z_hat_2, r_hat_2 = layers.convolution_2d(
-            name, "conv_2", s_hat_1, filter2, do1, do2,
-            tf.random_normal_initializer(stddev=1.0/np.sqrt(filter2*filter2*do1+1), seed=SEED),
+            name, "conv_2", s_hat_1, filter2, dim_out1, dim_out2,
+            tf.random_normal_initializer(stddev=1.0/np.sqrt(filter2*filter2*dim_out1+1), seed=SEED),
             gate_fun)
 
         # layer 2.5: pool
@@ -50,15 +53,15 @@ class Model_CPCPF:
         y_hat_2 = tf.reshape(s_hat_2, [-1, shape_2[1]*shape_2[2]*shape_2[3]])
 
         # layer 3: full
-        dim_full_1 = (np.ceil(height/4) * np.ceil(width/4) * do2)
+        dim_full_1 = (np.ceil(height/4) * np.ceil(width/4) * dim_out2)
         W_3, b_3, z_hat, self.y_hat_3= layers.fully_connected(
-            name, "full_1", y_hat_2, dim_full_1, do3,
+            name, "full_1", y_hat_2, dim_full_1, dim_out3,
             tf.random_normal_initializer(stddev=1.0/np.sqrt(dim_full_1), seed=SEED), tf.nn.selu)
 
         # layer 4: full
         W_4, b_4, z_hat, self.y_hat = layers.fully_connected(
-            name, "full_2", self.y_hat_3, do3, actions,
-            tf.random_normal_initializer(stddev=1.0/np.sqrt(do3), seed=SEED), linear_transfer)
+            name, "full_2", self.y_hat_3, dim_out3, actions,
+            tf.random_normal_initializer(stddev=1.0/np.sqrt(dim_out3), seed=SEED), linear_transfer)
 
         y_hat = tf.gather_nd(self.y_hat, self.x_actions)
         y_hat = tf.multiply(y_hat, self.isampling)
@@ -67,60 +70,51 @@ class Model_CPCPF:
         self.train_loss = tf.reduce_sum(loss_fun(y_hat, y))
         self.train_vars = [W_1, b_1, W_2, b_2, W_3, b_3, W_4, b_4]
 
-    def save_graph(self, sourcepath, tf_sess):
-        saver = tf.train.Saver()
-        save_path = saver.save(tf_sess, sourcepath+".ckpt")
-        print("Model Saved in file: %s" % save_path)
-
-    def restore_graph(self, sourcepath, tf_sess):
-        saver = tf.train.Saver()
-        saver.restore(tf_sess, sourcepath+".ckpt")
-        print("Model restored.")
-
 
 """
-Three Fully connected
+Three Fully connected + Output Layer
 Fully Connected -> Fully Connected -> Fully Connected -> Fully Connected 
 """
 class Model_FFF:
 
-    def __init__(self, name, dimensions, gate_fun, loss_fun, dim_out,  SEED=None):
-        # placeholders
-        self.model_name = name
-        height, width, channels, actions = dimensions
-        do1, do2, do3 = dim_out
-        self.dimensions = dimensions
-        self.dim_out = dim_out
-        self.loss_fun = loss_fun
-        self.x_frames = tf.placeholder(tf.float32, shape=(None, height * width * channels)) # input frames
-        self.x_actions = tf.placeholder(tf.int32, shape=(None, 2))                          # input actions
+    def __init__(self, name, observation_dimensions, model_dimensions, num_actions, gate_fun, loss_fun,  SEED=None):
+        input_dim = np.prod(observation_dimensions)
+        actions = num_actions
+        dim_out1, dim_out2, dim_out3 = model_dimensions
+        row_and_action_number = 2
+        " Model Variables "
+        self.model_name = name                      # Stored for saving Purposes
+        self.model_dimensions = model_dimensions    # Stored for saving purposes
+        self.loss_fun = loss_fun                    # Stored for saving purposes
+        self.gate_fun = gate_fun                    # Stored for saving purposes
+        " Place Holders "
+        self.x_frames = tf.placeholder(tf.float32, shape=(None, input_dim)) # input frames
+        self.x_actions = tf.placeholder(tf.int32, shape=(None, row_and_action_number))      # input actions
         self.y = tf.placeholder(tf.float32, shape=None)                                     # target
         self.isampling = tf.placeholder(tf.float32, shape=None)                             # importance sampling term
-        self.gate_fun = gate_fun
 
         # layer 1: full
-        dim_full_1 = height * width * channels
         W_1, b_1, z_hat, y_hat_1 = layers.fully_connected(
-            name, "full_1", self.x_frames, dim_full_1, do1,
-            tf.random_normal_initializer(stddev=1.0 / np.sqrt(dim_full_1), seed=SEED), gate_fun)
+            name, "full_1", self.x_frames, input_dim, dim_out1,
+            tf.random_normal_initializer(stddev=1.0 / np.sqrt(input_dim), seed=SEED), gate_fun)
         y_hat_1 = tf.nn.l2_normalize(y_hat_1, 0)
 
         # layer 2: full
         W_2, b_2, z_hat, y_hat_2= layers.fully_connected(
-            name, "full_2", y_hat_1, do1, do2,
-            tf.random_normal_initializer(stddev=1.0/np.sqrt(dim_full_1), seed=SEED), gate_fun)
+            name, "full_2", y_hat_1, dim_out1, dim_out2,
+            tf.random_normal_initializer(stddev=1.0/np.sqrt(dim_out1), seed=SEED), gate_fun)
         # y_hat_2 = tf.nn.l2_normalize(y_hat_2, 0)
 
         # layer 3: full
         W_3, b_3, z_hat, y_hat_3 = layers.fully_connected(
-            name, "full_3", y_hat_2, do2, do3,
-            tf.random_normal_initializer(stddev=1.0/np.sqrt(dim_full_1), seed=SEED), gate_fun)
+            name, "full_3", y_hat_2, dim_out2, dim_out3,
+            tf.random_normal_initializer(stddev=1.0/np.sqrt(dim_out2), seed=SEED), gate_fun)
         # y_hat_3 = tf.nn.l2_normalize(y_hat_3, 0)
 
         # layer 4: full
         W_4, b_4, z_hat, self.y_hat = layers.fully_connected(
-            name, "full_4", y_hat_3, do3, actions,
-            tf.random_normal_initializer(stddev=1.0 / np.sqrt(dim_full_1), seed=SEED), linear_transfer)
+            name, "full_4", y_hat_3, dim_out3, actions,
+            tf.random_normal_initializer(stddev=1.0 / np.sqrt(input_dim), seed=SEED), linear_transfer)
 
         y_hat = tf.gather_nd(self.y_hat, self.x_actions)
         y_hat = tf.multiply(y_hat, self.isampling)
@@ -128,13 +122,3 @@ class Model_FFF:
         # loss
         self.train_loss = tf.reduce_sum(loss_fun(y_hat, y))
         self.train_vars = [W_1, b_1, W_2, b_2, W_3, b_3, W_4, b_4]
-
-    def save_graph(self, sourcepath, tf_sess):
-        saver = tf.train.Saver()
-        save_path = saver.save(tf_sess, sourcepath+".ckpt")
-        print("Model Saved in file: %s" % save_path)
-
-    def restore_graph(self, sourcepath, tf_sess):
-        saver = tf.train.Saver()
-        saver.restore(tf_sess, sourcepath+".ckpt")
-        print("Model restored.")

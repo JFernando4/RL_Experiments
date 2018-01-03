@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 from Demos.Demos_Utility.Training_Util import training_loop
 from Demos.Demos_Utility.Saving_Restoring_Util import NN_Agent_History, save_graph, restore_graph
@@ -21,6 +22,8 @@ def main():
 
     " Environment "
     env = OpenAI_FlappyBird_vE(render=False)
+    observation_dimensions = [np.prod(env.get_current_state().size)]
+    num_actions = env.get_num_actions()
 
     " Variables "
     if restore:
@@ -33,11 +36,11 @@ def main():
             agent_history.load_nn_agent_environment_history()
 
         " Model Variables "
-        name, dimensions, dim_out, loss, gate = \
+        name, model_dimensions, loss, gate = \
             agent_history.load_nn_agent_model_history()
 
         " Function Approximator Variables "
-        num_actions, batch_size, alpha, buffer_size, loss_history, observation_dimensions = \
+        batch_size, alpha, buffer_size, loss_history = \
             agent_history.load_nn_agent_fa_history()
     else:
         " Environment Variables "
@@ -46,25 +49,19 @@ def main():
 
         " Model variables and definition "
         name = experiment_name
-        height, width = env.frame_size
-        channels = 1
-        actions = env.get_num_actions()
-        dimensions = [height, width, channels, actions]
-        dim_out = [200, 200, 200]
+        model_dimensions = [200, 200, 200]
         gate = tf.nn.relu
         loss = tf.losses.mean_squared_error
 
         " FA variables "
-        num_actions = env.get_num_actions()
         buffer_size = 1
         batch_size = 1
         alpha = 0.001
         loss_history = []
-        observation_dimensions = [height * width * channels]
 
         " Agent variables "
-        tpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.1)
-        bpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=1)
+        tpolicy = EpsilonGreedyPolicy(num_actions, epsilon=0.1)
+        bpolicy = EpsilonGreedyPolicy(num_actions, epsilon=1)
         gamma = 1
         n = 5
         beta = 1
@@ -78,7 +75,8 @@ def main():
     env.frame_count = frame_number
 
     " Model Definition "
-    model = models.Model_FFF(name, dimensions, gate_fun=gate, loss_fun=loss, dim_out=dim_out)
+    model = models.Model_FFF(name=name, model_dimensions=model_dimensions, num_actions=num_actions,
+                             observation_dimensions=observation_dimensions, gate_fun=gate, loss_fun=loss)
 
     " FA Definition "
     optimizer = tf.train.AdamOptimizer
@@ -106,8 +104,8 @@ def main():
         restore_graph(experiment_path, sess)
 
     " Training "
-    while env.frame_count < 100000:
-        training_loop(agent, iterations=10, episodes_per_iteration=10, render=False, agent_render=False)
+    # while env.frame_count < 400:
+    training_loop(agent, iterations=10, episodes_per_iteration=10, render=False, agent_render=False)
 
     " Saving "
     agent_history.save_training_history(agent, experiment_path)

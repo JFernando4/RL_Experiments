@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 from Demos.Demos_Utility.Training_Util import training_loop
 from Demos.Demos_Utility.Saving_Restoring_Util import NN_Agent_History, save_graph, restore_graph
@@ -20,7 +21,9 @@ def main():
     agent_history = NN_Agent_History(experiment_path, restore)
 
     " Environment "
-    env = OpenAI_MountainCar_vE(render=False)
+    env = OpenAI_MountainCar_vE()
+    observation_dimensions = [np.prod(env.get_current_state().size)]
+    num_actions = env.get_num_actions()
 
     " Variables "
     if restore:
@@ -33,11 +36,11 @@ def main():
             agent_history.load_nn_agent_environment_history()
 
         " Model Variables "
-        name, dimensions, dim_out, loss, gate = \
+        name, model_dimensions, loss, gate = \
             agent_history.load_nn_agent_model_history()
 
         " Function Approximator Variables "
-        num_actions, batch_size, alpha, buffer_size, loss_history, observation_dimensions = \
+        batch_size, alpha, buffer_size, loss_history = \
             agent_history.load_nn_agent_fa_history()
     else:
         " Agent variables "
@@ -56,27 +59,21 @@ def main():
 
         " Model Variables "
         name = experiment_name
-        height = 1
-        width = env.get_current_state().size
-        channels = 1
-        actions = env.get_num_actions()
-        dimensions = [height, width, channels, actions]
-        dim_out = [100, 100, 100]
+        model_dimensions = [100, 100, 100]
         gate = tf.nn.relu
         loss = tf.losses.mean_squared_error
 
         " FA variables "
-        num_actions = env.get_num_actions()
         buffer_size = 1
         batch_size = 1
         alpha = 0.0001
         loss_history = []
-        observation_dimensions = [height * width * channels]
 
     env.frame_count = frame_number
 
     " Model Definition "
-    model = models.Model_FFF(name, dimensions, gate_fun=gate, loss_fun=loss, dim_out=dim_out)
+    model = models.Model_FFF(name=name, model_dimensions=model_dimensions, num_actions=num_actions,
+                             observation_dimensions=observation_dimensions, gate_fun=gate, loss_fun=loss)
 
     " FA Definition "
     sess = tf.Session()
@@ -104,8 +101,8 @@ def main():
         restore_graph(experiment_path, sess)
 
     " Training "
-    for _ in range(600):
-        training_loop(agent, iterations=10, episodes_per_iteration=1, render=False, agent_render=False)
+    for _ in range(1):
+        training_loop(agent, iterations=10, episodes_per_iteration=1, render=True, agent_render=False)
 
     agent_history.save_training_history(agent, experiment_path=experiment_path)
     save_graph(experiment_path, tf_sess=sess)

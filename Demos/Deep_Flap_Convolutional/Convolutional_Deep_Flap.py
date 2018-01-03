@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 from Demos.Demos_Utility.Training_Util import training_loop
 from Demos.Demos_Utility.Saving_Restoring_Util import NN_Agent_History, save_graph, restore_graph
@@ -21,6 +22,10 @@ def main():
 
     " Environment "
     env = OpenAI_FlappyBird_vE(render=False)
+    observation_dimensions = list(env.get_current_state().shape)
+    channels = 1
+    observation_dimensions.extend([channels])
+    num_actions = env.get_num_actions()
 
     " Variables "
     if restore:
@@ -33,38 +38,34 @@ def main():
             agent_history.load_nn_agent_environment_history()
 
         " Model Variables "
-        name, dimensions, dim_out, loss, gate = \
+        name, model_dimensions, loss, gate = \
             agent_history.load_nn_agent_model_history()
 
         " Function Approximator Variables "
-        num_actions, batch_size, alpha, buffer_size, loss_history, observation_dimensions = \
+        batch_size, alpha, buffer_size, loss_history = \
             agent_history.load_nn_agent_fa_history()
     else:
-        " Model variables and definition "
+        " Environment Variables "
         action_repeat = 5
         frame_number = 0
 
+        " Model Variables "
         name = experiment_name
-        height, width = env.frame_size
-        channels = 1
         filter1, filter2 = (8, 5)
-        actions = env.get_num_actions()
-        dimensions = [height, width, channels, filter1, filter2, actions]
-        dim_out = [64, 32, 9000]
+        dim_out1, dim_out2, dim_out3 = [64, 32, 9000]
+        model_dimensions = [dim_out1, dim_out2, dim_out3, filter1, filter2]
         gate = tf.nn.relu
         loss = tf.losses.mean_squared_error
 
         " FA variables "
-        num_actions = env.get_num_actions()
-        buffer_size = 2000
-        batch_size = 50
+        buffer_size = 1
+        batch_size = 1
         alpha = 0.1
         loss_history = []
-        observation_dimensions = [height, width, channels]
 
         " Agent variables "
-        tpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=1)
-        bpolicy = tpolicy
+        tpolicy = EpsilonGreedyPolicy(num_actions, epsilon=0.1)
+        bpolicy = EpsilonGreedyPolicy(num_actions, epsilon=1)
         gamma = 1
         n = 5
         beta = 1
@@ -78,7 +79,9 @@ def main():
     env.frame_count = frame_number
 
     " Model Definition "
-    model = models.Model_CPCPF(name, dimensions, gate_fun=gate, loss_fun=loss, dim_out=dim_out)
+    model = models.Model_CPCPF(name=name, model_dimensions=model_dimensions,
+                               observation_dimensions=observation_dimensions,
+                               num_actions=num_actions, gate_fun=gate, loss_fun=loss)
 
     " FA Definition "
     sess = tf.Session()
@@ -106,7 +109,7 @@ def main():
 
     " Training "
     # while env.frame_count < 1000000:
-    training_loop(agent, iterations=1, episodes_per_iteration=5, render=True)
+    training_loop(agent, iterations=1, episodes_per_iteration=2, render=True)
 
     " Saving "
     agent_history.save_training_history(agent, experiment_path)
