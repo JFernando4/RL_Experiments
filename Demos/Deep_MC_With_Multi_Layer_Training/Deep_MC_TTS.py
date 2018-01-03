@@ -5,7 +5,7 @@ from Demos.Demos_Utility.Training_Util import training_loop
 from Demos.Demos_Utility.Saving_Restoring_Util import NN_Agent_History, save_graph, restore_graph
 from Environments.OpenAI.OpenAI_MountainCar import OpenAI_MountainCar_vE
 from Function_Approximators.Neural_Networks.Models_and_Layers import models
-from Function_Approximators.Neural_Networks.Neural_Network import NeuralNetwork_FA
+from Function_Approximators.Neural_Networks.NN_3Training_Steps import NeuralNetwork_TTS_FA
 from Policies.Epsilon_Greedy import EpsilonGreedyPolicy
 from RL_Algorithms.Q_Sigma import QSigma
 
@@ -18,7 +18,7 @@ def define_model_fa_and_agent(name, model_dimensions, num_actions, observation_d
                              observation_dimensions=observation_dimensions, gate_fun=gate, loss_fun=loss)
 
     " FA Definition "
-    fa = NeuralNetwork_FA(numActions=num_actions,
+    fa = NeuralNetwork_TTS_FA(numActions=num_actions,
                           model=model,
                           optimizer=optimizer,
                           buffer_size=buffer_size,
@@ -40,10 +40,10 @@ def main():
 
     """" Directories and Paths for Saving and Restoring """
     homepath = "/home/jfernando/"
-    srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Deep_Mountain_Car/"
-    experiment_name = "Deep_MC"
+    srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Deep_MC_TTS.py/"
+    experiment_name = "Deep_MC_TTS"
     experiment_path = srcpath+experiment_name
-    restore = True
+    restore = False
     agent_history = NN_Agent_History(experiment_path, restore)
 
     " Environment "
@@ -105,8 +105,8 @@ def main():
         loss = tf.losses.mean_squared_error
 
         " FA variables "
-        buffer_size = 10
-        batch_size = 10
+        buffer_size = 1
+        batch_size = 1
         alpha = 0.001
 
         agent = define_model_fa_and_agent(name=name, model_dimensions=model_dimensions, num_actions=num_actions,

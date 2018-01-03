@@ -4,8 +4,8 @@ import tensorflow as tf
 from Function_Approximators.Neural_Networks.Experience_Replay_Buffer import Buffer
 from Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
 
-" Fully Connected Neural Network Function Approximator "
-class NeuralNetwork_FA(FunctionApproximatorBase):
+" Neural Network Function Approximator with Three Training Steps "
+class NeuralNetwork_TTS_FA(FunctionApproximatorBase):
 
     """
     model               - deep learning model architecture
@@ -30,12 +30,25 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
             self.sess = tf.Session()
         else:
             self.sess = tf_session
-        self.train_step = self.optimizer.minimize(self.model.train_loss,
-                                                  var_list=self.model.train_vars)
+        # Train the last 2 layers
+        self.train_step1 = self.optimizer.minimize(self.model.train_loss,
+                                                  var_list=self.model.train_vars[-4:])
+        # Train the last 3 layers
+        self.train_step2 = self.optimizer.minimize(self.model.train_loss,
+                                                   var_list=self.model.train_vars[-6:])
+        self.train_step2_count = 0
+        # Train all the layers
+        self.train_step3 = self.optimizer.minimize(self.model.train_loss,
+                                                   var_list=self.model.train_vars)
+        self.train_step3_count = 0
+
         if not restore:
             for var in tf.global_variables():
                 self.sess.run(var.initializer)
-        self.train_loss_history = {"train_step": []}
+
+        self.train_loss_history = {"train_step1": [],
+                                   "train_step2": [],
+                                   "train_step3": []}
         " Environment "
         self.env = environment
         " Experience Replay Buffer "
@@ -75,8 +88,23 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
                                self.model.x_actions: sample_actions,
                                self.model.y: sample_labels,
                                self.model.isampling: sample_isampling}
-            train_loss, _ = self.sess.run((self.model.train_loss, self.train_step), feed_dict=feed_dictionary)
-            self.train_loss_history["train_step"].append(train_loss)
+            self.train_step2_count += 1
+            self.train_step3_count += 1
+            if self.train_step3_count == 40:
+                train_step = self.train_step3
+                key = 'train_step3'
+                self.train_step2_count = 0
+                self.train_step3_count = 0
+            elif self.train_step2_count == 20:
+                train_step = self.train_step2
+                key = 'train_step2'
+                self.train_step2_count = 0
+            else:
+                train_step = self.train_step1
+                key = 'train_step1'
+
+            train_loss, _ = self.sess.run((self.model.train_loss, train_step), feed_dict=feed_dictionary)
+            self.train_loss_history[key].append(train_loss)
 
     def update_alpha(self, new_alpha):
         self.alpha = new_alpha
