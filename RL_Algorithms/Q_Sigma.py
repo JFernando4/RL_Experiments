@@ -75,7 +75,7 @@ class QSigma(RL_ALgorithmBase):
                     E = 1
                     G = Q[Tau % (self.n+1)]
                     Rho = 1
-                    for k in range(Tau, min(T-1, t)):
+                    for k in range(Tau, min(T, Tau + self.n)):
                         G += E * Delta[k % self.n]
                         E = self.gamma * E * ((1-self.sigma) * Pi[k % self.n] + self.sigma)
                         Rho *= (1-self.sigma) + (self.sigma * (Pi[k % self.n] / Mu[k % self.n]))

@@ -47,7 +47,7 @@ def main():
         tpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.1)
         bpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.1)
         gamma = 1
-        n = 3
+        n = 1
         beta = 1
         sigma = 0.5
         episode_number = 0
