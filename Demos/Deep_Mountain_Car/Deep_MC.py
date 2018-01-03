@@ -17,7 +17,7 @@ def main():
     srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Deep_Mountain_Car/"
     experiment_name = "Deep_MC"
     experiment_path = srcpath+experiment_name
-    restore = True
+    restore = False
     agent_history = NN_Agent_History(experiment_path, restore)
 
     " Environment "
@@ -66,7 +66,7 @@ def main():
         " FA variables "
         buffer_size = 1
         batch_size = 1
-        alpha = 0.0001
+        alpha = 0.00001
         loss_history = []
 
     env.frame_count = frame_number
@@ -101,8 +101,7 @@ def main():
         restore_graph(experiment_path, sess)
 
     " Training "
-    for _ in range(1):
-        training_loop(agent, iterations=10, episodes_per_iteration=1, render=True, agent_render=False)
+    training_loop(agent, iterations=10, episodes_per_iteration=1, render=False, agent_render=False)
 
     agent_history.save_training_history(agent, experiment_path=experiment_path)
     save_graph(experiment_path, tf_sess=sess)
