@@ -5,7 +5,7 @@ from Function_Approximators.Neural_Networks.Experience_Replay_Buffer import Buff
 from Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
 
 " Neural Network Function Approximator with Three Training Steps "
-class NeuralNetwork_FTS_FA(FunctionApproximatorBase):
+class NeuralNetwork_TTS_FA(FunctionApproximatorBase):
 
     """
     model               - deep learning model architecture
@@ -90,11 +90,11 @@ class NeuralNetwork_FTS_FA(FunctionApproximatorBase):
                                self.model.isampling: sample_isampling}
             self.train_step2_count += 1
             self.train_step3_count += 1
-            if self.train_step3_count == 100:
+            if (self.train_step3_count % 100) == 0:
                 train_step = self.train_step3
                 key = 'train_step3'
-                self.train_step2_count = self.train_step3_count = 0
-            elif self.train_step2_count == 40:
+                self.train_step3_count = 0
+            elif (self.train_step2_count % 40) == 0:
                 train_step = self.train_step2
                 key = 'train_step2'
                 self.train_step2_count = 0
