@@ -122,3 +122,49 @@ class Model_FFF:
         # loss
         self.train_loss = tf.reduce_sum(loss_fun(y_hat, y))
         self.train_vars = [W_1, b_1, W_2, b_2, W_3, b_3, W_4, b_4]
+
+"""
+Two Fully connected + Output Layer
+Fully Connected -> Fully Connected ->  Output Layer
+"""
+class Model_FFO:
+
+    def __init__(self, name, observation_dimensions, model_dimensions, num_actions, gate_fun, loss_fun,  SEED=None):
+        input_dim = np.prod(observation_dimensions)
+        actions = num_actions
+        dim_out1, dim_out2 = model_dimensions
+        row_and_action_number = 2
+        " Model Variables "
+        self.model_name = name                      # Stored for saving Purposes
+        self.model_dimensions = model_dimensions    # Stored for saving purposes
+        self.loss_fun = loss_fun                    # Stored for saving purposes
+        self.gate_fun = gate_fun                    # Stored for saving purposes
+        " Place Holders "
+        self.x_frames = tf.placeholder(tf.float32, shape=(None, input_dim)) # input frames
+        self.x_actions = tf.placeholder(tf.int32, shape=(None, row_and_action_number))      # input actions
+        self.y = tf.placeholder(tf.float32, shape=None)                                     # target
+        self.isampling = tf.placeholder(tf.float32, shape=None)                             # importance sampling term
+
+        # layer 1: full
+        W_1, b_1, z_hat, y_hat_1 = layers.fully_connected(
+            name, "full_1", self.x_frames, input_dim, dim_out1,
+            tf.random_normal_initializer(stddev=1.0 / np.sqrt(input_dim), seed=SEED), gate_fun)
+        y_hat_1 = tf.nn.l2_normalize(y_hat_1, 0)
+
+        # layer 2: full
+        W_2, b_2, z_hat, y_hat_2= layers.fully_connected(
+            name, "full_2", y_hat_1, dim_out1, dim_out2,
+            tf.random_normal_initializer(stddev=1.0/np.sqrt(dim_out1), seed=SEED), gate_fun)
+        # y_hat_2 = tf.nn.l2_normalize(y_hat_2, 0)
+
+        # layer 3: full
+        W_3, b_3, z_hat, self.y_hat = layers.fully_connected(
+            name, "full_3", y_hat_2, dim_out2, actions,
+            tf.random_normal_initializer(stddev=1.0 / np.sqrt(dim_out2), seed=SEED), linear_transfer)
+
+        y_hat = tf.gather_nd(self.y_hat, self.x_actions)
+        y_hat = tf.multiply(y_hat, self.isampling)
+        y = tf.multiply(self.y, self.isampling)
+        # loss
+        self.train_loss = tf.reduce_sum(loss_fun(y_hat, y))
+        self.train_vars = [W_1, b_1, W_2, b_2, W_3, b_3]

@@ -5,7 +5,7 @@ from Demos.Demos_Utility.Training_Util import training_loop
 from Demos.Demos_Utility.Saving_Restoring_Util import NN_Agent_History, save_graph, restore_graph
 from Environments.OpenAI.OpenAI_MountainCar import OpenAI_MountainCar_vE
 from Function_Approximators.Neural_Networks.Models_and_Layers import models
-from Function_Approximators.Neural_Networks.NN_3Training_Steps import NeuralNetwork_TTS_FA
+from Function_Approximators.Neural_Networks.NN_FFFO_4Training_Steps import NeuralNetwork_FTS_FA
 from Policies.Epsilon_Greedy import EpsilonGreedyPolicy
 from RL_Algorithms.Q_Sigma import QSigma
 
@@ -18,7 +18,7 @@ def define_model_fa_and_agent(name, model_dimensions, num_actions, observation_d
                              observation_dimensions=observation_dimensions, gate_fun=gate, loss_fun=loss)
 
     " FA Definition "
-    fa = NeuralNetwork_TTS_FA(numActions=num_actions,
+    fa = NeuralNetwork_FTS_FA(numActions=num_actions,
                           model=model,
                           optimizer=optimizer,
                           buffer_size=buffer_size,
@@ -40,7 +40,7 @@ def main():
 
     """" Directories and Paths for Saving and Restoring """
     homepath = "/home/jfernando/"
-    srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Deep_MC_TTS.py/"
+    srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Deep_MC_With_Multi_Layer_Training/"
     experiment_name = "Deep_MC_TTS"
     experiment_path = srcpath+experiment_name
     restore = False
@@ -100,8 +100,12 @@ def main():
 
         " Model Variables "
         name = experiment_name
-        model_dimensions = [100, 100, 100]
-        gate = tf.nn.relu
+        """
+        The number of parameters of the NN is:
+            (dim_out1 * 2) + (dim_out1 * dim_out2) + (dim_out2 * dim_out3) + (dim_out3 * 3)
+        """
+        model_dimensions = [30, 30, 15] # Max = 1536 -2 = 1534 (The number of parameteres used by tile coding
+        gate = tf.nn.selu
         loss = tf.losses.mean_squared_error
 
         " FA variables "
@@ -116,7 +120,11 @@ def main():
                                           tpolicy=tpolicy, gamma=gamma, n=n, beta=beta, sigma=sigma)
 
     " Training "
-    training_loop(agent, iterations=100, episodes_per_iteration=1, render=False, agent_render=False)
+    paramenters_no = (model_dimensions[0] * 2) + (model_dimensions[0] * model_dimensions[1]) + \
+                     (model_dimensions[1] * model_dimensions[2]) + (model_dimensions[2] * 3) + \
+                     (2 + model_dimensions[0] + model_dimensions[1] + model_dimensions[2])
+    print("The number of parameters is:", paramenters_no)
+    training_loop(agent, iterations=500, episodes_per_iteration=1, render=False, agent_render=False)
 
     agent_history.save_training_history(agent, experiment_path=experiment_path)
     save_graph(experiment_path, tf_sess=sess)
