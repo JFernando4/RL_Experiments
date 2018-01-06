@@ -4,7 +4,7 @@ import numpy as np
 from Demos.Demos_Utility.Training_Util import training_loop
 from Demos.Demos_Utility.Saving_Restoring_Util import NN_Agent_History, save_graph, restore_graph
 from Environments.OpenAI.OpenAI_FlappyBird import OpenAI_FlappyBird_vE
-from Function_Approximators.Neural_Networks.Models_and_Layers import models
+from Function_Approximators.Neural_Networks.NN_Utilities import models
 from Function_Approximators.Neural_Networks.Neural_Network import NeuralNetwork_FA
 from Policies.Epsilon_Greedy import EpsilonGreedyPolicy
 from RL_Algorithms.Q_Sigma import QSigma

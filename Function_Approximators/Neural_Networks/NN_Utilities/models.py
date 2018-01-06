@@ -1,11 +1,10 @@
 import tensorflow as tf
 import numpy as np
-from Function_Approximators.Neural_Networks.Models_and_Layers import layers
+from Function_Approximators.Neural_Networks.NN_Utilities import layers
 
 
 def linear_transfer(x):
     return x
-
 
 """
 Two convolutional layers and one fully connected + Output Layer
@@ -71,10 +70,14 @@ class Model_CPCPF:
         self.train_vars = [W_1, b_1, W_2, b_2, W_3, b_3, W_4, b_4]
 
     def print_number_of_parameters(self):
+        sess = tf.Session()
         total = 0
-        for variable in self.train_vars:
-            total += tf.Session().run(tf.size(variable))
-        print("The total number of parameters is:", total)
+        for layer in range(int(len(self.train_vars)/2)):
+            index = layer * 2
+            layer_total = sess.run(tf.size(self.train_vars[index]) + tf.size(self.train_vars[index+1]))
+            print("Number of parameters in layer", layer + 1, ":", layer_total)
+            total += layer_total
+        print("Total number of parameters:", total)
 
 
 """
@@ -117,32 +120,37 @@ class Model_FFF:
             tf.random_normal_initializer(stddev=1.0/np.sqrt(dim_out2), seed=SEED), gate_fun)
         # y_hat_3 = tf.nn.l2_normalize(y_hat_3, 0)
 
-        # layer 4: full
+        # output layer: full
         W_4, b_4, z_hat, self.y_hat = layers.fully_connected(
             name, "full_4", y_hat_3, dim_out3, actions,
             tf.random_normal_initializer(stddev=1.0 / np.sqrt(input_dim), seed=SEED), linear_transfer)
 
+        # Obtaining y_hat and Scaling by the Importance Sampling
         y_hat = tf.gather_nd(self.y_hat, self.x_actions)
         y_hat = tf.multiply(y_hat, self.isampling)
         y = tf.multiply(self.y, self.isampling)
+            # Temporal Difference Error
+        self.td_error = tf.reduce_sum(loss_fun(y_hat, y))
 
-        # regularizer
-
-        # beta = 100.0 # Works for batch size of 3
-        beta = 1.0
-        reg_loss = tf.nn.l2_loss
-        regularizer = reg_loss(W_1) + reg_loss(b_1) + reg_loss(W_2) + reg_loss(b_2) + reg_loss(W_3) + reg_loss(b_3) + \
-            reg_loss(W_4) + reg_loss(b_4)
-
-        # loss
-        self.train_loss = tf.reduce_sum(loss_fun(y_hat, y) + tf.multiply(beta, regularizer))
+        # Regularizer
+        beta = 10.0     # beta = 100.0 # Works for batch size of 3
         self.train_vars = [W_1, b_1, W_2, b_2, W_3, b_3, W_4, b_4]
+        regularizer = 0
+        for variable in self.train_vars:
+            regularizer += tf.nn.l2_loss(variable)
+
+        # Loss
+        self.train_loss = self.td_error + (beta * regularizer)
 
     def print_number_of_parameters(self):
+        sess = tf.Session()
         total = 0
-        for variable in self.train_vars:
-            total += tf.Session().run(tf.size(variable))
-        print("The total number of parameters is:", total)
+        for layer in range(int(len(self.train_vars)/2)):
+            index = layer * 2
+            layer_total = sess.run(tf.size(self.train_vars[index]) + tf.size(self.train_vars[index+1]))
+            print("Number of parameters in layer", layer + 1, ":", layer_total)
+            total += layer_total
+        print("Total number of parameters:", total)
 
 """
 Two Fully connected + Output Layer
@@ -192,8 +200,11 @@ class Model_FFO:
         self.train_vars = [W_1, b_1, W_2, b_2, W_3, b_3]
 
     def print_number_of_parameters(self):
-        total = 0
         sess = tf.Session()
-        for variable in self.train_vars:
-            total += sess.run(tf.size(variable))
-        print("The total number of parameters is:", total)
+        total = 0
+        for layer in range(int(len(self.train_vars)/2)):
+            index = layer * 2
+            layer_total = sess.run(tf.size(self.train_vars[index]) + tf.size(self.train_vars[index+1]))
+            print("Number of parameters in layer", layer + 1, ":", layer_total)
+            total += layer_total
+        print("Total number of parameters:", total)

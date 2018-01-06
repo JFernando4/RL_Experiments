@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from Function_Approximators.Neural_Networks.Experience_Replay_Buffer import Buffer
+from Function_Approximators.Neural_Networks.NN_Utilities.Experience_Replay_Buffer import Buffer
 from Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
 
 " Neural Network Function Approximator with Three Training Steps "
@@ -32,7 +32,7 @@ class NeuralNetwork_FTS_FA(FunctionApproximatorBase):
             self.sess = tf_session
         # Train the output layer
         self.train_step1 = self.optimizer.minimize(self.model.train_loss,
-                                                  var_list=self.model.train_vars[-2:])
+                                                   var_list=self.model.train_vars[-2:])
         # Train layers 3 and output layer
         self.train_step2 = self.optimizer.minimize(self.model.train_loss,
                                                    var_list=self.model.train_vars[-4:])

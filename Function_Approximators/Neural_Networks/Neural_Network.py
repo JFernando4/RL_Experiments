@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from Function_Approximators.Neural_Networks.Experience_Replay_Buffer import Buffer
+from Function_Approximators.Neural_Networks.NN_Utilities.Experience_Replay_Buffer import Buffer
 from Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
 
 " Fully Connected Neural Network Function Approximator "

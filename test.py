@@ -79,7 +79,7 @@ agent1.train(1000)
 # """ Tensor Flow Model Test """
 # import tensorflow as tf
 # import numpy as np
-# from Function_Approximators.Neural_Networks.Models_and_Layers import layers
+# from Function_Approximators.Neural_Networks.NN_Utilities import layers
 # from Function_Approximators.Function_Approximator_Placeholder import PlaceholderFA
 # from Environments.OpenAI_FlappyBird import OpenAI_FlappyBird_vE
 # from Policies.Epsilon_Greedy import EpsilonGreedyPolicy
@@ -141,7 +141,7 @@ import tensorflow as tf
 
 from Environments.OpenAI.OpenAI_FlappyBird import OpenAI_FlappyBird_vE
 from Function_Approximators.Neural_Networks.Neural_Network import NeuralNetwork_FA
-from Function_Approximators.Neural_Networks.Models_and_Layers import models
+from Function_Approximators.Neural_Networks.NN_Utilities import models
 from Policies.Epsilon_Greedy import EpsilonGreedyPolicy
 from RL_Algorithms.Q_Sigma import QSigma
 #

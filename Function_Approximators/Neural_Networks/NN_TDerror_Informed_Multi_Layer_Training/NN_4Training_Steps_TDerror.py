@@ -2,10 +2,11 @@ import numpy as np
 import tensorflow as tf
 
 from Function_Approximators.Neural_Networks.NN_Utilities.Experience_Replay_Buffer import Buffer
+from Function_Approximators.Neural_Networks.NN_Utilities.Layer_Training_Priority import Layer_Training_Priority
 from Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
 
 " Neural Network Function Approximator with Three Training Steps "
-class NeuralNetwork_TTS_FA(FunctionApproximatorBase):
+class NeuralNetwork_FTS_FA(FunctionApproximatorBase):
 
     """
     model               - deep learning model architecture
@@ -25,30 +26,36 @@ class NeuralNetwork_TTS_FA(FunctionApproximatorBase):
         self.observation_dimensions = observation_dimensions
         self.model = model
         " Training and Learning Evaluation: Tensorflow and variables initializer "
-        self.optimizer = optimizer(alpha/batch_size, name=self.model.model_name)
+            # creating tensorflow session
         if tf_session is None:
             self.sess = tf.Session()
         else:
             self.sess = tf_session
-        # Train the output layer
+            # optimizer and trining steps
+        self.optimizer = optimizer(alpha / batch_size, name=self.model.model_name)
+                # trains the output layer
         self.train_step1 = self.optimizer.minimize(self.model.train_loss,
-                                                  var_list=self.model.train_vars[-2:])
-        # Train layers 3 and output layer
+                                                   var_list=self.model.train_vars[-2:])
+                # trains layers 3 and output layer
         self.train_step2 = self.optimizer.minimize(self.model.train_loss,
                                                    var_list=self.model.train_vars[-4:])
-        self.train_step2_count = 0
-        # Train layer 2,3, and output layer
+                # trains layer 2,3, and output layer
         self.train_step3 = self.optimizer.minimize(self.model.train_loss,
+                                                   var_list=self.model.train_vars[-6:])
+                # trains all layers
+        self.train_step4 = self.optimizer.minimize(self.model.train_loss,
                                                    var_list=self.model.train_vars)
-        self.train_step3_count = 0
-
+            # initializing variables
         if not restore:
             for var in tf.global_variables():
                 self.sess.run(var.initializer)
-
+            # loss history
         self.train_loss_history = {"train_step1": [],
                                    "train_step2": [],
-                                   "train_step3": []}
+                                   "train_step3": [],
+                                   "train_step4": []}
+            # training priority
+        self.training_priority = Layer_Training_Priority(number_of_training_steps=4)
         " Environment "
         self.env = environment
         " Experience Replay Buffer "
@@ -88,19 +95,13 @@ class NeuralNetwork_TTS_FA(FunctionApproximatorBase):
                                self.model.x_actions: sample_actions,
                                self.model.y: sample_labels,
                                self.model.isampling: sample_isampling}
-            self.train_step2_count += 1
-            self.train_step3_count += 1
-            if (self.train_step3_count % 10) == 0:
-                train_step = self.train_step3
-                key = 'train_step3'
-                self.train_step3_count = 0
-            elif (self.train_step2_count % 2) == 0:
-                train_step = self.train_step2
-                key = 'train_step2'
-                self.train_step2_count = 0
-            else:
-                train_step = self.train_step1
-                key = 'train_step1'
+            td_error = self.sess.run(self.model.td_error, feed_dictionary=feed_dictionary)
+            train_layer = self.training_priority.update_priority(td_error)  # 0-4 depending on how big is the td error
+            training_steps_and_keys = [(self.train_step1, "train_step1"),
+                                       (self.train_step2, "train_step2"),
+                                       (self.train_step3, "train_step3"),
+                                       (self.train_step4, "train_step4")]
+            train_step, key = training_steps_and_keys[train_layer]
 
             train_loss, _ = self.sess.run((self.model.train_loss, train_step), feed_dict=feed_dictionary)
             self.train_loss_history[key].append(train_loss)

@@ -4,7 +4,7 @@ import numpy as np
 from Demos.Demos_Utility.Training_Util import training_loop
 from Demos.Demos_Utility.Saving_Restoring_Util import NN_Agent_History, save_graph, restore_graph
 from Environments.OpenAI.OpenAI_FlappyBird import OpenAI_FlappyBird_vE                              # Environment
-from Function_Approximators.Neural_Networks.Models_and_Layers import models                         # DL Model
+from Function_Approximators.Neural_Networks.NN_Utilities import models                         # DL Model
 from Function_Approximators.Neural_Networks.NN_4Training_Steps import NeuralNetwork_FTS_FA          # NN FA Interface
 from Policies.Epsilon_Greedy import EpsilonGreedyPolicy                                             # Policies
 from RL_Algorithms.Q_Sigma import QSigma                                                            # RL ALgorithm
@@ -104,14 +104,14 @@ def main():
         The number of parameters of the NN is:
             (dim_out1 * 2) + (dim_out1 * dim_out2) + (dim_out2 * dim_out3) + (dim_out3 * 3) + (3 + all_dimensions)
         """
-        model_dimensions = [1600, 800, 200] # Max = 1536 -2 = 1534 (The number of parameteres used by tile coding
+        model_dimensions = [500, 500, 500]
         gate = tf.nn.relu
         loss = tf.losses.mean_squared_error
 
         " FA variables "
-        buffer_size = 1
-        batch_size = 1
-        alpha = 0.00001
+        buffer_size = 3
+        batch_size = 3
+        alpha = 0.01
 
         agent = define_model_fa_and_agent(name=name, model_dimensions=model_dimensions, num_actions=num_actions,
                                           observation_dimensions=observation_dimensions, gate=gate, loss=loss,
@@ -120,11 +120,8 @@ def main():
                                           tpolicy=tpolicy, gamma=gamma, n=n, beta=beta, sigma=sigma)
 
     " Training "
-    paramenters_no = (model_dimensions[0] * 2) + (model_dimensions[0] * model_dimensions[1]) + \
-                     (model_dimensions[1] * model_dimensions[2]) + (model_dimensions[2] * 3) + \
-                     (3 + model_dimensions[0] + model_dimensions[1] + model_dimensions[2])
-    print("The number of parameters is:", paramenters_no)
-    training_loop(agent, iterations=500, episodes_per_iteration=10, render=False, agent_render=False)
+    agent.fa.model.print_number_of_parameters()
+    training_loop(agent, iterations=100, episodes_per_iteration=5, render=True, agent_render=False)
 
     agent_history.save_training_history(agent, experiment_path=experiment_path)
     save_graph(experiment_path, tf_sess=sess)
