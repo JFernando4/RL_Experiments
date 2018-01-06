@@ -70,6 +70,12 @@ class Model_CPCPF:
         self.train_loss = tf.reduce_sum(loss_fun(y_hat, y))
         self.train_vars = [W_1, b_1, W_2, b_2, W_3, b_3, W_4, b_4]
 
+    def print_number_of_parameters(self):
+        total = 0
+        for variable in self.train_vars:
+            total += tf.Session().run(tf.size(variable))
+        print("The total number of parameters is:", total)
+
 
 """
 Three Fully connected + Output Layer
@@ -119,9 +125,24 @@ class Model_FFF:
         y_hat = tf.gather_nd(self.y_hat, self.x_actions)
         y_hat = tf.multiply(y_hat, self.isampling)
         y = tf.multiply(self.y, self.isampling)
+
+        # regularizer
+
+        # beta = 100.0 # Works for batch size of 3
+        beta = 1.0
+        reg_loss = tf.nn.l2_loss
+        regularizer = reg_loss(W_1) + reg_loss(b_1) + reg_loss(W_2) + reg_loss(b_2) + reg_loss(W_3) + reg_loss(b_3) + \
+            reg_loss(W_4) + reg_loss(b_4)
+
         # loss
-        self.train_loss = tf.reduce_sum(loss_fun(y_hat, y))
+        self.train_loss = tf.reduce_sum(loss_fun(y_hat, y) + tf.multiply(beta, regularizer))
         self.train_vars = [W_1, b_1, W_2, b_2, W_3, b_3, W_4, b_4]
+
+    def print_number_of_parameters(self):
+        total = 0
+        for variable in self.train_vars:
+            total += tf.Session().run(tf.size(variable))
+        print("The total number of parameters is:", total)
 
 """
 Two Fully connected + Output Layer
@@ -149,7 +170,8 @@ class Model_FFO:
         W_1, b_1, z_hat, y_hat_1 = layers.fully_connected(
             name, "full_1", self.x_frames, input_dim, dim_out1,
             tf.random_normal_initializer(stddev=1.0 / np.sqrt(input_dim), seed=SEED), gate_fun)
-        y_hat_1 = tf.nn.l2_normalize(y_hat_1, 0)
+        # y_hat_1 = tf.nn.l2_normalize(y_hat_1, 0)
+
 
         # layer 2: full
         W_2, b_2, z_hat, y_hat_2= layers.fully_connected(
@@ -168,3 +190,10 @@ class Model_FFO:
         # loss
         self.train_loss = tf.reduce_sum(loss_fun(y_hat, y))
         self.train_vars = [W_1, b_1, W_2, b_2, W_3, b_3]
+
+    def print_number_of_parameters(self):
+        total = 0
+        sess = tf.Session()
+        for variable in self.train_vars:
+            total += sess.run(tf.size(variable))
+        print("The total number of parameters is:", total)

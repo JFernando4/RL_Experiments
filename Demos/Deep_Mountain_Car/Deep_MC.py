@@ -43,7 +43,7 @@ def main():
     srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Deep_Mountain_Car/"
     experiment_name = "Deep_MC"
     experiment_path = srcpath+experiment_name
-    restore = True
+    restore = False
     agent_history = NN_Agent_History(experiment_path, restore)
 
     " Environment "
@@ -100,14 +100,14 @@ def main():
 
         " Model Variables "
         name = experiment_name
-        model_dimensions = [100, 100, 100]
+        model_dimensions = [100, 50, 10]
         gate = tf.nn.relu
         loss = tf.losses.mean_squared_error
 
         " FA variables "
-        buffer_size = 10
-        batch_size = 10
-        alpha = 0.001
+        buffer_size = 1
+        batch_size = 1
+        alpha = 0.01
 
         agent = define_model_fa_and_agent(name=name, model_dimensions=model_dimensions, num_actions=num_actions,
                                           observation_dimensions=observation_dimensions, gate=gate, loss=loss,
@@ -116,7 +116,7 @@ def main():
                                           tpolicy=tpolicy, gamma=gamma, n=n, beta=beta, sigma=sigma)
 
     " Training "
-    training_loop(agent, iterations=100, episodes_per_iteration=1, render=False, agent_render=False)
+    training_loop(agent, iterations=500, episodes_per_iteration=1, render=False, agent_render=False)
 
     agent_history.save_training_history(agent, experiment_path=experiment_path)
     save_graph(experiment_path, tf_sess=sess)

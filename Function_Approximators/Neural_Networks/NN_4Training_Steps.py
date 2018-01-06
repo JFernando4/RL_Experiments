@@ -96,15 +96,16 @@ class NeuralNetwork_FTS_FA(FunctionApproximatorBase):
             self.train_step2_count += 1
             self.train_step3_count += 1
             self.train_step4_count += 1
-            if (self.train_step4_count % 250) == 0:
+            # 1502 401 10 for MC
+            if (self.train_step4_count % 100) == 0:
                 train_step = self.train_step4
                 key = 'train_step4'
                 self.train_step4_count = 0
-            elif (self.train_step3_count % 100) == 0:
+            elif (self.train_step3_count % 50) == 0:
                 train_step = self.train_step3
                 key = 'train_step3'
                 self.train_step3_count = 0
-            elif (self.train_step2_count % 40) == 0:
+            elif (self.train_step2_count % 10) == 0:
                 train_step = self.train_step2
                 key = 'train_step2'
                 self.train_step2_count = 0

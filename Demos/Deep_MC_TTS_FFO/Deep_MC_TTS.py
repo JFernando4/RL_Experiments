@@ -14,7 +14,7 @@ def define_model_fa_and_agent(name, model_dimensions, num_actions, observation_d
                               optimizer, buffer_size, batch_size, alpha, env, sess, restore,
                               bpolicy, tpolicy, gamma, n, beta, sigma):
     " Model Definition "
-    model = models.Model_FFF(name=name, model_dimensions=model_dimensions, num_actions=num_actions,
+    model = models.Model_FFO(name=name, model_dimensions=model_dimensions, num_actions=num_actions,
                              observation_dimensions=observation_dimensions, gate_fun=gate, loss_fun=loss)
 
     " FA Definition "
@@ -40,7 +40,7 @@ def main():
 
     """" Directories and Paths for Saving and Restoring """
     homepath = "/home/jfernando/"
-    srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Deep_MC_With_Multi_Layer_Training/"
+    srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Deep_MC_TTS_FFO/"
     experiment_name = "Deep_MC_TTS"
     experiment_path = srcpath+experiment_name
     restore = False
@@ -102,9 +102,9 @@ def main():
         name = experiment_name
         """
         The number of parameters of the NN is:
-            (dim_out1 * 2) + (dim_out1 * dim_out2) + (dim_out2 * dim_out3) + (dim_out3 * 3)
+            (dim_out1 * 2) + (dim_out1 * dim_out2) + (dim_out2 * 3) + (all_dims + 3)
         """
-        model_dimensions = [30, 30, 15] # Max = 1536 -2 = 1534 (The number of parameteres used by tile coding
+        model_dimensions = [100, 20] # Max = 1536 -2 = 1534 (The number of parameteres used by tile coding
         gate = tf.nn.selu
         loss = tf.losses.mean_squared_error
 
@@ -120,10 +120,7 @@ def main():
                                           tpolicy=tpolicy, gamma=gamma, n=n, beta=beta, sigma=sigma)
 
     " Training "
-    paramenters_no = (model_dimensions[0] * 2) + (model_dimensions[0] * model_dimensions[1]) + \
-                     (model_dimensions[1] * model_dimensions[2]) + (model_dimensions[2] * 3) + \
-                     (2 + model_dimensions[0] + model_dimensions[1] + model_dimensions[2])
-    print("The number of parameters is:", paramenters_no)
+    agent.fa.model.print_number_of_parameters()
     training_loop(agent, iterations=500, episodes_per_iteration=1, render=False, agent_render=False)
 
     agent_history.save_training_history(agent, experiment_path=experiment_path)

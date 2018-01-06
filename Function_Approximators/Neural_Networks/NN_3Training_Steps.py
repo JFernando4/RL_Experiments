@@ -90,11 +90,11 @@ class NeuralNetwork_TTS_FA(FunctionApproximatorBase):
                                self.model.isampling: sample_isampling}
             self.train_step2_count += 1
             self.train_step3_count += 1
-            if (self.train_step3_count % 100) == 0:
+            if (self.train_step3_count % 10) == 0:
                 train_step = self.train_step3
                 key = 'train_step3'
                 self.train_step3_count = 0
-            elif (self.train_step2_count % 40) == 0:
+            elif (self.train_step2_count % 2) == 0:
                 train_step = self.train_step2
                 key = 'train_step2'
                 self.train_step2_count = 0
