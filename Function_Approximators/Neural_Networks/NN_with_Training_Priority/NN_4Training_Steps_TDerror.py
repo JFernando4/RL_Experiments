@@ -6,7 +6,7 @@ from Function_Approximators.Neural_Networks.NN_Utilities.Layer_Training_Priority
 from Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
 
 " Neural Network Function Approximator with Three Training Steps "
-class NeuralNetwork_FTS_FA(FunctionApproximatorBase):
+class NeuralNetwork_FTSTP_FA(FunctionApproximatorBase):
 
     """
     model               - deep learning model architecture
@@ -95,14 +95,14 @@ class NeuralNetwork_FTS_FA(FunctionApproximatorBase):
                                self.model.x_actions: sample_actions,
                                self.model.y: sample_labels,
                                self.model.isampling: sample_isampling}
-            td_error = self.sess.run(self.model.td_error, feed_dictionary=feed_dictionary)
+            td_error = self.sess.run(self.model.td_error, feed_dict=feed_dictionary)
             train_layer = self.training_priority.update_priority(td_error)  # 0-4 depending on how big is the td error
             training_steps_and_keys = [(self.train_step1, "train_step1"),
                                        (self.train_step2, "train_step2"),
                                        (self.train_step3, "train_step3"),
                                        (self.train_step4, "train_step4")]
+            print(train_layer)
             train_step, key = training_steps_and_keys[train_layer]
-
             train_loss, _ = self.sess.run((self.model.train_loss, train_step), feed_dict=feed_dictionary)
             self.train_loss_history[key].append(train_loss)
 

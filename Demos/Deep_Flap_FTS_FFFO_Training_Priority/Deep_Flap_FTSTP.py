@@ -3,11 +3,12 @@ import numpy as np
 
 from Demos.Demos_Utility.Training_Util import training_loop
 from Demos.Demos_Utility.Saving_Restoring_NN_Util import NN_Agent_History, save_graph, restore_graph
-from Environments.OpenAI.OpenAI_MountainCar import OpenAI_MountainCar_vE
-from Function_Approximators.Neural_Networks.NN_Utilities import models
-from Function_Approximators.Neural_Networks.Neural_Network import NeuralNetwork_FA
-from Policies.Epsilon_Greedy import EpsilonGreedyPolicy
-from RL_Algorithms.Q_Sigma import QSigma
+from Environments.OpenAI.OpenAI_FlappyBird import OpenAI_FlappyBird_vE                              # Environment
+from Function_Approximators.Neural_Networks.NN_Utilities import models                              # DL Model
+from Function_Approximators.Neural_Networks.NN_with_Training_Priority.NN_4Training_Steps_TDerror \
+    import NeuralNetwork_FTSTP_FA                                                                   # NN FA Interface
+from Policies.Epsilon_Greedy import EpsilonGreedyPolicy                                             # Policies
+from RL_Algorithms.Q_Sigma import QSigma                                                            # RL ALgorithm
 
 
 def define_model_fa_and_agent(name, model_dimensions, num_actions, observation_dimensions, gate, loss,
@@ -18,7 +19,7 @@ def define_model_fa_and_agent(name, model_dimensions, num_actions, observation_d
                              observation_dimensions=observation_dimensions, gate_fun=gate, loss_fun=loss)
 
     " FA Definition "
-    fa = NeuralNetwork_FA(numActions=num_actions,
+    fa = NeuralNetwork_FTSTP_FA(numActions=num_actions,
                           model=model,
                           optimizer=optimizer,
                           buffer_size=buffer_size,
@@ -40,14 +41,14 @@ def main():
 
     """" Directories and Paths for Saving and Restoring """
     homepath = "/home/jfernando/"
-    srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Deep_Mountain_Car/"
-    experiment_name = "Deep_MC"
+    srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Deep_Flap_FTS_FFFO_Training_Priority/"
+    experiment_name = "Deep_Flap"
     experiment_path = srcpath+experiment_name
     restore = False
     agent_history = NN_Agent_History(experiment_path, restore)
 
     " Environment "
-    env = OpenAI_MountainCar_vE()
+    env = OpenAI_FlappyBird_vE(action_repeat=5)
     observation_dimensions = [np.prod(env.get_current_state().size)]
     num_actions = env.get_num_actions()
 
@@ -92,21 +93,25 @@ def main():
     else:
         " Agent variables "
         tpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.1)
-        bpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.1)
+        bpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.3)
         gamma = 1
-        n = 5
+        n = 8
         beta = 1
         sigma = 0.5
 
         " Model Variables "
         name = experiment_name
-        model_dimensions = [100, 50, 10]
+        """
+        The number of parameters of the NN is:
+            (dim_out1 * 2) + (dim_out1 * dim_out2) + (dim_out2 * dim_out3) + (dim_out3 * 3) + (3 + all_dimensions)
+        """
+        model_dimensions = [500, 500, 500]
         gate = tf.nn.relu
         loss = tf.losses.mean_squared_error
 
         " FA variables "
-        buffer_size = 1
-        batch_size = 1
+        buffer_size = 3
+        batch_size = 3
         alpha = 0.01
 
         agent = define_model_fa_and_agent(name=name, model_dimensions=model_dimensions, num_actions=num_actions,
@@ -116,7 +121,8 @@ def main():
                                           tpolicy=tpolicy, gamma=gamma, n=n, beta=beta, sigma=sigma)
 
     " Training "
-    training_loop(agent, iterations=500, episodes_per_iteration=1, render=False, agent_render=False)
+    agent.fa.model.print_number_of_parameters()
+    training_loop(agent, iterations=1000, episodes_per_iteration=5, render=True, agent_render=False)
 
     agent_history.save_training_history(agent, experiment_path=experiment_path)
     save_graph(experiment_path, tf_sess=sess)
