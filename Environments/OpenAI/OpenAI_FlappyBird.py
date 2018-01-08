@@ -43,7 +43,11 @@ class OpenAI_FlappyBird_vE(EnvironmentBase):
         """ Actions must be one of the entries in self.actions """
         reward = 0
         for i in range(self.action_repeat):
-            self.current_state, sample_reward, termination, info = self.env.step(A)
+            current_state, sample_reward, termination, info = self.env.step(A)
+            if i == 0:
+                self.current_state = current_state
+            else:
+                self.current_state += current_state
             if sample_reward > 0:
                 sample_reward *= 10
             reward += sample_reward

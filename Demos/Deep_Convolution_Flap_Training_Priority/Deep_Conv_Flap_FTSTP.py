@@ -16,7 +16,7 @@ def define_model_fa_and_agent(name, model_dimensions, num_actions, observation_d
                               optimizer, buffer_size, batch_size, alpha, env, sess, restore,
                               bpolicy, tpolicy, gamma, n, beta, sigma):
     " Model Definition "
-    model = models.Model_FFF(name=name, model_dimensions=model_dimensions, num_actions=num_actions,
+    model = models.Model_CPCPF(name=name, model_dimensions=model_dimensions, num_actions=num_actions,
                              observation_dimensions=observation_dimensions, gate_fun=gate, loss_fun=loss)
 
     " FA Definition "
@@ -42,7 +42,7 @@ def main():
 
     """" Directories and Paths for Saving and Restoring """
     homepath = "/home/jfernando/"
-    srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Deep_Flap_FTS_FFFO_Training_Priority/"
+    srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Deep_Convolution_Flap_FTS_FFFO_Training_Priority/"
     experiment_name = "Deep_Flap"
     experiment_path = srcpath+experiment_name
     restore = False
@@ -51,7 +51,8 @@ def main():
     " Environment "
     env = OpenAI_FlappyBird_vE(action_repeat=5)
     # env = OpenAI_MountainCar_vE()
-    observation_dimensions = [np.prod(env.get_current_state().size)]
+    observation_dimensions = list(env.get_current_state().shape)
+    observation_dimensions.append(1)
     num_actions = env.get_num_actions()
 
     " Optimizer and TF Session "
@@ -95,7 +96,7 @@ def main():
     else:
         " Agent variables "
         tpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.1)
-        bpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=1)
+        bpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=1.0)
         gamma = 1
         n = 15
         beta = 1
@@ -103,7 +104,9 @@ def main():
 
         " Model Variables "
         name = experiment_name
-        model_dimensions = [2000, 500, 550]
+        filter1, filter2 = (8,5)
+        dim_out1, dim_out2, dim_out3 = [128, 64, 800]
+        model_dimensions = [dim_out1, dim_out2, dim_out3, filter1, filter2]
         gate = tf.nn.relu
         loss = tf.losses.mean_squared_error
 
@@ -121,7 +124,7 @@ def main():
     " Training "
     agent.fa.model.print_number_of_parameters()
     training_loop(agent, iterations=10000, episodes_per_iteration=10, render=False, agent_render=False,
-                  final_epsilon=0.1, decrease_epsilon=True, bpolicy_frames_before_target=100000)
+                  final_epsilon=0.1, decrease_epsilon=True, bpolicy_frames_before_target=500000)
 
     agent_history.save_training_history(agent, experiment_path=experiment_path)
     save_graph(experiment_path, tf_sess=sess)

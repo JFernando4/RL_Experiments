@@ -62,12 +62,22 @@ class Model_CPCPF:
             name, "full_2", self.y_hat_3, dim_out3, actions,
             tf.random_normal_initializer(stddev=1.0/np.sqrt(dim_out3), seed=SEED), linear_transfer)
 
+        # Obtaining y_hat and Scaling by the Importance Sampling
         y_hat = tf.gather_nd(self.y_hat, self.x_actions)
         y_hat = tf.multiply(y_hat, self.isampling)
         y = tf.multiply(self.y, self.isampling)
-        # loss
-        self.train_loss = tf.reduce_sum(loss_fun(y_hat, y))
+        # Temporal Difference Error
+        self.td_error = tf.reduce_sum(loss_fun(y_hat, y))
+
+        # Regularizer
+        beta = 0.00  # beta = 100.0 # Works for batch size of 3
         self.train_vars = [W_1, b_1, W_2, b_2, W_3, b_3, W_4, b_4]
+        regularizer = 0
+        for variable in self.train_vars:
+            regularizer += tf.nn.l2_loss(variable)
+
+        # Loss
+        self.train_loss = self.td_error + (beta * regularizer)
 
     def print_number_of_parameters(self):
         sess = tf.Session()
@@ -133,7 +143,7 @@ class Model_FFF:
         self.td_error = tf.reduce_sum(loss_fun(y_hat, y))
 
         # Regularizer
-        beta = 10.0     # beta = 100.0 # Works for batch size of 3
+        beta = 0.00     # beta = 100.0 # Works for batch size of 3
         self.train_vars = [W_1, b_1, W_2, b_2, W_3, b_3, W_4, b_4]
         regularizer = 0
         for variable in self.train_vars:

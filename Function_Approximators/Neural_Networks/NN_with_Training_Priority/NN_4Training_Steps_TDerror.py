@@ -56,6 +56,8 @@ class NeuralNetwork_FTSTP_FA(FunctionApproximatorBase):
                                    "train_step4": []}
             # training priority
         self.training_priority = Layer_Training_Priority(number_of_training_steps=4)
+        self.layer_training_count = np.zeros(4, dtype=int)
+        self.layer_training_print = 0
         " Environment "
         self.env = environment
         " Experience Replay Buffer "
@@ -101,11 +103,22 @@ class NeuralNetwork_FTSTP_FA(FunctionApproximatorBase):
                                        (self.train_step2, "train_step2"),
                                        (self.train_step3, "train_step3"),
                                        (self.train_step4, "train_step4")]
-            print(train_layer)
+            # print(train_layer)
             train_step, key = training_steps_and_keys[train_layer]
             train_loss, _ = self.sess.run((self.model.train_loss, train_step), feed_dict=feed_dictionary)
+                # Count how many times each layer has been trained
+            self.layer_training_count[train_layer] += 1
+            self.layer_training_print += 1
+            if self.layer_training_print == 1000:
+                self.layer_training_print = 0
+                self.print_layer_training_count()
             self.train_loss_history[key].append(train_loss)
 
     def update_alpha(self, new_alpha):
         self.alpha = new_alpha
         self.optimizer._learning_rate = self.alpha
+
+    def print_layer_training_count(self):
+        for i in range(self.layer_training_count.size):
+            print("Layer", self.layer_training_count.size - i, "has been trained:", self.layer_training_count[i],
+                  "times.")
