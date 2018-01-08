@@ -105,7 +105,7 @@ def main():
         " Model Variables "
         name = experiment_name
         filter1, filter2 = (8,5)
-        dim_out1, dim_out2, dim_out3 = [128, 64, 800]
+        dim_out1, dim_out2, dim_out3 = [128, 64, 300]
         model_dimensions = [dim_out1, dim_out2, dim_out3, filter1, filter2]
         gate = tf.nn.relu
         loss = tf.losses.mean_squared_error
