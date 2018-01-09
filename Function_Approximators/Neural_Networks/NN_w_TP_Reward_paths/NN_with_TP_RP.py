@@ -6,7 +6,7 @@ from Function_Approximators.Neural_Networks.NN_Utilities.Layer_Training_Priority
 from Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
 
 " Neural Network Function Approximator with Three Training Steps "
-class NeuralNetwork_FTSTP_FA(FunctionApproximatorBase):
+class NeuralNetwork_FTS_TP_RP_FA(FunctionApproximatorBase):
 
     """
     model               - deep learning model architecture
@@ -35,24 +35,42 @@ class NeuralNetwork_FTSTP_FA(FunctionApproximatorBase):
         self.training_steps_number = training_steps_number
         self.optimizer = optimizer(alpha / batch_size, name=self.model.model_name)
             # positive training steps
-        self.training_steps = []
+        self.positive_training_steps = []
         for i in range(self.training_steps_number):
             ind = 2 * (i+1)
             training_step = self.optimizer.minimize(self.model.train_loss,
-                                                 var_list=self.model.train_vars[-ind:])
-            self.training_steps.append(training_step)
+                                                 var_list=self.model.train_varsp[-ind:])
+            self.positive_training_steps.append(training_step)
+            # negative training steps
+        self.negative_training_steps = []
+        for i in range(self.training_steps_number):
+            ind = 2 * (i+1)
+            training_step = self.optimizer.minimize(self.model.train_loss,
+                                                    var_list=self.model.train_varsn[-ind:])
+            self.negative_training_steps.append(training_step)
             # initializing variables
         if not restore:
             for var in tf.global_variables():
                 self.sess.run(var.initializer)
             # loss history
-        self.train_loss_history = {"train_step1": [],
-                                   "train_step2": [],
-                                   "train_step3": [],
-                                   "train_step4": []}
+        self.train_loss_history = {"Positive_train_step1": [],
+                                   "Positive_train_step2": [],
+                                   "Positive_train_step3": [],
+                                   "Positive_train_step4": [],
+                                   "Negative_train_step1": [],
+                                   "Negative_train_step2": [],
+                                   "Negative_train_step3": [],
+                                   "Negative_train_step4": []}
             # training priority
         self.training_priority = Layer_Training_Priority(number_of_training_steps=4)
-        self.layer_training_count = np.zeros(4, dtype=int)
+        self.layer_training_count = {"Positive_train_step1": 0,
+                                     "Positive_train_step2": 0,
+                                     "Positive_train_step3": 0,
+                                     "Positive_train_step4": 0,
+                                     "Negative_train_step1": 0,
+                                     "Negative_train_step2": 0,
+                                     "Negative_train_step3": 0,
+                                     "Negative_train_step4": 0}
         self.layer_training_print = 0
         " Environment "
         self.env = environment
@@ -94,25 +112,29 @@ class NeuralNetwork_FTSTP_FA(FunctionApproximatorBase):
                                self.model.y: sample_labels,
                                self.model.isampling: sample_isampling}
             td_error = self.sess.run(self.model.td_error, feed_dict=feed_dictionary)
-            train_layer = self.training_priority.update_priority(td_error)  # 0-4 depending on how big is the td error
-            keys = []
-            for i in range(self.training_steps_number):
-                keys.append("train_step"+str(i+1))
-            train_loss, _ = self.sess.run((self.model.train_loss, self.training_steps[train_layer]),
-                                          feed_dict=feed_dictionary)
-                # Count how many times each layer has been trained
-            self.layer_training_count[train_layer] += 1
+                # positive or negative path training selection
+            if td_error >= 0:
+                train_step = self.positive_training_steps
+                sign = "Positive_"
+            else:
+                train_step = self.negative_training_steps
+                sign = "Negative_"
+                # obtain which layers to train
+            train_layer = self.training_priority.update_priority(td_error)  # 0-3 depending on how big is the td error
+                # key for storing in the layer train count and loss history dictionaries
+            key = sign+"train_step"+str(train_layer+1)
+                # loss minimization step
+            train_loss, _ = self.sess.run((self.model.train_loss, train_step[train_layer]), feed_dict=feed_dictionary)
+                # count how many times each layer has been trained
+            self.layer_training_count[key] += 1
             self.layer_training_print += 1
+                # print how many times each positive and negative layer has been trained
             if self.layer_training_print == 1000:
                 self.layer_training_print = 0
                 self.print_layer_training_count()
-            self.train_loss_history[keys[train_layer]].append(train_loss)
-
-    def update_alpha(self, new_alpha):
-        self.alpha = new_alpha
-        self.optimizer._learning_rate = self.alpha
+            self.train_loss_history[key].append(train_loss)
 
     def print_layer_training_count(self):
-        for i in range(self.layer_training_count.size):
-            print("Layer", self.layer_training_count.size - i, "has been trained:", self.layer_training_count[i],
-                  "times.")
+        print("Layers training counts:")
+        for key in self.layer_training_count.keys():
+            print("\t"+key+":", self.layer_training_count[key])

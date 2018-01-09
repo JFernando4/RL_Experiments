@@ -4,10 +4,9 @@ import numpy as np
 from Demos.Demos_Utility.Training_Util import training_loop
 from Demos.Demos_Utility.Saving_Restoring_NN_Util import NN_Agent_History, save_graph, restore_graph
 from Environments.OpenAI.OpenAI_FlappyBird import OpenAI_FlappyBird_vE                              # Environment
-from Environments.OpenAI.OpenAI_MountainCar import OpenAI_MountainCar_vE
 from Function_Approximators.Neural_Networks.NN_Utilities import models                              # DL Model
-from Function_Approximators.Neural_Networks.NN_with_Training_Priority.NN_4Training_Steps_TDerror \
-    import NeuralNetwork_FTSTP_FA                                                                   # NN FA Interface
+from Function_Approximators.Neural_Networks.NN_w_TP_Reward_paths.NN_with_TP_RP \
+    import NeuralNetwork_FTS_TP_RP_FA                                                                   # NN FA Interface
 from Policies.Epsilon_Greedy import EpsilonGreedyPolicy                                             # Policies
 from RL_Algorithms.Q_Sigma import QSigma                                                            # RL ALgorithm
 
@@ -16,11 +15,11 @@ def define_model_fa_and_agent(name, model_dimensions, num_actions, observation_d
                               optimizer, buffer_size, batch_size, alpha, env, sess, restore,
                               bpolicy, tpolicy, gamma, n, beta, sigma):
     " Model Definition "
-    model = models.Model_CPCPF(name=name, model_dimensions=model_dimensions, num_actions=num_actions,
+    model = models.Model_CPCPF_RP(name=name, model_dimensions=model_dimensions, num_actions=num_actions,
                              observation_dimensions=observation_dimensions, gate_fun=gate, loss_fun=loss)
 
     " FA Definition "
-    fa = NeuralNetwork_FTSTP_FA(numActions=num_actions,
+    fa = NeuralNetwork_FTS_TP_RP_FA(numActions=num_actions,
                           model=model,
                           optimizer=optimizer,
                           buffer_size=buffer_size,
@@ -42,7 +41,7 @@ def main():
 
     """" Directories and Paths for Saving and Restoring """
     homepath = "/home/jfernando/"
-    srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Deep_Convolution_Flap_FTS_FFFO_Training_Priority/"
+    srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Deep_Conv_Flap_FTS_TP_RP/"
     experiment_name = "Deep_Flap"
     experiment_path = srcpath+experiment_name
     restore = False
