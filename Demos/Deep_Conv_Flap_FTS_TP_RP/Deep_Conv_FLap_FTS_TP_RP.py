@@ -95,8 +95,8 @@ def main():
     else:
         " Agent variables "
         tpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.1)
-        bpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=1.0)
-        gamma = 1
+        bpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.1)
+        gamma = 0.9999
         n = 15
         beta = 1
         sigma = 0.5
@@ -104,15 +104,15 @@ def main():
         " Model Variables "
         name = experiment_name
         filter1, filter2 = (8,5)
-        dim_out1, dim_out2, dim_out3 = [128, 64, 300]
+        dim_out1, dim_out2, dim_out3 = [128, 32, 200]
         model_dimensions = [dim_out1, dim_out2, dim_out3, filter1, filter2]
         gate = tf.nn.relu
         loss = tf.losses.mean_squared_error
 
         " FA variables "
-        buffer_size = 3
-        batch_size = 3
-        alpha = 0.1
+        buffer_size = 1
+        batch_size = 1
+        alpha = 0.01
 
         agent = define_model_fa_and_agent(name=name, model_dimensions=model_dimensions, num_actions=num_actions,
                                           observation_dimensions=observation_dimensions, gate=gate, loss=loss,
@@ -122,8 +122,8 @@ def main():
 
     " Training "
     agent.fa.model.print_number_of_parameters()
-    training_loop(agent, iterations=10000, episodes_per_iteration=10, render=False, agent_render=False,
-                  final_epsilon=0.1, decrease_epsilon=True, bpolicy_frames_before_target=500000)
+    training_loop(agent, iterations=10000, episodes_per_iteration=10, render=True, agent_render=True,
+                  final_epsilon=0.1, decrease_epsilon=False, bpolicy_frames_before_target=1000)
 
     agent_history.save_training_history(agent, experiment_path=experiment_path)
     save_graph(experiment_path, tf_sess=sess)

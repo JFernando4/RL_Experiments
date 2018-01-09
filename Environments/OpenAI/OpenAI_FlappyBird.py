@@ -67,7 +67,7 @@ class OpenAI_FlappyBird_vE(EnvironmentBase):
     "Makes the frame smaller, black and white, and downsamples by half"
     def fix_state(self):
         top = 10
-        bottom = 370
+        bottom = 400
         left = 60
         self.current_state = (np.sum(self.current_state, 2) / 3)[top:bottom]
         self.current_state = np.delete(self.current_state, range(0, left+1), 1) # Eliminates 60 columns from the left

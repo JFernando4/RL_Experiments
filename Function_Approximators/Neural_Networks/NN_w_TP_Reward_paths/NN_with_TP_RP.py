@@ -111,7 +111,7 @@ class NeuralNetwork_FTS_TP_RP_FA(FunctionApproximatorBase):
                                self.model.x_actions: sample_actions,
                                self.model.y: sample_labels,
                                self.model.isampling: sample_isampling}
-            td_error = self.sess.run(self.model.td_error, feed_dict=feed_dictionary)
+            td_error = np.sum(self.sess.run(self.model.td_error, feed_dict=feed_dictionary))
                 # positive or negative path training selection
             if td_error >= 0:
                 train_step = self.positive_training_steps

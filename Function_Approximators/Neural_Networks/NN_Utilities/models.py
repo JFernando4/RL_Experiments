@@ -118,22 +118,18 @@ class Model_CPCPF_RP:
             name, "conv_1", self.x_frames, filter1, channels, dim_out1,
             tf.random_normal_initializer(stddev=1.0/np.sqrt(filter1*filter1*channels+1), seed=SEED),
             gate_fun)
-
         # layer 1.5: pool
         s_hat_1 = tf.nn.max_pool(
             r_hat_1, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
 
-        s_hat_1p, s_hat_1n = tf.split(s_hat_1, 2, 0)
-
         " Positive TD Error Path "
-        dim_out1p = int(np.floor(dim_out1 / 2))
         dim_out2p = int(np.floor(dim_out2 / 2))
         dim_out3p = int(np.floor(dim_out3 / 2))
 
         # positive layer 2: conv
         W_2p, b_2p, z_hat_2p, r_hat_2p = layers.convolution_2d(
-            name, "conv_2_positive", s_hat_1p, filter2, dim_out1p, dim_out2p,
-            tf.random_normal_initializer(stddev=1.0/np.sqrt(filter2*filter2*dim_out1p+1), seed=SEED),
+            name, "conv_2_positive", s_hat_1, filter2, dim_out1, dim_out2p,
+            tf.random_normal_initializer(stddev=1.0/np.sqrt(filter2*filter2*dim_out1+1), seed=SEED),
             gate_fun)
         # positive layer 2.5: conv
         s_hat_2p = tf.nn.max_pool(
@@ -149,14 +145,13 @@ class Model_CPCPF_RP:
             gate_fun)
 
         " Negative TD Error Path "
-        dim_out1n = int(np.ceil(dim_out1 / 2))
         dim_out2n = int(np.ceil(dim_out2 / 2))
         dim_out3n = int(np.ceil(dim_out3 / 2))
 
         # negative layer 2: conv
         W_2n, b_2n, z_hat_2n, r_hat_2n = layers.convolution_2d(
-            name, "conv_2_negative", s_hat_1n, filter2, dim_out1n, dim_out2n,
-            tf.random_normal_initializer(stddev=1.0 / np.sqrt(filter2 * filter2 * dim_out1n + 1), seed=SEED),
+            name, "conv_2_negative", s_hat_1, filter2, dim_out1, dim_out2n,
+            tf.random_normal_initializer(stddev=1.0 / np.sqrt(filter2 * filter2 * dim_out1 + 1), seed=SEED),
             gate_fun)
         # negative layer 2.5: conv
         s_hat_2n = tf.nn.max_pool(
@@ -167,11 +162,11 @@ class Model_CPCPF_RP:
         # negative layer 3: full
         dim_full_1n = (np.ceil(height / 4) * np.ceil(width / 4) * dim_out2n)
         W_3n, b_3n, z_hat3n, y_hat_3n = layers.fully_connected(
-            name, "full_1_positive", y_hat_2n, dim_full_1n, dim_out3n,
+            name, "full_1_negative", y_hat_2n, dim_full_1n, dim_out3n,
             tf.random_normal_initializer(stddev=1.0 / np.sqrt(filter2 * filter2 * dim_out3n + 1), seed=SEED),
             gate_fun)
 
-        y_hat_3 = tf.concat([y_hat_3p, y_hat_3n], 0)
+        y_hat_3 = tf.concat([y_hat_3p, y_hat_3n], 1)
 
         # layer 4: full
         W_4, b_4, z_hat, self.y_hat = layers.fully_connected(
@@ -183,10 +178,11 @@ class Model_CPCPF_RP:
         y_hat = tf.multiply(y_hat, self.isampling)
         y = tf.multiply(self.y, self.isampling)
         # Temporal Difference Error
-        self.td_error = tf.reduce_sum(loss_fun(y_hat, y))
+        self.td_error = tf.subtract(y_hat, y)
+        squared_td_error = tf.reduce_sum(tf.pow(self.td_error, 2))
 
         # Regularizer
-        beta = 5000.00  # beta = 100.0 # Works for batch size of 3
+        beta = 10000.00  # beta = 100.0 # Works for batch size of 3
         self.train_vars = [W_1, b_1, W_2p, b_2p, W_3p, b_3p, W_2n, b_2n, W_3n, b_3n, W_4, b_4]
         self.train_varsp = [W_1, b_1, W_2p, b_2p, W_3p, b_3p, W_4, b_4]
         self.train_varsn = [W_1, b_1, W_2n, b_2n, W_3n, b_3n, W_4, b_4]
@@ -195,7 +191,7 @@ class Model_CPCPF_RP:
             regularizer += tf.nn.l2_loss(variable)
 
         # Loss
-        self.train_loss = self.td_error + (beta * regularizer)
+        self.train_loss = squared_td_error + (beta * regularizer)
 
     def print_number_of_parameters(self):
         sess = tf.Session()
