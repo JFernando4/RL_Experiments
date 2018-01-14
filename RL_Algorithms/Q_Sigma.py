@@ -1,23 +1,41 @@
 from Objects_Bases.RL_Algorithm_Base import RL_ALgorithmBase
+from Objects_Bases.Environment_Base import EnvironmentBase
+from Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
+from Objects_Bases.Policy_Base import PolicyBase
 from numpy import inf, zeros
 
 class QSigma(RL_ALgorithmBase):
 
-    def __init__(self, target_policy, behavior_policy, function_approximator, environment, n=3, gamma=1, beta=1,
-                 sigma=1):
-        """ Hyper parameters """
-        self.n = n
-        self.gamma = gamma
-        self.beta = beta
-        self.sigma = sigma
+    def __init__(self, n=3, gamma=1, beta=1,
+                 sigma=1, agent_dictionary=None, environment=EnvironmentBase(),
+                 function_approximator=FunctionApproximatorBase(),
+                 target_policy=PolicyBase(), behavior_policy=PolicyBase()):
+        """ Dictionary for Saving and Restoring """
+        if agent_dictionary is None:
+            self._agent_dictionary ={"n": n,
+                                     "gamma": gamma,
+                                     "beta": beta,
+                                     "sigma": sigma,
+                                     "return_per_episode": [],
+                                     "average_reward_per_timestep": [],
+                                     "episode_number": 0,
+                                     "bpolicy": behavior_policy,
+                                     "tpolicy": target_policy}
+        else:
+            self._agent_dictionary = agent_dictionary
+        """ Hyperparameters """
+        self.n = self._agent_dictionary["n"]
+        self.gamma = self._agent_dictionary["gamma"]
+        self.beta = self._agent_dictionary["beta"]
+        self.sigma = self._agent_dictionary["sigma"]
         """ History """
-        self.return_per_episode = []
-        self.average_reward_per_timestep = []
-        self.episode_number = 0
+        self.return_per_episode = self._agent_dictionary["return_per_episode"]
+        self.average_reward_per_timestep = self._agent_dictionary["average_reward_per_timestep"]
+        self.episode_number = self._agent_dictionary["episode_number"]
         """ Policies, function approximator, and environment """
+        self.bpolicy = self._agent_dictionary["bpolicy"]
+        self.tpolicy = self._agent_dictionary["tpolicy"]
         self.fa = function_approximator
-        self.bpolicy = behavior_policy
-        self.tpolicy = target_policy
         self.env = environment
         super().__init__()
 
@@ -33,7 +51,7 @@ class QSigma(RL_ALgorithmBase):
         Sigma = zeros(self.n)
 
         for episode in range(num_episodes):
-            self.episode_number += 1
+            self.increase_episode_number()
             S = self.env.get_current_state()
             q_values = self.fa.get_next_states_values(S)
             A = self.bpolicy.choose_action(q_values)
@@ -89,10 +107,11 @@ class QSigma(RL_ALgorithmBase):
 
             self.return_per_episode.append(reward_sum)
             self.average_reward_per_timestep.append(reward_sum/t)
-            self.sigma *= self.beta
+            self.adjust_sigma()
             self.env.reset()
 
-    def expected_action_value(self, q_values, p_values):
+    @staticmethod
+    def expected_action_value(q_values, p_values):
         expected = 0
         for i in range(len(q_values)):
             expected += q_values[i] * p_values[i]
@@ -114,3 +133,14 @@ class QSigma(RL_ALgorithmBase):
 
         self.env.set_render()
         self.env.reset()
+
+    def increase_episode_number(self):
+        self.episode_number += 1
+        self._agent_dictionary["episode_number"] += self.episode_number
+
+    def adjust_sigma(self):
+        self.sigma *= self.beta
+        self._agent_dictionary['sigma'] = self.sigma
+
+    def get_agent_dictionary(self):
+        return self._agent_dictionary

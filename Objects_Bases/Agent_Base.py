@@ -1,12 +1,15 @@
 import abc
-
+from Objects_Bases.Environment_Base import EnvironmentBase
+from Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
 
 class AgentBase(object):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def __init__(self):
+    def __init__(self, env=EnvironmentBase(), fa=FunctionApproximatorBase()):
         """ Initializes the agent """
+        self.env = env
+        self.fa = fa
         pass
 
     @abc.abstractmethod
@@ -22,4 +25,9 @@ class AgentBase(object):
     @abc.abstractmethod
     def train(self, number_of_episodes):
         """ Runs (number_of_episodes) episodes beginning to end """
+        return
+
+    @abc.abstractmethod
+    def get_agent_dictionary(self):
+        """ Returns a dictionary with all the hyperparameters of the agent """
         return

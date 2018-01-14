@@ -13,15 +13,16 @@ class Layer_Training_Priority:
         self._percentiles_full = False
         self._number_of_percentiles = number_of_percentiles
         self._percentiles = [0 for _ in range(self._number_of_percentiles)]
-                # indexes with equal number of entires between them
+            # indexes with equal number of entries between them
         self._percentiles_indexes = [(i+1) * (self._record_size // (self._number_of_percentiles+1)) - 1
                                      for i in range(self._number_of_percentiles)]
         self._lr = learning_rate
 
     def update_priority(self, td_error):
+        """ returns 0 to self._training_steps - 1 """
         self.add_to_record(td_error)
         if not self._percentiles_full:
-            return self._training_steps - 1
+            return 0 #self._training_steps - 1
         else:
             layer = (self._training_steps - 1) - self.get_closest_percentile_index(td_error)
             return layer
@@ -60,13 +61,6 @@ class Layer_Training_Priority:
                                                         - self._percentiles[index])
 
     def get_closest_percentile_index(self, td_error):
-        # smallest_index = 0
-        # for i in range(self._number_of_percentiles):
-        #     if td_error >= self._percentiles[i]:
-        #         return smallest_index
-        #     smallest_index += 1
-        # return smallest_index - 1
-
         smallest_difference = abs(self._percentiles[0] - td_error)
         smallest_index = 0
         for i in range(self._number_of_percentiles-1):

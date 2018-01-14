@@ -13,6 +13,7 @@ class OpenAI_CartPole_vE(EnvironmentBase):
                 reward_threshold=475.0,
             )
         self.env = gym.make('CartPole-v5')
+        self._env_dictionary = {}
         self.current_state = self.env.reset()
         self.actions = [action for action in range(self.env.action_space.n)]
         self.high = self.env.observation_space.high
@@ -54,3 +55,6 @@ class OpenAI_CartPole_vE(EnvironmentBase):
         if self.render and (not render):
             self.env.render(close=True)
         self.render = render
+
+    def get_environment_dictionary(self):
+        return self._env_dictionary

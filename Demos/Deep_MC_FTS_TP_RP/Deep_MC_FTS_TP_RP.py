@@ -3,22 +3,25 @@ import numpy as np
 
 from Demos.Demos_Utility.Training_Util import training_loop
 from Demos.Demos_Utility.Saving_Restoring_NN_Util import NN_Agent_History, save_graph, restore_graph
-from Environments.OpenAI.OpenAI_MountainCar import OpenAI_MountainCar_vE
-from Function_Approximators.Neural_Networks.NN_Utilities import models
-from Function_Approximators.Neural_Networks.NN_3Training_Steps import NeuralNetwork_TTS_FA
-from Policies.Epsilon_Greedy import EpsilonGreedyPolicy
-from RL_Algorithms.Q_Sigma import QSigma
+from Environments.OpenAI.OpenAI_MountainCar import OpenAI_MountainCar_vE                        # Environment
+from Function_Approximators.Neural_Networks.NN_Utilities import models                          # DL Model
+from Function_Approximators.Neural_Networks.NN_w_TP_Reward_paths.NN_with_TP_RP \
+    import NeuralNetwork_FTS_TP_RP_FA                                                           # NN FA Interface
+from Function_Approximators.Neural_Networks.NN_with_Training_Priority.NN_4Training_Steps_TDerror \
+    import NeuralNetwork_FTSTP_FA                                                          # NN FA Interface
+from Policies.Epsilon_Greedy import EpsilonGreedyPolicy                                         # Policies
+from RL_Algorithms.Q_Sigma import QSigma                                                        # RL ALgorithm
 
 
 def define_model_fa_and_agent(name, model_dimensions, num_actions, observation_dimensions, gate, loss,
                               optimizer, buffer_size, batch_size, alpha, env, sess, restore,
                               bpolicy, tpolicy, gamma, n, beta, sigma):
     " Model Definition "
-    model = models.Model_FFO(name=name, model_dimensions=model_dimensions, num_actions=num_actions,
+    model = models.Model_FFF(name=name, model_dimensions=model_dimensions, num_actions=num_actions,
                              observation_dimensions=observation_dimensions, gate_fun=gate, loss_fun=loss)
 
     " FA Definition "
-    fa = NeuralNetwork_TTS_FA(numActions=num_actions,
+    fa = NeuralNetwork_FTSTP_FA(numActions=num_actions,
                           model=model,
                           optimizer=optimizer,
                           buffer_size=buffer_size,
@@ -40,15 +43,15 @@ def main():
 
     """" Directories and Paths for Saving and Restoring """
     homepath = "/home/jfernando/"
-    srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Deep_MC_TTS_FFO/"
-    experiment_name = "Deep_MC_TTS"
+    srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Deep_MC_FTS_TP_RP/"
+    experiment_name = "Deep_Flap"
     experiment_path = srcpath+experiment_name
     restore = False
     agent_history = NN_Agent_History(experiment_path, restore)
 
     " Environment "
-    env = OpenAI_MountainCar_vE()
-    observation_dimensions = [np.prod(env.get_current_state().size)]
+    env = OpenAI_MountainCar_vE(max_steps=10000)
+    observation_dimensions = list(env.get_current_state().shape)
     num_actions = env.get_num_actions()
 
     " Optimizer and TF Session "
@@ -94,24 +97,20 @@ def main():
         tpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.1)
         bpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.1)
         gamma = 1
-        n = 5
+        n = 12
         beta = 1
         sigma = 0.5
 
         " Model Variables "
         name = experiment_name
-        """
-        The number of parameters of the NN is:
-            (dim_out1 * 2) + (dim_out1 * dim_out2) + (dim_out2 * 3) + (all_dims + 3)
-        """
-        model_dimensions = [100, 20] # Max = 1536 -2 = 1534 (The number of parameteres used by tile coding
-        gate = tf.nn.selu
+        model_dimensions = [100, 50, 10]
+        gate = tf.nn.relu
         loss = tf.losses.mean_squared_error
 
         " FA variables "
-        buffer_size = 1
-        batch_size = 1
-        alpha = 0.001
+        buffer_size = 3
+        batch_size = 3
+        alpha = 0.1
 
         agent = define_model_fa_and_agent(name=name, model_dimensions=model_dimensions, num_actions=num_actions,
                                           observation_dimensions=observation_dimensions, gate=gate, loss=loss,
@@ -121,7 +120,8 @@ def main():
 
     " Training "
     agent.fa.model.print_number_of_parameters()
-    training_loop(agent, iterations=500, episodes_per_iteration=1, render=False, agent_render=False)
+    training_loop(agent, iterations=500, episodes_per_iteration=1, render=False, agent_render=False,
+                  final_epsilon=0.1, decrease_epsilon=False, bpolicy_frames_before_target=1000)
 
     agent_history.save_training_history(agent, experiment_path=experiment_path)
     save_graph(experiment_path, tf_sess=sess)

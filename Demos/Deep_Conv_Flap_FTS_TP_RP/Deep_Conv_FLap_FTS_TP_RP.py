@@ -7,6 +7,8 @@ from Environments.OpenAI.OpenAI_FlappyBird import OpenAI_FlappyBird_vE          
 from Function_Approximators.Neural_Networks.NN_Utilities import models                              # DL Model
 from Function_Approximators.Neural_Networks.NN_w_TP_Reward_paths.NN_with_TP_RP \
     import NeuralNetwork_FTS_TP_RP_FA                                                                   # NN FA Interface
+from Function_Approximators.Neural_Networks.NN_with_Training_Priority.NN_4Training_Steps_TDerror \
+    import NeuralNetwork_FTSTP_FA
 from Policies.Epsilon_Greedy import EpsilonGreedyPolicy                                             # Policies
 from RL_Algorithms.Q_Sigma import QSigma                                                            # RL ALgorithm
 
@@ -15,11 +17,11 @@ def define_model_fa_and_agent(name, model_dimensions, num_actions, observation_d
                               optimizer, buffer_size, batch_size, alpha, env, sess, restore,
                               bpolicy, tpolicy, gamma, n, beta, sigma):
     " Model Definition "
-    model = models.Model_CPCPF_RP(name=name, model_dimensions=model_dimensions, num_actions=num_actions,
+    model = models.Model_CPCPF(name=name, model_dimensions=model_dimensions, num_actions=num_actions,
                              observation_dimensions=observation_dimensions, gate_fun=gate, loss_fun=loss)
 
     " FA Definition "
-    fa = NeuralNetwork_FTS_TP_RP_FA(numActions=num_actions,
+    fa = NeuralNetwork_FTSTP_FA(numActions=num_actions,
                           model=model,
                           optimizer=optimizer,
                           buffer_size=buffer_size,
@@ -50,8 +52,7 @@ def main():
     " Environment "
     env = OpenAI_FlappyBird_vE(action_repeat=5)
     # env = OpenAI_MountainCar_vE()
-    observation_dimensions = list(env.get_current_state().shape)
-    observation_dimensions.append(1)
+    observation_dimensions = env.get_observation_dimensions()
     num_actions = env.get_num_actions()
 
     " Optimizer and TF Session "
@@ -96,23 +97,23 @@ def main():
         " Agent variables "
         tpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.1)
         bpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.1)
-        gamma = 0.9999
-        n = 15
+        gamma = 1
+        n = 8
         beta = 1
         sigma = 0.5
 
         " Model Variables "
         name = experiment_name
         filter1, filter2 = (8,5)
-        dim_out1, dim_out2, dim_out3 = [128, 32, 200]
+        dim_out1, dim_out2, dim_out3 = [256, 16, 1000]
         model_dimensions = [dim_out1, dim_out2, dim_out3, filter1, filter2]
         gate = tf.nn.relu
         loss = tf.losses.mean_squared_error
 
         " FA variables "
-        buffer_size = 1
-        batch_size = 1
-        alpha = 0.01
+        buffer_size = 3
+        batch_size = 3
+        alpha = 0.5
 
         agent = define_model_fa_and_agent(name=name, model_dimensions=model_dimensions, num_actions=num_actions,
                                           observation_dimensions=observation_dimensions, gate=gate, loss=loss,
@@ -122,7 +123,7 @@ def main():
 
     " Training "
     agent.fa.model.print_number_of_parameters()
-    training_loop(agent, iterations=10000, episodes_per_iteration=10, render=True, agent_render=True,
+    training_loop(agent, iterations=10000, episodes_per_iteration=10, render=True, agent_render=False,
                   final_epsilon=0.1, decrease_epsilon=False, bpolicy_frames_before_target=1000)
 
     agent_history.save_training_history(agent, experiment_path=experiment_path)

@@ -5,8 +5,8 @@ from Function_Approximators.Neural_Networks.NN_Utilities.Experience_Replay_Buffe
 from Function_Approximators.Neural_Networks.NN_Utilities.Layer_Training_Priority import Layer_Training_Priority
 from Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
 
-" Neural Network Function Approximator with Three Training Steps "
-class NeuralNetwork_FTSTP_FA(FunctionApproximatorBase):
+" Neural Network Function Approximator with Training Priority "
+class NeuralNetwork_TP_FA(FunctionApproximatorBase):
 
     """
     model               - deep learning model architecture
@@ -94,7 +94,7 @@ class NeuralNetwork_FTSTP_FA(FunctionApproximatorBase):
                                self.model.y: sample_labels,
                                self.model.isampling: sample_isampling}
             td_error = self.sess.run(self.model.squared_td_error, feed_dict=feed_dictionary)
-            train_layer = self.training_priority.update_priority(td_error)  # 0-4 depending on how big is the td error
+            train_layer = self.training_priority.update_priority(td_error)
             keys = []
             for i in range(self.training_steps_number):
                 keys.append("train_step"+str(i+1))

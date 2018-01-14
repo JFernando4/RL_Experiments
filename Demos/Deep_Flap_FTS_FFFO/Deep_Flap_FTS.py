@@ -4,7 +4,7 @@ import numpy as np
 from Demos.Demos_Utility.Training_Util import training_loop
 from Demos.Demos_Utility.Saving_Restoring_NN_Util import NN_Agent_History, save_graph, restore_graph
 from Environments.OpenAI.OpenAI_FlappyBird import OpenAI_FlappyBird_vE                              # Environment
-from Function_Approximators.Neural_Networks.NN_Utilities import models                         # DL Model
+from Function_Approximators.Neural_Networks.NN_Utilities import models                              # DL Model
 from Function_Approximators.Neural_Networks.NN_4Training_Steps import NeuralNetwork_FTS_FA          # NN FA Interface
 from Policies.Epsilon_Greedy import EpsilonGreedyPolicy                                             # Policies
 from RL_Algorithms.Q_Sigma import QSigma                                                            # RL ALgorithm
@@ -100,10 +100,6 @@ def main():
 
         " Model Variables "
         name = experiment_name
-        """
-        The number of parameters of the NN is:
-            (dim_out1 * 2) + (dim_out1 * dim_out2) + (dim_out2 * dim_out3) + (dim_out3 * 3) + (3 + all_dimensions)
-        """
         model_dimensions = [500, 500, 500]
         gate = tf.nn.relu
         loss = tf.losses.mean_squared_error

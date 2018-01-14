@@ -100,10 +100,6 @@ def main():
 
         " Model Variables "
         name = experiment_name
-        """
-        The number of parameters of the NN is:
-            (dim_out1 * 2) + (dim_out1 * dim_out2) + (dim_out2 * dim_out3) + (dim_out3 * 3) + (3 + all_dimensions)
-        """
         model_dimensions = [100, 50, 20] # Max = 1536 -2 = 1534 (The number of parameteres used by tile coding
         gate = tf.nn.leaky_relu
         loss = tf.losses.mean_squared_error

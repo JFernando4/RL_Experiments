@@ -111,7 +111,9 @@ class NeuralNetwork_FTS_TP_RP_FA(FunctionApproximatorBase):
                                self.model.x_actions: sample_actions,
                                self.model.y: sample_labels,
                                self.model.isampling: sample_isampling}
-            td_error = np.sum(self.sess.run(self.model.td_error, feed_dict=feed_dictionary))
+            td_error, squared_td_error = self.sess.run((self.model.td_error, self.model.squared_td_error),
+                                            feed_dict=feed_dictionary)
+            td_error = np.sum(td_error)
                 # positive or negative path training selection
             if td_error >= 0:
                 train_step = self.positive_training_steps
@@ -120,7 +122,7 @@ class NeuralNetwork_FTS_TP_RP_FA(FunctionApproximatorBase):
                 train_step = self.negative_training_steps
                 sign = "Negative_"
                 # obtain which layers to train
-            train_layer = self.training_priority.update_priority(td_error)  # 0-3 depending on how big is the td error
+            train_layer = self.training_priority.update_priority(squared_td_error)  # 0-3 depending on the td error
                 # key for storing in the layer train count and loss history dictionaries
             key = sign+"train_step"+str(train_layer+1)
                 # loss minimization step
@@ -129,7 +131,7 @@ class NeuralNetwork_FTS_TP_RP_FA(FunctionApproximatorBase):
             self.layer_training_count[key] += 1
             self.layer_training_print += 1
                 # print how many times each positive and negative layer has been trained
-            if self.layer_training_print == 1000:
+            if self.layer_training_print == 100:
                 self.layer_training_print = 0
                 self.print_layer_training_count()
             self.train_loss_history[key].append(train_loss)

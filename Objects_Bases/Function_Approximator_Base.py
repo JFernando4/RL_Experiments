@@ -7,6 +7,7 @@ class FunctionApproximatorBase(object):
     @abc.abstractmethod
     def __init__(self):
         """ Initializes the environment """
+        self._fa_dictionary = None
         return
 
     @abc.abstractmethod
@@ -17,3 +18,12 @@ class FunctionApproximatorBase(object):
     def get_value(self, state, action):
         """ Returns the approximation to the action-value or the state-value function """
         return
+
+    @abc.abstractmethod
+    def get_next_states_values(self, state):
+        """ Returns all value functions of all the possible next states """
+        return
+
+    @abc.abstractmethod
+    def get_fa_dictionary(self):
+        return self._fa_dictionary
