@@ -56,6 +56,7 @@ class Model_nCPmFO(ModelBase):
         height, width, channels = self._model_dictionary["observation_dimensions"]
         actions = self._model_dictionary["num_actions"]
         row_and_action_number = 2
+        total_layers = convolutional_layers + fully_connected_layers
         " Placehodler "
         self.x_frames = tf.placeholder(tf.float32, shape=(None, height, width, channels))   # input frames
         self.x_actions = tf.placeholder(tf.int32, shape=(None, row_and_action_number))      # input actions
@@ -83,7 +84,8 @@ class Model_nCPmFO(ModelBase):
         """ Fully Connected layers """
         shape = current_s_hat.get_shape().as_list()
         current_y_hat = tf.reshape(current_s_hat, [-1, shape[1] * shape[2] * shape[3]])
-        dim_in_fully = [np.sum(shape)] + dim_out[convolutional_layers: fully_connected_layers-1]
+        # shape[-3:] are the last 3 dimensions. Shape has 4 dimensions: dim 1 = None, dim 2 =
+        dim_in_fully = [np.prod(shape[-3:])] + dim_out[convolutional_layers: total_layers-1]
         dim_out_fully = dim_out[convolutional_layers:]
         for j in range(fully_connected_layers):
             # layer n + m: fully connected
@@ -177,6 +179,9 @@ class Model_mFO(ModelBase):
         regularizer = 0
         for variable in self.train_vars:
             regularizer += tf.nn.l2_loss(variable)
+        #
+        # # regularizer 2
+        # regularizer = tf.gradients(y_hat, self.train_vars)
 
         # Loss
         self.train_loss = self.squared_td_error + (eta * regularizer)

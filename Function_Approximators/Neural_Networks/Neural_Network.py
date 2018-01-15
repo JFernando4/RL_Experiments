@@ -23,7 +23,8 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
     """
     def __init__(self, model, optimizer, numActions=None, buffer_size=None, batch_size=None, alpha=None,
                  tf_session=None, observation_dimensions=None, restore=False, fa_dictionary=None, training_steps=None,
-                 record_size=10):
+                 record_size=10, layer_training_print_freq=200):
+        super().__init__()
         if len(model.train_vars)/2 < training_steps:
             raise ValueError("The number of layers in the model can't be less than the number training steps.")
 
@@ -39,7 +40,8 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
                                                                                       number_of_percentiles=training_steps,
                                                                                       record_size=record_size),
                                    "train_loss_history": {},
-                                   "layer_training_count": {}}
+                                   "layer_training_count": {},
+                                   "layer_training_print_freq": layer_training_print_freq}
             # initializes the train_loss_history and layer_training_count
             self.train_loss_history = self._fa_dictionary["train_loss_history"]
             self.layer_training_count = self._fa_dictionary["layer_training_count"]
@@ -64,6 +66,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         self.model = model
 
         " Training and Learning Evaluation: Tensorflow and variables initializer "
+        self.print_count = 0
         self.optimizer = optimizer(self.alpha/self.batch_size)
         if self._fa_dictionary["tf_session"] is None:
             self.sess = tf.Session()
@@ -72,7 +75,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
             self.sess = self._fa_dictionary["tf_session"]
         # initializing training steps
         self.train_steps_list = []
-        for i in range(self.training_steps):
+        for i in range(self.training_steps-1):
             self.train_steps_list.append(self.optimizer.minimize(self.model.train_loss,
                                                                  var_list=self.model.train_vars[-2*(i+1):]))
         self.train_steps_list.append(self.optimizer.minimize(self.model.train_loss,
@@ -84,7 +87,6 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
 
         " Buffer "
         self.buffer = Buffer(buffer_size=self.buffer_size, observation_dimensions=self.observation_dimensions)
-        super().__init__()
 
     def update(self, state, action, nstep_return, correction, current_estimate):
         value = nstep_return
@@ -123,8 +125,18 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
             train_loss, _ = self.sess.run((self.model.train_loss, train_step), feed_dict=feed_dictionary)
             self.train_loss_history[key].append(train_loss)
             self.layer_training_count[key] += 1
+            self.print_layer_training_count()
 
     def update_alpha(self, new_alpha):
         self.alpha = new_alpha
         self.optimizer._learning_rate = self.alpha
         self._fa_dictionary["alpha"] = self.alpha
+
+    def print_layer_training_count(self):
+        if self.print_count < self._fa_dictionary["layer_training_print_freq"]:
+            self.print_count += 1
+        else:
+            self.print_count = 0
+            for key in self._fa_dictionary["layer_training_count"]:
+                print("Layers corresponding to", key, "has been trained",
+                      self._fa_dictionary["layer_training_count"][key], "times.")
