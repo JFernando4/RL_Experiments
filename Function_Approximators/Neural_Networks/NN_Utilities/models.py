@@ -128,7 +128,8 @@ and negative returns followed by one linear output layer that combines both netw
 class Model_nCPmFO_RP(ModelBase):
     def __init__(self, name=None, dim_out=None, filter_dims=None, observation_dimensions=None, num_actions=None,
                  gate_fun=None, convolutional_layers=None, fully_connected_layers=None, SEED=None,
-                 model_dictionary=None, eta=1.0):
+                 model_dictionary=None, eta=1.0, reward_path=False):
+        super().__init__()
         if model_dictionary is None:
             self._model_dictionary = {"model_name": name,
                                       "output_dims": dim_out,
@@ -138,9 +139,14 @@ class Model_nCPmFO_RP(ModelBase):
                                       "gate_fun": gate_fun,
                                       "conv_layers": convolutional_layers,
                                       "full_layers": fully_connected_layers,
-                                      "eta": eta}
+                                      "eta": eta,
+                                      "reward_path": reward_path}
         else:
             self._model_dictionary = model_dictionary
+        if self._model_dictionary["reward_path"]:
+            train_vars_dims = 2
+        else:
+            train_vars_dims = 1
         " Dimensions "
         height, width, channels = self._model_dictionary["observation_dimensions"]
         actions = self._model_dictionary["num_actions"]
@@ -152,19 +158,18 @@ class Model_nCPmFO_RP(ModelBase):
         self.y = tf.placeholder(tf.float32, shape=None)                                     # target
         self.isampling = tf.placeholder(tf.float32, shape=None)                             # importance sampling term
         " Variables for Training "
-        self.train_pos_vars = []
-        self.train_neg_vars = []
-        self.train_vars = [self.train_pos_vars, self.train_neg_vars]
+        self.train_vars = []
         y_hats = []
 
-        for train_vars in self.train_vars:
+        for k in range(train_vars_dims):
             """ Convolutional layers """
-            dim_in_conv = [channels] + dim_out[:convolutional_layers - 1]
+            temp_train_vars = []
+            dim_in_conv = [channels] + dim_out[k][:convolutional_layers - 1]
             current_s_hat = self.x_frames
             for i in range(convolutional_layers):
                 # layer n: convolutional
                 W, b, z_hat, r_hat = layers.convolution_2d(
-                    name, "conv_"+str(i+1), current_s_hat, filter_dims[i], dim_in_conv[i], dim_out[i],
+                    name, "conv_"+str(i+1)+"_"+str(k), current_s_hat, filter_dims[i], dim_in_conv[i], dim_out[k][i],
                     tf.random_normal_initializer(stddev=1.0 / np.sqrt(filter_dims[i]**2 * dim_in_conv[i] + 1), seed=SEED),
                     gate_fun)
                 # layer n + 1/2: pool
@@ -172,34 +177,39 @@ class Model_nCPmFO_RP(ModelBase):
                     r_hat, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
 
                 current_s_hat = s_hat
-                train_vars.extend([W, b])
+                temp_train_vars.extend([W, b])
 
             """ Fully Connected layers """
             shape = current_s_hat.get_shape().as_list()
             current_y_hat = tf.reshape(current_s_hat, [-1, shape[1] * shape[2] * shape[3]])
             # shape[-3:] are the last 3 dimensions. Shape has 4 dimensions: dim 1 = None, dim 2 =
-            dim_in_fully = [np.prod(shape[-3:])] + dim_out[convolutional_layers: total_layers-1]
-            dim_out_fully = dim_out[convolutional_layers:]
+            dim_in_fully = [np.prod(shape[-3:])] + dim_out[k][convolutional_layers: total_layers-1]
+            dim_out_fully = dim_out[k][convolutional_layers:]
             for j in range(fully_connected_layers):
                 # layer n + m: fully connected
                 W, b, z_hat, y_hat = layers.fully_connected(
-                    name, "full_"+str(j+1), current_y_hat, dim_in_fully[j], dim_out_fully[j],
+                    name, "full_"+str(j+1)+"_"+str(k), current_y_hat, dim_in_fully[j], dim_out_fully[j],
                     tf.random_normal_initializer(stddev=1.0 / np.sqrt(dim_in_fully[j]), seed=SEED), gate_fun)
 
                 current_y_hat = y_hat
-                train_vars.extend([W, b])
+                temp_train_vars.extend([W, b])
 
             y_hats.append(current_y_hat)
+            self.train_vars.append(temp_train_vars)
 
         combined_y_hat = tf.concat(y_hats, 1)
 
         """ Output layer """
         # output layer: fully connected
+        if reward_path:
+            final_dim_in = dim_out[0][-1] + dim_out[1][-1]
+        else:
+            final_dim_in = dim_out[0][-1]
         W, b, z_hat, self.y_hat = layers.fully_connected(
-            name, "output_layer", combined_y_hat, dim_out[-1] * 2, actions,
-            tf.random_normal_initializer(stddev=1.0 / np.sqrt(dim_out[-1]), seed=SEED), linear_transfer)
-        self.train_pos_vars.extend([W, b])
-        self.train_neg_vars.extend([W, b])
+            name, "output_layer", combined_y_hat,final_dim_in, actions,
+            tf.random_normal_initializer(stddev=1.0 / np.sqrt(final_dim_in), seed=SEED), linear_transfer)
+        for lst in self.train_vars:
+            lst.extend([W, b])
 
         # Obtaining y_hat and Scaling by the Importance Sampling
         y_hat = tf.gather_nd(self.y_hat, self.x_actions)
@@ -211,12 +221,12 @@ class Model_nCPmFO_RP(ModelBase):
 
         # Regularizer
         regularizer = 0
-        for variable in self.train_vars:
-            regularizer += tf.nn.l2_loss(variable)
+        for lst in self.train_vars:
+            for variable in lst:
+                regularizer += tf.nn.l2_loss(variable)
 
         # Loss
-        self.train_loss = self.squared_td_error + (eta * regularizer)
-        super().__init__()
+        self.train_loss = self.squared_td_error + (self._model_dictionary["eta"] * regularizer)
 
 
 """
@@ -301,22 +311,26 @@ class Model_mFO_RP(ModelBase):
                                       "reward_path": reward_path}
         else:
             self._model_dictionary = model_dictionary
+        if self._model_dictionary["reward_path"]:
+            train_vars_dims = 2
+        else:
+            train_vars_dims = 1
         " Dimensions "
-        dim_in = [np.prod(self._model_dictionary["observation_dimensions"])] \
-                 + self._model_dictionary["output_dims"][:-1]
+        dim_in = []
+        for i in range(train_vars_dims):
+            di = [np.prod(self._model_dictionary["observation_dimensions"])] \
+                 + self._model_dictionary["output_dims"][i][:-1]
+            dim_in.append(di)
         actions = self._model_dictionary["num_actions"]
         row_and_action_number = 2
         " Placehodler "
-        self.x_frames = tf.placeholder(tf.float32, shape=(None, dim_in[0]))             # input frames
+        self.x_frames = tf.placeholder(tf.float32,                                      # input frames
+                                       shape=(None, np.prod(self._model_dictionary["observation_dimensions"])))
         self.x_actions = tf.placeholder(tf.int32, shape=(None, row_and_action_number))  # input actions
         self.y = tf.placeholder(tf.float32, shape=None)                                 # target
         self.isampling = tf.placeholder(tf.float32, shape=None)                         # importance sampling term
         " Variables for Training "
         self.train_vars = []
-        if self._model_dictionary["reward_path"]:
-            train_vars_dims = 2
-        else:
-            train_vars_dims = 1
         y_hats = []
 
         for i in range(train_vars_dims):
@@ -326,8 +340,8 @@ class Model_mFO_RP(ModelBase):
             for j in range(fully_connected_layers):
                 # layer n + m: fully connected
                 W, b, z_hat, y_hat = layers.fully_connected(
-                    name, "full_"+str(j + 1)+"_"+str(i), current_y_hat, dim_in[j], dim_out[j],
-                    tf.random_normal_initializer(stddev=1.0 / np.sqrt(dim_in[j]), seed=SEED), gate_fun)
+                    name, "full_"+str(j + 1)+"_"+str(i), current_y_hat, dim_in[i][j], dim_out[i][j],
+                    tf.random_normal_initializer(stddev=1.0 / np.sqrt(dim_in[i][j]), seed=SEED), gate_fun)
 
                 current_y_hat = y_hat
                 train_vars.extend([W, b])
@@ -338,9 +352,13 @@ class Model_mFO_RP(ModelBase):
 
         """ Output layer """
         # output layer: fully connected
+        if reward_path:
+            final_dim_in = dim_out[0][-1] + dim_out[1][-1]
+        else:
+            final_dim_in = dim_out[0][-1]
         W, b, z_hat, self.y_hat = layers.fully_connected(
-            name, "output_layer", combined_y_hat, dim_out[-1] * train_vars_dims, actions,
-            tf.random_normal_initializer(stddev=1.0 / np.sqrt(dim_out[-1]), seed=SEED), linear_transfer)
+            name, "output_layer", combined_y_hat, final_dim_in, actions,
+            tf.random_normal_initializer(stddev=1.0 / np.sqrt(final_dim_in), seed=SEED), linear_transfer)
         for lst in self.train_vars:
             lst.extend([W, b])
 
@@ -359,4 +377,4 @@ class Model_mFO_RP(ModelBase):
                 regularizer += tf.nn.l2_loss(variable)
 
         # Loss
-        self.train_loss = self.squared_td_error + (eta * regularizer)
+        self.train_loss = self.squared_td_error + (self._model_dictionary["eta"] * regularizer)
