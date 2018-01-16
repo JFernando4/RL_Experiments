@@ -22,7 +22,7 @@ class Layer_Training_Priority:
         """ returns 0 to self._training_steps - 1 """
         self.add_to_record(td_error)
         if not self._percentiles_full:
-            return 0 #self._training_steps - 1
+            return 0
         else:
             layer = (self._training_steps - 1) - self.get_closest_percentile_index(td_error)
             return layer

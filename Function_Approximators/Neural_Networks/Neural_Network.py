@@ -23,10 +23,10 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
     """
     def __init__(self, model, optimizer, numActions=None, buffer_size=None, batch_size=None, alpha=None,
                  tf_session=None, observation_dimensions=None, restore=False, fa_dictionary=None, training_steps=None,
-                 record_size=10, layer_training_print_freq=200):
+                 record_size=10, layer_training_print_freq=200, reward_path=False):
         super().__init__()
-        if len(model.train_vars)/2 < training_steps:
-            raise ValueError("The number of layers in the model can't be less than the number training steps.")
+        # if len(model.train_vars)/2 < training_steps:
+        #     raise ValueError("The number of layers in the model can't be less than the number training steps.")
 
         if fa_dictionary is None:
             self._fa_dictionary = {"num_actions": numActions,
@@ -41,7 +41,8 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
                                                                                       record_size=record_size),
                                    "train_loss_history": {},
                                    "layer_training_count": {},
-                                   "layer_training_print_freq": layer_training_print_freq}
+                                   "layer_training_print_freq": layer_training_print_freq,
+                                   "reward_path": reward_path}
             # initializes the train_loss_history and layer_training_count
             self.train_loss_history = self._fa_dictionary["train_loss_history"]
             self.layer_training_count = self._fa_dictionary["layer_training_count"]
@@ -61,6 +62,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         self.alpha = self._fa_dictionary["alpha"]
         self.training_steps = self._fa_dictionary["training_steps"]
         self.layer_training_priority = self._fa_dictionary["layer_training_priority"]
+        self.reward_path = self._fa_dictionary["reward_path"]
 
         " Neural Network Model "
         self.model = model
@@ -75,11 +77,20 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
             self.sess = self._fa_dictionary["tf_session"]
         # initializing training steps
         self.train_steps_list = []
-        for i in range(self.training_steps-1):
-            self.train_steps_list.append(self.optimizer.minimize(self.model.train_loss,
-                                                                 var_list=self.model.train_vars[-2*(i+1):]))
-        self.train_steps_list.append(self.optimizer.minimize(self.model.train_loss,
-                                                             var_list=self.model.train_vars))
+        if self.reward_path:
+            train_steps_dims = 2
+        else:
+            train_steps_dims = 1
+
+        for j in range(train_steps_dims):
+            ts_list = []
+            for i in range(self.training_steps-1):
+                ts_list.append(self.optimizer.minimize(self.model.train_loss,
+                                                                 var_list=self.model.train_vars[j][-2*(i+1):]))
+            ts_list.append(self.optimizer.minimize(self.model.train_loss,
+                                                   var_list=self.model.train_vars))
+            self.train_steps_list.append(ts_list)
+
         # initializing variables in the graph
         if not restore:
             for var in tf.global_variables():
@@ -120,7 +131,15 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
                                self.model.isampling: sample_isampling}
             td_error = np.sum(self.sess.run(self.model.td_error, feed_dict=feed_dictionary))
             train_layer = self.layer_training_priority.update_priority(td_error)
-            train_step = self.train_steps_list[train_layer]
+            if self.reward_path:
+                return_value = np.sum(np.multiply(sample_labels, sample_isampling))
+                if return_value >= 0:   # Positive reward path
+                    path_indx = 0
+                else:                   # Negative reward path
+                    path_indx = 1
+            else:
+                path_indx = 0
+            train_step = self.train_steps_list[path_indx][train_layer]
             key = "train_step"+str(train_layer+1)
             train_loss, _ = self.sess.run((self.model.train_loss, train_step), feed_dict=feed_dictionary)
             self.train_loss_history[key].append(train_loss)
