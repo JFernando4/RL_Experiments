@@ -17,7 +17,7 @@ class QSigma(RL_ALgorithmBase):
                                      "beta": beta,
                                      "sigma": sigma,
                                      "return_per_episode": [],
-                                     "average_reward_per_timestep": [],
+                                     "timesteps_per_episode": [],
                                      "episode_number": 0,
                                      "bpolicy": behavior_policy,
                                      "tpolicy": target_policy}
@@ -30,7 +30,6 @@ class QSigma(RL_ALgorithmBase):
         self.sigma = self._agent_dictionary["sigma"]
         """ History """
         self.return_per_episode = self._agent_dictionary["return_per_episode"]
-        self.average_reward_per_timestep = self._agent_dictionary["average_reward_per_timestep"]
         self.episode_number = self._agent_dictionary["episode_number"]
         """ Policies, function approximator, and environment """
         self.bpolicy = self._agent_dictionary["bpolicy"]
@@ -58,6 +57,7 @@ class QSigma(RL_ALgorithmBase):
             reward_sum = 0
             T = inf
             t = 0
+            timesteps = 1
             States[t % (self.n+1)] = S
             Actions[t % (self.n+1)] = A
             Q[t % (self.n+1)] = self.fa.get_value(S, A)
@@ -65,6 +65,7 @@ class QSigma(RL_ALgorithmBase):
             while 1:
                 if t < T:
                     new_S, R, terminate = self.env.update(A)
+                    timesteps += 1
                     States[(t+1) % (self.n+1)] = new_S
                     reward_sum += R
 
@@ -105,8 +106,8 @@ class QSigma(RL_ALgorithmBase):
                 t += 1
                 if Tau == T - 1: break
 
-            self.return_per_episode.append(reward_sum)
-            self.average_reward_per_timestep.append(reward_sum/t)
+            self._agent_dictionary["return_per_episode"].append(reward_sum)
+            self._agent_dictionary["timesteps_per_episode"].append(timesteps)
             self.adjust_sigma()
             self.env.reset()
 
@@ -136,7 +137,7 @@ class QSigma(RL_ALgorithmBase):
 
     def increase_episode_number(self):
         self.episode_number += 1
-        self._agent_dictionary["episode_number"] += self.episode_number
+        self._agent_dictionary["episode_number"] = self.episode_number
 
     def adjust_sigma(self):
         self.sigma *= self.beta

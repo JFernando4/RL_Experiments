@@ -16,7 +16,7 @@ class ModelBase(object):
         self._model_dictionary = None
 
     @abc.abstractmethod
-    def get_model_diactionary(self):
+    def get_model_dictionary(self):
         return self._model_dictionary
 
     @staticmethod
@@ -143,7 +143,17 @@ class Model_nCPmFO_RP(ModelBase):
                                       "reward_path": reward_path}
         else:
             self._model_dictionary = model_dictionary
-        if self._model_dictionary["reward_path"]:
+        " Loading Variables From Dictionary "
+        eta = self._model_dictionary["eta"]
+        fully_connected_layers = self._model_dictionary["full_layers"]
+        convolutional_layers = self._model_dictionary["conv_layers"]
+        name = self._model_dictionary["model_name"]
+        dim_out = self._model_dictionary["output_dims"]
+        gate_fun = self._model_dictionary["gate_fun"]
+        filter_dims = self._model_dictionary["filter_dims"]
+        reward_path = self._model_dictionary["reward_path"]
+        " Reward Path Flag "
+        if reward_path:
             train_vars_dims = 2
         else:
             train_vars_dims = 1
@@ -226,7 +236,7 @@ class Model_nCPmFO_RP(ModelBase):
                 regularizer += tf.nn.l2_loss(variable)
 
         # Loss
-        self.train_loss = self.squared_td_error + (self._model_dictionary["eta"] * regularizer)
+        self.train_loss = self.squared_td_error + (eta * regularizer)
 
 
 """
@@ -311,7 +321,15 @@ class Model_mFO_RP(ModelBase):
                                       "reward_path": reward_path}
         else:
             self._model_dictionary = model_dictionary
-        if self._model_dictionary["reward_path"]:
+        " Loading Variables From Dictionary "
+        eta = self._model_dictionary["eta"]
+        fully_connected_layers = self._model_dictionary["full_layers"]
+        name = self._model_dictionary["model_name"]
+        dim_out = self._model_dictionary["output_dims"]
+        gate_fun = self._model_dictionary["gate_fun"]
+        reward_path = self._model_dictionary["reward_path"]
+        " Reward Path Flag "
+        if reward_path:
             train_vars_dims = 2
         else:
             train_vars_dims = 1
@@ -377,4 +395,4 @@ class Model_mFO_RP(ModelBase):
                 regularizer += tf.nn.l2_loss(variable)
 
         # Loss
-        self.train_loss = self.squared_td_error + (self._model_dictionary["eta"] * regularizer)
+        self.train_loss = self.squared_td_error + (eta * regularizer)

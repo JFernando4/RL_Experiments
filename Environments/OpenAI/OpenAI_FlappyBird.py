@@ -10,6 +10,7 @@ class OpenAI_FlappyBird_vE(EnvironmentBase):
 
     def __init__(self, render=False, agent_render=False, max_steps=10000, action_repeat=4,
                  env_dictionary=None):
+        super().__init__()
         if not ('FlappyBird-v5' in gym.envs.registry.env_specs):
             gym.envs.registration.register(
                 id='{}'.format('FlappyBird-v5'),
@@ -38,9 +39,9 @@ class OpenAI_FlappyBird_vE(EnvironmentBase):
         self.low = np.ones(self.current_state.shape, dtype=int) * np.max(self.env.observation_space.low)
         if self.render:
             self.env.render()
-        super().__init__()
 
     def reset(self):
+        self.update_frame_count()
         self.current_state = self.env.reset()
         self.current_state = self.fix_state(self.current_state)
         single_state = self.current_state
@@ -66,7 +67,6 @@ class OpenAI_FlappyBird_vE(EnvironmentBase):
             if self.render:
                 self.env.render()
             if termination:
-                self.frame_count += 1
                 for j in range(i+1, self.action_repeat):
                     self.current_state = np.concatenate((self.current_state, self.fix_state(current_state)), -1)
                 return self.current_state, reward, termination

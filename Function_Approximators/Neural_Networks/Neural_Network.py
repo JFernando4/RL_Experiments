@@ -23,7 +23,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
     """
     def __init__(self, model, optimizer, numActions=None, buffer_size=None, batch_size=None, alpha=None,
                  tf_session=None, observation_dimensions=None, restore=False, fa_dictionary=None, training_steps=None,
-                 record_size=10, layer_training_print_freq=200, reward_path=False):
+                 layer_training_print_freq=200, reward_path=False):
         super().__init__()
         # if len(model.train_vars)/2 < training_steps:
         #     raise ValueError("The number of layers in the model can't be less than the number training steps.")
@@ -34,7 +34,6 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
                                    "batch_size": batch_size,
                                    "alpha": alpha,
                                    "observation_dimensions": observation_dimensions,
-                                   "tf_session": tf_session,
                                    "training_steps": training_steps,
                                    "layer_training_priority": Layer_Training_Priority(training_steps,
                                                                                 number_of_percentiles=training_steps),
@@ -69,11 +68,10 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         " Training and Learning Evaluation: Tensorflow and variables initializer "
         self.print_count = 0
         self.optimizer = optimizer(self.alpha/self.batch_size)
-        if self._fa_dictionary["tf_session"] is None:
+        if tf_session is None:
             self.sess = tf.Session()
-            self._fa_dictionary["tf_session"] = self.sess
         else:
-            self.sess = self._fa_dictionary["tf_session"]
+            self.sess = tf_session
         # initializing training steps
         self.train_steps_list = []
         if self.reward_path:
@@ -161,10 +159,13 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         self._fa_dictionary["alpha"] = self.alpha
 
     def print_layer_training_count(self):
-        if self.print_count < self._fa_dictionary["layer_training_print_freq"]:
-            self.print_count += 1
+        if self._fa_dictionary["layer_training_print_freq"] is not None:
+            if self.print_count < self._fa_dictionary["layer_training_print_freq"]:
+                self.print_count += 1
+            else:
+                self.print_count = 0
+                for key in self._fa_dictionary["layer_training_count"]:
+                    print("Layers corresponding to", key, "has been trained",
+                          self._fa_dictionary["layer_training_count"][key], "times.")
         else:
-            self.print_count = 0
-            for key in self._fa_dictionary["layer_training_count"]:
-                print("Layers corresponding to", key, "has been trained",
-                      self._fa_dictionary["layer_training_count"][key], "times.")
+            return

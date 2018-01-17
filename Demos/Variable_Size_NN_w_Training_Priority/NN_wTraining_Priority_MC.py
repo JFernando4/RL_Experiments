@@ -67,14 +67,13 @@ def main():
         batch_size = 1
         alpha = 0.01
         training_steps = 11
-        record_size = 20
         reward_path = True
 
         model = models.Model_mFO_RP(name=name, dim_out=dim_out, observation_dimensions=observation_dimensions,
                                  num_actions=num_actions, gate_fun=gate_fun, eta=eta,
                                  fully_connected_layers=fully_connected_layers, reward_path=reward_path)
         fa = NeuralNetwork_FA(model=model, optimizer=optimizer, numActions=num_actions, buffer_size=buffer_size,
-                              batch_size=batch_size, alpha=alpha, tf_session=sess, record_size=record_size,
+                              batch_size=batch_size, alpha=alpha, tf_session=sess,
                               observation_dimensions=observation_dimensions, training_steps=training_steps,
                               layer_training_print_freq=10000, reward_path=reward_path)
         agent = QSigma(n=n, gamma=gamma, beta=beta, sigma=sigma, environment=env, function_approximator=fa,
