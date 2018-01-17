@@ -37,8 +37,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
                                    "tf_session": tf_session,
                                    "training_steps": training_steps,
                                    "layer_training_priority": Layer_Training_Priority(training_steps,
-                                                                                      number_of_percentiles=training_steps,
-                                                                                      record_size=record_size),
+                                                                                number_of_percentiles=training_steps),
                                    "train_loss_history": {},
                                    "layer_training_count": {},
                                    "layer_training_print_freq": layer_training_print_freq,
@@ -84,12 +83,22 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
 
         for j in range(train_steps_dims):
             ts_list = []
-            for i in range(self.training_steps-1):
+            old_idx = len(self.model.train_vars[j])
+            for i in range(self.training_steps):
+                new_idx = -2*(i+2)
                 ts_list.append(self.optimizer.minimize(self.model.train_loss,
-                                                                 var_list=self.model.train_vars[j][-2*(i+1):]))
-            ts_list.append(self.optimizer.minimize(self.model.train_loss,
-                                                   var_list=self.model.train_vars))
+                                                       var_list=self.model.train_vars[j][new_idx:old_idx]))
+                old_idx = new_idx + 2
             self.train_steps_list.append(ts_list)
+
+        # for j in range(train_steps_dims):
+        #     ts_list = []
+        #     for i in range(self.training_steps-1):
+        #         ts_list.append(self.optimizer.minimize(self.model.train_loss,
+        #                                                          var_list=self.model.train_vars[j][-2*(i+2):]))
+        #     ts_list.append(self.optimizer.minimize(self.model.train_loss,
+        #                                            var_list=self.model.train_vars))
+        #     self.train_steps_list.append(ts_list)
 
         # initializing variables in the graph
         if not restore:
