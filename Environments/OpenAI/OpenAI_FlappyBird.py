@@ -41,7 +41,6 @@ class OpenAI_FlappyBird_vE(EnvironmentBase):
             self.env.render()
 
     def reset(self):
-        self.update_frame_count()
         self.current_state = self.env.reset()
         self.current_state = self.fix_state(self.current_state)
         single_state = self.current_state
@@ -67,6 +66,7 @@ class OpenAI_FlappyBird_vE(EnvironmentBase):
             if self.render:
                 self.env.render()
             if termination:
+                self.update_frame_count()
                 for j in range(i+1, self.action_repeat):
                     self.current_state = np.concatenate((self.current_state, self.fix_state(current_state)), -1)
                 return self.current_state, reward, termination
@@ -121,3 +121,8 @@ class OpenAI_FlappyBird_vE(EnvironmentBase):
 
     def get_environment_dictionary(self):
         return self._env_dictionary
+
+    def set_environment_dictionary(self, new_dictionary):
+        self._env_dictionary = new_dictionary
+        self.action_repeat = self._env_dictionary["action_repeat"]
+        self.frame_count = self._env_dictionary["frame_count"]

@@ -10,6 +10,7 @@ class QSigma(RL_ALgorithmBase):
                  sigma=1, agent_dictionary=None, environment=EnvironmentBase(),
                  function_approximator=FunctionApproximatorBase(),
                  target_policy=PolicyBase(), behavior_policy=PolicyBase()):
+        super().__init__()
         """ Dictionary for Saving and Restoring """
         if agent_dictionary is None:
             self._agent_dictionary ={"n": n,
@@ -36,7 +37,7 @@ class QSigma(RL_ALgorithmBase):
         self.tpolicy = self._agent_dictionary["tpolicy"]
         self.fa = function_approximator
         self.env = environment
-        super().__init__()
+
 
     def train(self, num_episodes):
         if num_episodes == 0: return

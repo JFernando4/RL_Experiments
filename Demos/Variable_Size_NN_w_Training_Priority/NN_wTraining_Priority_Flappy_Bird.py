@@ -21,7 +21,7 @@ def main():
     srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Variable_Size_NN_w_Training_Priority/"
     experiment_name = "Deep_Flap"
     experiment_path = srcpath + experiment_name
-    restore = False
+    restore = True
     agent_history = NN_Agent_History(experiment_path, restore)
 
     " Environment "
@@ -32,7 +32,7 @@ def main():
 
     " Optimizer and TF Session "
     sess = tf.Session()
-    optimizer = tf.train.RMSPropOptimizer
+    optimizer = tf.train.GradientDescentOptimizer
 
     if restore:
         " Dictionaries "
@@ -51,7 +51,7 @@ def main():
         tpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.1)
         bpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.1)
         gamma = 1
-        n = 10
+        n = 5
         beta = 1
         sigma = 0.5
 
@@ -71,7 +71,7 @@ def main():
         " FA variables "
         buffer_size = 1
         batch_size = 1
-        alpha = 0.0001
+        alpha = 0.0000001
         training_steps = 4
         reward_path = True
 
@@ -90,7 +90,7 @@ def main():
                        target_policy=tpolicy, behavior_policy=bpolicy)
 
     agent.fa.model.print_number_of_parameters(agent.fa.model.train_vars[0])
-    training_loop(rl_agent=agent, iterations=10, episodes_per_iteration=1, render=False, agent_render=False,
+    training_loop(rl_agent=agent, iterations=1000, episodes_per_iteration=1, render=True, agent_render=False,
                   final_epsilon=0.1, bpolicy_frames_before_target=100000, decrease_epsilon=True)
 
     save_graph(experiment_path, sess)
