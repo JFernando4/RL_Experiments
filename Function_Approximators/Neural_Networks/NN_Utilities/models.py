@@ -222,8 +222,8 @@ class Model_nCPmFO_RP(ModelBase):
             lst.extend([W, b])
 
         # Obtaining y_hat and Scaling by the Importance Sampling
-        y_hat = tf.gather_nd(self.y_hat, self.x_actions)
-        y_hat = tf.multiply(y_hat, self.isampling)
+        # y_hat = tf.gather_nd(self.y_hat, self.x_actions)
+        y_hat = tf.multiply(self.y_hat, self.isampling)
         y = tf.multiply(self.y, self.isampling)
         # Temporal Difference Error
         self.td_error = tf.subtract(y_hat, y)
