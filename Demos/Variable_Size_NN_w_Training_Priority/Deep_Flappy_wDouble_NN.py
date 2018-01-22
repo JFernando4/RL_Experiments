@@ -93,7 +93,7 @@ def main():
         agent = QSigma(n=n, gamma=gamma, beta=beta, sigma=sigma, environment=env, function_approximator=fa,
                        target_policy=tpolicy, behavior_policy=bpolicy)
 
-    training_loop(rl_agent=agent, iterations=100, episodes_per_iteration=1, render=True, agent_render=False,
+    training_loop(rl_agent=agent, iterations=200, episodes_per_iteration=10, render=False, agent_render=False,
                   final_epsilon=0.1, bpolicy_frames_before_target=100, decrease_epsilon=True)
 
     save_graph(experiment_path, sess)
