@@ -11,6 +11,7 @@ class OpenAI_FlappyBird_vE(EnvironmentBase):
     def __init__(self, render=False, agent_render=False, max_steps=10000, action_repeat=4,
                  env_dictionary=None):
         super().__init__()
+        " Registering environment in OpenAI Gym "
         if not ('FlappyBird-v5' in gym.envs.registry.env_specs):
             gym.envs.registration.register(
                 id='{}'.format('FlappyBird-v5'),
@@ -20,25 +21,31 @@ class OpenAI_FlappyBird_vE(EnvironmentBase):
                 reward_threshold=200.0,
             )
         self.env = gym.make('FlappyBird-v5')
+
+        " Environment dictionary for saving the state of the environment "
         if env_dictionary is None:
             self._env_dictionary = {"action_repeat": action_repeat,
                                     "frame_count": 0}
         else:
             self._env_dictionary = env_dictionary
-        """ Variables that need to be saved """
+
+        """ Variables that need to be saved and restored """
         self.action_repeat = self._env_dictionary["action_repeat"]
         self.frame_count = self._env_dictionary["frame_count"]
-        """ Variables that are set at the time of training """
+
+        """ Rendering variables """
         self.render = render
         self.agent_render = agent_render
+        if self.render:
+            self.env.render()
+
         """ Inner state of the environment. They don't need to be saved. """
         self.current_state = self.reset()
         self.observations_dimensions = self.current_state.shape
         self.actions = [action for action in range(self.env.action_space.n)]
         self.high = np.ones(self.current_state.shape, dtype=int) * np.max(self.env.observation_space.high)
         self.low = np.ones(self.current_state.shape, dtype=int) * np.max(self.env.observation_space.low)
-        if self.render:
-            self.env.render()
+
 
     def reset(self):
         self.current_state = self.env.reset()
@@ -60,15 +67,14 @@ class OpenAI_FlappyBird_vE(EnvironmentBase):
                 self.current_state = self.fix_state(current_state)
             else:
                 self.current_state = np.concatenate((self.current_state, self.fix_state(current_state)), -1)
-            if sample_reward > 0:
-                sample_reward *= 10
-            reward += sample_reward
+            reward = self.clip_reward(reward + self.clip_reward(sample_reward))
             if self.render:
                 self.env.render()
             if termination:
                 self.update_frame_count()
                 for j in range(i+1, self.action_repeat):
                     self.current_state = np.concatenate((self.current_state, self.fix_state(current_state)), -1)
+
                 return self.current_state, reward, termination
         if self.agent_render:
             shape = self.current_state.shape
@@ -126,3 +132,12 @@ class OpenAI_FlappyBird_vE(EnvironmentBase):
         self._env_dictionary = new_dictionary
         self.action_repeat = self._env_dictionary["action_repeat"]
         self.frame_count = self._env_dictionary["frame_count"]
+
+    @staticmethod
+    def clip_reward(reward):
+        temp_reward = reward
+        if reward < -1:
+            temp_reward = -1
+        elif reward > 1:
+            temp_reward = 1
+        return temp_reward

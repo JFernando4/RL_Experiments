@@ -2,7 +2,8 @@ import numpy as np
 import tensorflow as tf
 
 from Function_Approximators.Neural_Networks.NN_Utilities.Layer_Training_Priority import Layer_Training_Priority
-from Function_Approximators.Neural_Networks.NN_Utilities.Experience_Replay_Buffer import Buffer
+from Function_Approximators.Neural_Networks.NN_Utilities.buffer import Buffer
+from Function_Approximators.Neural_Networks.NN_Utilities.percentile_estimator import Percentile_Estimator
 from Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
 
 " Neural Network function approximator with the possibility of using several training steps and training priority "
@@ -23,11 +24,9 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
     """
     def __init__(self, model, optimizer, numActions=None, buffer_size=None, batch_size=None, alpha=None,
                  tf_session=None, observation_dimensions=None, restore=False, fa_dictionary=None, training_steps=None,
-                 layer_training_print_freq=200, reward_path=False):
+                 layer_training_print_freq=200, reward_path=False, percentile_to_train_index=0):
         super().__init__()
-        # if len(model.train_vars)/2 < training_steps:
-        #     raise ValueError("The number of layers in the model can't be less than the number training steps.")
-
+        " Function Approximator Dictionary "
         if fa_dictionary is None:
             self._fa_dictionary = {"num_actions": numActions,
                                    "buffer_size": buffer_size,
@@ -37,16 +36,18 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
                                    "training_steps": training_steps,
                                    "layer_training_priority": Layer_Training_Priority(training_steps,
                                                                                 number_of_percentiles=training_steps),
-                                   "train_loss_history": {},
-                                   "layer_training_count": {},
                                    "layer_training_print_freq": layer_training_print_freq,
-                                   "reward_path": reward_path}
+                                   "reward_path": reward_path,
+                                   "percentile_to_train_index": percentile_to_train_index,
+                                   "percentile_estimator": Percentile_Estimator(number_of_percentiles=10)}
             # initializes the train_loss_history and layer_training_count
-            self.train_loss_history = self._fa_dictionary["train_loss_history"]
-            self.layer_training_count = self._fa_dictionary["layer_training_count"]
+            self.train_loss_history = {}
+            self.layer_training_count = {}
             for i in range(self._fa_dictionary["training_steps"]):
                 self.train_loss_history["train_step"+str(i+1)] = []
                 self.layer_training_count["train_step"+str(i+1)] = 0
+            self._fa_dictionary["train_loss_history"] = self.train_loss_history
+            self._fa_dictionary["layer_training_count"] = self.layer_training_count
         else:
             self._fa_dictionary = fa_dictionary
             self.train_loss_history = self._fa_dictionary["train_loss_history"]
@@ -61,6 +62,8 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         self.training_steps = self._fa_dictionary["training_steps"]
         self.layer_training_priority = self._fa_dictionary["layer_training_priority"]
         self.reward_path = self._fa_dictionary["reward_path"]
+        self.percentile_to_train_index = self._fa_dictionary["percentile_to_train_index"]
+        self.percentile_estimator = self._fa_dictionary["percentile_estimator"]
 
         " Neural Network Model "
         self.model = model
@@ -81,22 +84,21 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
 
         for j in range(train_steps_dims):
             ts_list = []
-            old_idx = len(self.model.train_vars[j])
-            for i in range(self.training_steps):
-                new_idx = -2*(i+2)
+            if self.training_steps == 1:
                 ts_list.append(self.optimizer.minimize(self.model.train_loss,
+                                                       var_list=self.model.train_vars[j]))
+            else:
+                train_var_len = len(self.model.train_vars[j])
+                old_idx = train_var_len
+                for i in range(self.training_steps-1):
+                    new_idx = -2*(i+1)
+                    ts_list.append(self.optimizer.minimize(self.model.train_loss,
                                                        var_list=self.model.train_vars[j][new_idx:old_idx]))
-                old_idx = new_idx + 2
+                    old_idx = new_idx
+                if old_idx > -train_var_len:
+                    ts_list.append(self.optimizer.minimize(self.model.train_loss,
+                                                           var_list=self.model.train_vars[j][-train_var_len:old_idx]))
             self.train_steps_list.append(ts_list)
-
-        # for j in range(train_steps_dims):
-        #     ts_list = []
-        #     for i in range(self.training_steps-1):
-        #         ts_list.append(self.optimizer.minimize(self.model.train_loss,
-        #                                                          var_list=self.model.train_vars[j][-2*(i+2):]))
-        #     ts_list.append(self.optimizer.minimize(self.model.train_loss,
-        #                                            var_list=self.model.train_vars))
-        #     self.train_steps_list.append(ts_list)
 
         # initializing variables in the graph
         if not restore:
@@ -106,15 +108,21 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         " Buffer "
         self.buffer = Buffer(buffer_size=self.buffer_size, observation_dimensions=self.observation_dimensions)
 
-    def update(self, state, action, nstep_return, correction, current_estimate):
+    def update(self, state, action, nstep_return, correction):
         value = nstep_return
         dims = [1] + list(self.observation_dimensions)
-        buffer_entry = (state.reshape(dims),
-                        np.zeros(shape=[1,1], dtype=int) + action,
-                        value,
-                        correction)
-        self.buffer.add_to_buffer(buffer_entry)
-        self.train()
+        sample_state = state.reshape(dims)
+        sample_action = np.column_stack((0, np.zeros(shape=[1,1], dtype=int) + action))
+        abs_td_error = np.abs(self.get_td_error(sample_state, sample_action, value, correction))
+        self.percentile_estimator.add_to_record(abs_td_error)
+        if abs_td_error >= self.percentile_estimator.get_percentile(self.percentile_to_train_index):
+            buffer_entry = (sample_state,
+                            np.zeros(shape=[1,1], dtype=int) + action,
+                            value,
+                            correction)
+            self.buffer.add_to_buffer(buffer_entry)
+            self.train()
+            print(abs_td_error)
 
     def get_value(self, state, action):
         y_hat = self.get_next_states_values(state)
@@ -127,7 +135,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         return y_hat[0]
 
     def train(self):
-        if self.buffer.current_buffer_size < self.batch_size:
+        if not self.buffer.buffer_full:
             return
         else:
             sample_frames, sample_actions, sample_labels, sample_isampling = self.buffer.sample(self.batch_size)
@@ -136,7 +144,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
                                self.model.x_actions: sample_actions,
                                self.model.y: sample_labels,
                                self.model.isampling: sample_isampling}
-            td_error = np.sum(self.sess.run(self.model.td_error, feed_dict=feed_dictionary))
+            td_error = self.get_td_error(sample_frames, sample_actions, sample_labels, sample_isampling)
             train_layer = self.layer_training_priority.update_priority(td_error)
             if self.reward_path:
                 return_value = np.sum(np.multiply(sample_labels, sample_isampling))
@@ -153,6 +161,14 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
             self.layer_training_count[key] += 1
             self.print_layer_training_count()
 
+    def get_td_error(self, frames, actions, labels, isampling):
+        feed_dictionary = {self.model.x_frames: frames,
+                           self.model.x_actions: actions,
+                           self.model.y: labels,
+                           self.model.isampling: isampling}
+        td_error = np.sum(self.sess.run(self.model.td_error, feed_dict=feed_dictionary))
+        return td_error
+
     def update_alpha(self, new_alpha):
         self.alpha = new_alpha
         self.optimizer._learning_rate = self.alpha
@@ -165,7 +181,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
             else:
                 self.print_count = 0
                 for key in self._fa_dictionary["layer_training_count"]:
-                    print("Layers corresponding to", key, "has been trained",
+                    print("Layers corresponding to", key, "have been trained",
                           self._fa_dictionary["layer_training_count"][key], "times.")
         else:
             return

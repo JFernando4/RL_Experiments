@@ -8,7 +8,7 @@ from Demos.Demos_Utility.Saving_Restoring_NN_Util import NN_Agent_History, save_
 
 """ Agent, Environment, and Function Approximator """
 from Environments.OpenAI.OpenAI_FlappyBird import OpenAI_FlappyBird_vE                              # environment
-from Function_Approximators.Neural_Networks.NN_Utilities import models                              # DL Model
+from Function_Approximators.Neural_Networks.NN_Utilities import models                              # DL Models
 from Function_Approximators.Neural_Networks.Double_Neural_Network import DoubleNeuralNetwork_FA     # Function Approximator
 from Policies.Epsilon_Greedy import EpsilonGreedyPolicy                                             # Policies
 from RL_Algorithms.Q_Sigma import QSigma                                                            # RL ALgorithm
@@ -31,7 +31,7 @@ def main():
 
     " Optimizer and TF Session "
     sess = tf.Session()
-    optimizer = tf.train.GradientDescentOptimizer
+    optimizer = tf.train.AdamOptimizer
 
     if restore:
         " Dictionaries "
@@ -93,7 +93,7 @@ def main():
         agent = QSigma(n=n, gamma=gamma, beta=beta, sigma=sigma, environment=env, function_approximator=fa,
                        target_policy=tpolicy, behavior_policy=bpolicy)
 
-    training_loop(rl_agent=agent, iterations=200, episodes_per_iteration=10, render=False, agent_render=False,
+    training_loop(rl_agent=agent, iterations=10, episodes_per_iteration=10, render=True, agent_render=False,
                   final_epsilon=0.1, bpolicy_frames_before_target=100, decrease_epsilon=True)
 
     save_graph(experiment_path, sess)

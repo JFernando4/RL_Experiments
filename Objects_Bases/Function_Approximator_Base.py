@@ -11,7 +11,7 @@ class FunctionApproximatorBase(object):
         return
 
     @abc.abstractmethod
-    def update(self, state, action, nstep_return, correction, current_estimate):
+    def update(self, state, action, nstep_return, correction):
         """ Updates the function approximator """
 
     @abc.abstractmethod

@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 from Function_Approximators.Neural_Networks.NN_Utilities.Layer_Training_Priority import Layer_Training_Priority
-from Function_Approximators.Neural_Networks.NN_Utilities.Experience_Replay_Buffer import Buffer
+from Function_Approximators.Neural_Networks.NN_Utilities.buffer import Buffer
 from Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
 
 " Neural Network function approximator with the possibility of using several training steps and training priority "
@@ -102,7 +102,7 @@ class DoubleNeuralNetwork_FA(FunctionApproximatorBase):
         " Buffer "
         self.buffer = Buffer(buffer_size=self.buffer_size, observation_dimensions=self.observation_dimensions)
 
-    def update(self, state, action, nstep_return, correction, current_estimate):
+    def update(self, state, action, nstep_return, correction):
         value = nstep_return
         dims = [1] + list(self.observation_dimensions)
         buffer_entry = (state.reshape(dims),

@@ -23,18 +23,18 @@ class NN_Agent_History:
         env_dictionary = agent.env.get_environment_dictionary()
 
         " Model Variables "
-        models = list(agent.fa.model)
-        model_dictionaries = []
-        for model in models:
-            model_dictionaries.append(model.get_model_dictionary())
-        # model_dictionary = agent.fa.model.get_model_dictionary()
+        # models = list(agent.fa.model)
+        # model_dictionaries = []
+        # for model in models:
+        #     model_dictionaries.append(model.get_model_dictionary())
+        model_dictionary = agent.fa.model.get_model_dictionary()
 
         " Function Approximator's Variables and History "
         fa_dictionary = agent.fa.get_fa_dictionary()
 
         history = {"agent": agent_dictionary,
                    "environment": env_dictionary,
-                   "model": model_dictionaries,
+                   "model": model_dictionary,
                    "fa": fa_dictionary}
 
         pickle.dump(history, open(experiment_path + "_history.p", mode="wb"))

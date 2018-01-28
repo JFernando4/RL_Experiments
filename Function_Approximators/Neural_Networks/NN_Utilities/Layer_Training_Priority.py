@@ -1,13 +1,9 @@
 class Layer_Training_Priority:
 
-    def __init__(self, number_of_training_steps, record_size=10, number_of_percentiles=4, learning_rate=0.1):
-        # if number_of_percentiles > record_size:
-        #     raise ValueError("The number of percentiles is greater than the record size.")
+    def __init__(self, number_of_training_steps, number_of_percentiles=4, learning_rate=0.1):
         self._training_steps = number_of_training_steps
             # record variables
         self._record_count = 0
-        # self._record_size = (record_size // 10) * 10            # a multiple of 10 for simplicity
-        # if self._record_size < 10: self._record_size = 10       # at least 10 entries in the record
             # percentiles variables
         self._percentiles_full = False
         self._number_of_percentiles = number_of_percentiles
@@ -15,8 +11,6 @@ class Layer_Training_Priority:
         self._percentiles = [0 for _ in range(self._number_of_percentiles)]
             # indexes with equal number of entries between them
         self._percentiles_indexes = [i for i in range(self._number_of_percentiles)]
-        # self._percentiles_indexes = [(i+1) * (self._record_size // (self._number_of_percentiles+1)) - 1
-        #                              for i in range(self._number_of_percentiles)]
         self._lr = learning_rate
 
     def update_priority(self, td_error):

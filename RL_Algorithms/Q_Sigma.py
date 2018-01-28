@@ -77,9 +77,11 @@ class QSigma(RL_ALgorithmBase):
                     if terminate:
                         T = t+1
                         Delta[t % self.n] = R - self.fa.get_value(States[t % (self.n+1)], Actions[t % (self.n+1)])
+                        # print("exterminate!")
                     else:
                         Sigma[t % self.n] = self.sigma
                         new_A = self.bpolicy.choose_action(q_values)
+                        # print("The action is:", new_A, "\tThe q_values are:", q_values)
                         Actions[(t+1) % (self.n+1)] = new_A
                         Q[(t+1) % (self.n+1)] = self.fa.get_value(new_S, new_A)
                         Delta[(t+1) % self.n] = R + (self.gamma * self.sigma * Q[(t+1) % (self.n+1)]) + \
@@ -101,9 +103,9 @@ class QSigma(RL_ALgorithmBase):
                         G += E * Delta[k % self.n]
                         E = self.gamma * E * ((1-self.sigma) * Pi[k % self.n] + self.sigma)
                         Rho *= (1-self.sigma) + (self.sigma * (Pi[k % self.n] / Mu[k % self.n]))
-                    Qtau = self.fa.get_value(States[Tau % (self.n+1)], Actions[Tau % (self.n+1)])
+                    # Qtau = self.fa.get_value(States[Tau % (self.n+1)], Actions[Tau % (self.n+1)])
                     self.fa.update(States[Tau % (self.n+1)], Actions[Tau % (self.n+1)],
-                                   nstep_return=G, correction=Rho, current_estimate=Qtau)
+                                   nstep_return=G, correction=Rho)
                 t += 1
                 if Tau == T - 1: break
 
