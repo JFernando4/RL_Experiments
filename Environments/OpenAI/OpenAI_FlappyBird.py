@@ -2,13 +2,13 @@ from Objects_Bases.Environment_Base import EnvironmentBase
 import gym
 import gym_ple
 import numpy as np
-from skimage.measure import block_reduce
+from skimage.transform import resize
 import matplotlib.pyplot as plt
 
 
 class OpenAI_FlappyBird_vE(EnvironmentBase):
 
-    def __init__(self, render=False, agent_render=False, max_steps=10000, action_repeat=4,
+    def __init__(self, render=False, agent_render=False, max_steps=10000, frame_skip=4, frame_stack=3,
                  env_dictionary=None):
         super().__init__()
         " Registering environment in OpenAI Gym "
@@ -24,14 +24,16 @@ class OpenAI_FlappyBird_vE(EnvironmentBase):
 
         " Environment dictionary for saving the state of the environment "
         if env_dictionary is None:
-            self._env_dictionary = {"action_repeat": action_repeat,
-                                    "frame_count": 0}
+            self._env_dictionary = {"frame_skip": frame_skip,
+                                    "frame_count": 0,
+                                    "frame_stack": frame_stack}
         else:
             self._env_dictionary = env_dictionary
 
         """ Variables that need to be saved and restored """
-        self.action_repeat = self._env_dictionary["action_repeat"]
+        self.frame_skip = self._env_dictionary["frame_skip"]
         self.frame_count = self._env_dictionary["frame_count"]
+        self.frame_stack = self._env_dictionary["frame_stack"]
 
         """ Rendering variables """
         self.render = render
@@ -46,56 +48,44 @@ class OpenAI_FlappyBird_vE(EnvironmentBase):
         self.high = np.ones(self.current_state.shape, dtype=int) * np.max(self.env.observation_space.high)
         self.low = np.ones(self.current_state.shape, dtype=int) * np.max(self.env.observation_space.low)
 
-
     def reset(self):
-        self.current_state = self.env.reset()
-        self.current_state = self.fix_state(self.current_state)
-        single_state = self.current_state
-        for _ in range(1, self.action_repeat):
-            self.current_state = np.concatenate((self.current_state, single_state), -1)
-        if self.render:
-            self.env.render()
+        current_frame = self.fix_state(self.env.reset())
+        frame_stack = current_frame
+        for _ in range(self.frame_stack - 1):
+            frame_stack = np.concatenate((frame_stack, current_frame), -1)
+        self.agent_display()
+        self.current_state = frame_stack
         return self.current_state
 
     def update(self, A):
         """ Actions must be one of the entries in self.actions """
         self.update_frame_count()
         reward = 0
-        for i in range(self.action_repeat):
-            current_state, sample_reward, termination, info = self.env.step(A)
-            if i == 0:
-                self.current_state = self.fix_state(current_state)
-            else:
-                self.current_state = np.concatenate((self.current_state, self.fix_state(current_state)), -1)
-            reward = self.clip_reward(reward + self.clip_reward(sample_reward))
-            if self.render:
-                self.env.render()
+        termination = False
+        new_frame = None
+        for i in range(self.frame_skip):
+            new_frame, current_reward, termination, info = self.env.step(A)
+            reward += current_reward
+            self.agent_display()
             if termination:
                 self.update_frame_count()
-                for j in range(i+1, self.action_repeat):
-                    self.current_state = np.concatenate((self.current_state, self.fix_state(current_state)), -1)
-
-                return self.current_state, reward, termination
-        if self.agent_render:
-            shape = self.current_state.shape
-            state = self.current_state[:shape[0], :shape[1], 0]
-            plt.imshow(state)
-            plt.pause(0.05)
+                break
+        current_state = np.delete(self.current_state, 0, axis=-1)
+        current_state = np.concatenate((current_state, self.fix_state(new_frame)), axis=-1)
+        self.current_state = current_state
         return self.current_state, reward, termination
 
     "Makes the frame smaller, black and white, and downsamples by half"
     @staticmethod
     def fix_state(state):
-        top = 10
+        off_top = 0
         bottom = 400
-        left = 60
-        current_state = (np.sum(state, 2) / 3)[top:bottom]
-        current_state = np.delete(current_state, range(0, left+1), 1) # Eliminates 60 columns from the left
-        current_state = block_reduce(current_state, (8,8), np.min)
-        dims = list(current_state.shape)
-        dims.append(1)
-        current_state = current_state.reshape(dims)
-        return current_state
+        off_left = 60
+        new_state = np.sum(state, -1)/3
+        new_state = new_state[:][off_top:bottom][:]
+        new_state = np.delete(new_state, range(0, off_left + 1), 1)  # Eliminates 60 columns from the left
+        new_state = resize(new_state, (84, 84, 1), mode="constant")
+        return new_state
 
     def get_num_actions(self):
         return len(self.actions)
@@ -130,14 +120,15 @@ class OpenAI_FlappyBird_vE(EnvironmentBase):
 
     def set_environment_dictionary(self, new_dictionary):
         self._env_dictionary = new_dictionary
-        self.action_repeat = self._env_dictionary["action_repeat"]
+        self.frame_skip = self._env_dictionary["frame_skip"]
         self.frame_count = self._env_dictionary["frame_count"]
+        self.frame_stack = self._env_dictionary["frame_stack"]
 
-    @staticmethod
-    def clip_reward(reward):
-        temp_reward = reward
-        if reward < -1:
-            temp_reward = -1
-        elif reward > 1:
-            temp_reward = 1
-        return temp_reward
+    def agent_display(self):
+        if self.render:
+            self.env.render()
+        if self.agent_render:
+            shape = self.current_state.shape
+            state = self.current_state[:shape[0], :shape[1], 0]
+            plt.imshow(state)
+            plt.pause(0.05)

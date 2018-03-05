@@ -249,6 +249,7 @@ Creates a model with m fully connected layers followed by one linear output laye
 class Model_mFO(ModelBase):
     def __init__(self, name=None, dim_out=None, observation_dimensions=None, num_actions=None, gate_fun=None,
                  fully_connected_layers=None, SEED=None, model_dictionary=None, eta=1.0):
+        super().__init__()
         if model_dictionary is None:
             self._model_dictionary = {"model_name": name,
                                       "output_dims": dim_out,
@@ -288,24 +289,16 @@ class Model_mFO(ModelBase):
             name, "output_layer", current_y_hat, dim_out[-1], actions,
             tf.random_normal_initializer(stddev=1.0 / np.sqrt(dim_out[-1]), seed=SEED), linear_transfer)
         self.train_vars.extend([W, b])
+        self.train_vars = [self.train_vars]
 
         # Obtaining y_hat and Scaling by the Importance Sampling
         y_hat = tf.gather_nd(self.y_hat, self.x_actions)
         y_hat = tf.multiply(y_hat, self.isampling)
         y = tf.multiply(self.y, self.isampling)
         # Temporal Difference Error
-        self.td_error = tf.subtract(y_hat, y)
-        self.squared_td_error = tf.reduce_sum(tf.pow(self.td_error, 2))
-
-        # Regularizer
-        regularizer = 0
-        for variable in self.train_vars:
-            regularizer += tf.nn.l2_loss(variable)
-
+        self.td_error = tf.subtract(y, y_hat)
         # Loss
-        self.train_loss = self.squared_td_error + (eta * regularizer)
-        super().__init__()
-
+        self.train_loss = tf.reduce_sum(tf.pow(self.td_error, 2))
 
 """
 Creates a model with m fully connected layers followed by one linear output layer that combines both networks together

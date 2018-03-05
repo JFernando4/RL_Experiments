@@ -58,6 +58,9 @@ class OpenAI_MountainCar_vE(EnvironmentBase):
     def get_low(self):
         return self.low
 
+    def get_observation_dimensions(self):
+        return [len(self.current_state)]
+
     def set_render(self, render=False):
         if self.render and (not render):
             self.env.render(close=True)
@@ -66,3 +69,4 @@ class OpenAI_MountainCar_vE(EnvironmentBase):
     def update_frame_count(self):
         self.frame_count += 1
         self._env_dictionary["frame_count"] = self.frame_count
+

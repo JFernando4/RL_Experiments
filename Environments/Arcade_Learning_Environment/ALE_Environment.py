@@ -59,9 +59,10 @@ class ALE_Environment(EnvironmentBase):
     def reset(self):
         self.env.reset_game()
         current_frame = self.fix_state(self.env.getScreenGrayscale())
+        frame_stack = current_frame
         for i in range(self.frame_stack-1):
-            current_frame = np.concatenate((self.fix_state(self.env.getScreenGrayscale()), current_frame), axis=-1)
-        self.current_state = current_frame
+            frame_stack = np.concatenate((frame_stack, current_frame), axis=-1)
+        self.current_state = frame_stack
         return self.current_state
 
     def update(self, action):

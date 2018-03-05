@@ -35,9 +35,11 @@ class Percentile_Estimator:
 
     def update_percentiles(self):
         self._percentiles += self._lr * (self._record - self._percentiles)
-        print("The percentiles are:", self._percentiles)
+        # print("The percentiles are:", self._percentiles)
 
     def get_percentile(self, index):
+        if self._number_of_percentiles == 0:
+            return -np.inf
         if index > self._number_of_percentiles-1:
             raise ValueError("The index needs to be a number in [0, number_of_percentiles - 1]")
         return self._percentiles[index]

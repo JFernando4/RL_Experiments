@@ -12,7 +12,6 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
     model                   - deep learning model architecture
     optimizer               - optimizer used for learning
     numActions              - number of actions available in the environment
-    buffer_size             - experience replace buffer size
     batch_size              - batch size for learning step
     alpha                   - stepsize parameter
     environment             - self-explanatory
@@ -22,14 +21,14 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
     fa_dictionary           - fa dictionary from a previous session
     training_steps          - at how many different levels to train the network
     """
-    def __init__(self, model, optimizer, numActions=None, buffer_size=None, batch_size=None, alpha=None,
+    def __init__(self, model, optimizer, numActions=None, batch_size=None, alpha=None,
                  tf_session=None, observation_dimensions=None, restore=False, fa_dictionary=None, training_steps=None,
-                 layer_training_print_freq=200, reward_path=False, percentile_to_train_index=0):
+                 layer_training_print_freq=200, reward_path=False, percentile_to_train_index=0,
+                 number_of_percentiles=10):
         super().__init__()
         " Function Approximator Dictionary "
         if fa_dictionary is None:
             self._fa_dictionary = {"num_actions": numActions,
-                                   "buffer_size": buffer_size,
                                    "batch_size": batch_size,
                                    "alpha": alpha,
                                    "observation_dimensions": observation_dimensions,
@@ -39,7 +38,9 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
                                    "layer_training_print_freq": layer_training_print_freq,
                                    "reward_path": reward_path,
                                    "percentile_to_train_index": percentile_to_train_index,
-                                   "percentile_estimator": Percentile_Estimator(number_of_percentiles=10)}
+                                   "percentile_estimator":
+                                       Percentile_Estimator(number_of_percentiles=number_of_percentiles),
+                                   "number_of_percentiles": number_of_percentiles}
             # initializes the train_loss_history and layer_training_count
             self.train_loss_history = {}
             self.layer_training_count = {}
@@ -55,7 +56,6 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
 
         " Variables that need to be restored "
         self.numActions = self._fa_dictionary["num_actions"]
-        self.buffer_size = self._fa_dictionary["buffer_size"]
         self.batch_size = self._fa_dictionary["batch_size"]
         self.observation_dimensions = self._fa_dictionary["observation_dimensions"]
         self.alpha = self._fa_dictionary["alpha"]
@@ -64,12 +64,13 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         self.reward_path = self._fa_dictionary["reward_path"]
         self.percentile_to_train_index = self._fa_dictionary["percentile_to_train_index"]
         self.percentile_estimator = self._fa_dictionary["percentile_estimator"]
+        self.number_of_percentiles = self._fa_dictionary["number_of_percentiles"]
 
         " Neural Network Model "
         self.model = model
 
         " Training and Learning Evaluation: Tensorflow and variables initializer "
-        self.print_count = 0
+        self.print_count = 1
         self.optimizer = optimizer(self.alpha/self.batch_size)
         if tf_session is None:
             self.sess = tf.Session()
@@ -106,7 +107,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
                 self.sess.run(var.initializer)
 
         " Buffer "
-        self.buffer = Buffer(buffer_size=self.buffer_size, observation_dimensions=self.observation_dimensions)
+        self.buffer = Buffer(buffer_size=self.batch_size, observation_dimensions=self.observation_dimensions)
 
     def update(self, state, action, nstep_return, correction):
         value = nstep_return
@@ -122,7 +123,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
                             correction)
             self.buffer.add_to_buffer(buffer_entry)
             self.train()
-            print(abs_td_error)
+            # print(abs_td_error)
 
     def get_value(self, state, action):
         y_hat = self.get_next_states_values(state)
@@ -156,7 +157,14 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
                 path_indx = 0
             train_step = self.train_steps_list[path_indx][train_layer]
             key = "train_step"+str(train_layer+1)
+
+            if self.number_of_percentiles != 0:
+                top_percentile = self.percentile_estimator.get_percentile(0)
+                low_percentile = self.percentile_estimator.get_percentile(self.number_of_percentiles-1)
+                self.optimizer._learning_rate = self.alpha * (1 - (low_percentile+0.00001) / (top_percentile+0.00001) )
             train_loss, _ = self.sess.run((self.model.train_loss, train_step), feed_dict=feed_dictionary)
+            self.optimizer._learning_rate = self.alpha
+
             self.train_loss_history[key].append(train_loss)
             self.layer_training_count[key] += 1
             self.print_layer_training_count()
@@ -166,7 +174,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
                            self.model.x_actions: actions,
                            self.model.y: labels,
                            self.model.isampling: isampling}
-        td_error = np.sum(self.sess.run(self.model.td_error, feed_dict=feed_dictionary))
+        td_error = np.sum(np.abs(self.sess.run(self.model.td_error, feed_dict=feed_dictionary)))
         return td_error
 
     def update_alpha(self, new_alpha):
@@ -179,7 +187,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
             if self.print_count < self._fa_dictionary["layer_training_print_freq"]:
                 self.print_count += 1
             else:
-                self.print_count = 0
+                self.print_count = 1
                 for key in self._fa_dictionary["layer_training_count"]:
                     print("Layers corresponding to", key, "have been trained",
                           self._fa_dictionary["layer_training_count"][key], "times.")
