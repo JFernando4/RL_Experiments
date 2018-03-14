@@ -22,7 +22,7 @@ def main():
     rom_name = "seaquest.bin"
     experiment_name = "seaquest_test"
     experiment_path = srcpath + experiment_name
-    restore = True
+    restore = False
     agent_history = NN_Agent_History(experiment_path, restore)
 
     " Environment "
@@ -64,7 +64,6 @@ def main():
         fully_connected_layers = 1
 
         " FA variables "
-        buffer_size = 1
         batch_size = 1
         alpha = 0.000001
         training_steps = 1
@@ -72,16 +71,16 @@ def main():
         model = models.Model_nCPmFO(name=name, dim_out=dim_out, observation_dimensions=observation_dimensions,
                                        num_actions=num_actions, gate_fun=gate_fun, convolutional_layers=conv_layers,
                                        filter_dims=filter_dims, fully_connected_layers=fully_connected_layers)
-        fa = NeuralNetwork_FA(model=model, optimizer=optimizer, numActions=num_actions, buffer_size=buffer_size,
+        fa = NeuralNetwork_FA(model=model, optimizer=optimizer, numActions=num_actions,
                               batch_size=batch_size, alpha=alpha, tf_session=sess,
                               observation_dimensions=observation_dimensions, training_steps=training_steps,
-                              layer_training_print_freq=100000)
+                              layer_training_print_freq=100000, number_of_percentiles=0)
         agent = QSigma(n=n, gamma=gamma, beta=beta, sigma=sigma, environment=env, function_approximator=fa,
                        target_policy=tpolicy, behavior_policy=bpolicy)
 
     agent.fa.model.print_number_of_parameters(agent.fa.model.train_vars[0])
-    while env.frame_count < 50000000:
-        training_loop(rl_agent=agent, iterations=1, episodes_per_iteration=1, render=False, agent_render=False,
+    while env.frame_count < 50000:
+        training_loop(rl_agent=agent, iterations=1, episodes_per_iteration=1, render=True, agent_render=False,
                       final_epsilon=0.1, bpolicy_frames_before_target=100, decrease_epsilon=True)
 
     save_graph(experiment_path, sess)

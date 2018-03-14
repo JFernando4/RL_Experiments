@@ -78,8 +78,8 @@ def main():
                        target_policy=tpolicy, behavior_policy=bpolicy)
 
     agent.fa.model.print_number_of_parameters(agent.fa.model.train_vars[0])
-    # while env.frame_count < 10000000:
-    training_loop(rl_agent=agent, iterations=100, episodes_per_iteration=1, render=False, agent_render=False,
+    while env.frame_count < 10000000:
+        training_loop(rl_agent=agent, iterations=1, episodes_per_iteration=1, render=True, agent_render=False,
                       final_epsilon=0.1, bpolicy_frames_before_target=100, decrease_epsilon=True)
 
     save_graph(experiment_path, sess)

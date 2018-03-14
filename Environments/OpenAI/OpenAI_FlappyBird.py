@@ -1,6 +1,6 @@
 from Objects_Bases.Environment_Base import EnvironmentBase
 import gym
-import gym_ple
+# import gym_ple
 import numpy as np
 from skimage.transform import resize
 import matplotlib.pyplot as plt
@@ -107,7 +107,7 @@ class OpenAI_FlappyBird_vE(EnvironmentBase):
 
     def set_render(self, render=False, agent_render=False):
         if self.render and (not render):
-            self.env.render(close=True)
+            self.env.close()
         self.agent_render = agent_render
         self.render = render
 

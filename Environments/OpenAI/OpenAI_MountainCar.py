@@ -5,6 +5,7 @@ import gym
 class OpenAI_MountainCar_vE(EnvironmentBase):
 
     def __init__(self, render=False, max_steps=5000, env_dictionary=None):
+        super().__init__()
         if not ('MountainCar-v5' in gym.envs.registry.env_specs):
             gym.envs.registration.register(
                 id='{}'.format('MountainCar-v5'),
@@ -27,9 +28,9 @@ class OpenAI_MountainCar_vE(EnvironmentBase):
         self.render = render
         if self.render:
             self.env.render()
-        super().__init__()
 
     def reset(self):
+        self.env.close()
         self.current_state = self.env.reset()
         if self.render:
             self.env.render()
@@ -63,7 +64,7 @@ class OpenAI_MountainCar_vE(EnvironmentBase):
 
     def set_render(self, render=False):
         if self.render and (not render):
-            self.env.render(close=True)
+            self.env.close()
         self.render = render
 
     def update_frame_count(self):

@@ -17,8 +17,9 @@ class EnvironmentBase(object):
 
     @abc.abstractmethod
     def update(self, A):
-        """"Given an action, it returns the new state and the corresponding reward.
-            It must also return a flag indicating whether the terminal state has been reached.
+        """"
+        Given an action, it returns the new state and the corresponding reward.
+        It must also return a flag indicating whether the terminal state has been reached.
         """
         return
 

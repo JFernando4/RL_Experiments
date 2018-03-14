@@ -17,10 +17,10 @@ def main():
 
     """" Directories and Paths for Saving and Restoring """
     homepath = "/home/jfernando/"
-    srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Deep_Flap/"
+    srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Deep_Flappy/"
     experiment_name = "Deep_Flappy"
     experiment_path = srcpath + experiment_name
-    restore = True
+    restore = False
     agent_history = NN_Agent_History(experiment_path, restore)
 
     " Environment "
@@ -80,9 +80,9 @@ def main():
                        target_policy=tpolicy, behavior_policy=bpolicy)
 
     agent.fa.model.print_number_of_parameters(agent.fa.model.train_vars[0])
-    while env.frame_count < 10000000:
-        training_loop(rl_agent=agent, iterations=10, episodes_per_iteration=10, render=False, agent_render=False,
-                      final_epsilon=0.1, bpolicy_frames_before_target=100, decrease_epsilon=True)
+    # while env.frame_count < 10000000:
+    training_loop(rl_agent=agent, iterations=10, episodes_per_iteration=2, render=True, agent_render=False,
+                  final_epsilon=0.1, bpolicy_frames_before_target=100, decrease_epsilon=True)
 
     save_graph(experiment_path, sess)
     agent_history.save_training_history(experiment_path, agent)

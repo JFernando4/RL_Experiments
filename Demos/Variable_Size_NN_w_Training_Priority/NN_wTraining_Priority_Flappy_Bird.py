@@ -19,7 +19,7 @@ def main():
     """" Directories and Paths for Saving and Restoring """
     homepath = "/home/jfernando/"
     srcpath = homepath + "PycharmProjects/RL_Experiments/Demos/Variable_Size_NN_w_Training_Priority/"
-    experiment_name = "Deep_Flap"
+    experiment_name = "Deep_Flappy"
     experiment_path = srcpath + experiment_name
     restore = False
     agent_history = NN_Agent_History(experiment_path, restore)
