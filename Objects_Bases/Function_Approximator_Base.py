@@ -17,7 +17,7 @@ class FunctionApproximatorBase(object):
     @abc.abstractmethod
     def get_value(self, state, action):
         """ Returns the approximation to the action-value or the state-value function """
-        return
+        return 0.0
 
     @abc.abstractmethod
     def get_next_states_values(self, state):

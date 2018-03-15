@@ -23,4 +23,4 @@ class PolicyBase(object):
     def probability_of_action(self, q_values, action, all_actions):
         """ Given q_value it returns the probability of each action if all_actions is true, otherwise
             it returns the probability of action """
-        return
+        return [0.0 for _ in q_values]

@@ -8,7 +8,7 @@ class TileCoderFA(FunctionApproximatorBase):
 
     def __init__(self, numTilings=8, numActions=3, alpha=0.1, state_space_range=None, state_space_size=2,
                  tiles_factor=4):
-        """ state_space_limits should be a list
+        """ state_space_range should be a list
             tiles_factor is how much of the space each tile covers, e.g. 1 is unit tiles, 4 => each tile is 1/4 the
             size of the unit tile
         """
@@ -30,7 +30,8 @@ class TileCoderFA(FunctionApproximatorBase):
         super().__init__()
 
     """ Updates the value of the parameters corresponding to the state and action """
-    def update(self, state, action, nstep_return, correction, current_estimate):
+    def update(self, state, action, nstep_return, correction):
+        current_estimate = self.get_value(state, action)
         value = correction * (nstep_return - current_estimate)
         scaled_state = np.multiply(np.asarray(state).flatten(), self.scale_factor)
         # scaled_state = []
