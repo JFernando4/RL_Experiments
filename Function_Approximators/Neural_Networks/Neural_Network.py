@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from Function_Approximators.Neural_Networks.NN_Utilities.Layer_Training_Priority import Layer_Training_Priority
+from Function_Approximators.Neural_Networks.NN_Utilities.layer_training_priority import Layer_Training_Priority
 from Function_Approximators.Neural_Networks.NN_Utilities.buffer import Buffer
 from Function_Approximators.Neural_Networks.NN_Utilities.percentile_estimator import Percentile_Estimator
 from Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
@@ -21,7 +21,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
     fa_dictionary           - fa dictionary from a previous session
     training_steps          - at how many different levels to train the network
     """
-    def __init__(self, model, optimizer, numActions=None, batch_size=None, alpha=None,
+    def __init__(self, optimizer, model, numActions=None, batch_size=None, alpha=None,
                  tf_session=None, observation_dimensions=None, restore=False, fa_dictionary=None, training_steps=None,
                  layer_training_print_freq=200, reward_path=False, percentile_to_train_index=0,
                  number_of_percentiles=10):
@@ -42,17 +42,15 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
                                        Percentile_Estimator(number_of_percentiles=number_of_percentiles),
                                    "number_of_percentiles": number_of_percentiles}
             # initializes the train_loss_history and layer_training_count
-            self.train_loss_history = {}
-            self.layer_training_count = {}
+            train_loss_history = {}
+            layer_training_count = {}
             for i in range(self._fa_dictionary["training_steps"]):
-                self.train_loss_history["train_step"+str(i+1)] = []
-                self.layer_training_count["train_step"+str(i+1)] = 0
-            self._fa_dictionary["train_loss_history"] = self.train_loss_history
-            self._fa_dictionary["layer_training_count"] = self.layer_training_count
+                train_loss_history["train_step"+str(i+1)] = []
+                layer_training_count["train_step"+str(i+1)] = 0
+            self._fa_dictionary["train_loss_history"] = train_loss_history
+            self._fa_dictionary["layer_training_count"] = layer_training_count
         else:
             self._fa_dictionary = fa_dictionary
-            self.train_loss_history = self._fa_dictionary["train_loss_history"]
-            self.layer_training_count = self._fa_dictionary["layer_training_count"]
 
         " Variables that need to be restored "
         self.numActions = self._fa_dictionary["num_actions"]
@@ -65,6 +63,8 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         self.percentile_to_train_index = self._fa_dictionary["percentile_to_train_index"]
         self.percentile_estimator = self._fa_dictionary["percentile_estimator"]
         self.number_of_percentiles = self._fa_dictionary["number_of_percentiles"]
+        self.train_loss_history = self._fa_dictionary["train_loss_history"]
+        self.layer_training_count = self._fa_dictionary["layer_training_count"]
 
         " Neural Network Model "
         self.model = model

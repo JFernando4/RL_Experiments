@@ -148,3 +148,6 @@ class QSigma(RL_ALgorithmBase):
 
     def get_agent_dictionary(self):
         return self._agent_dictionary
+
+    def get_return_per_episode(self):
+        return self._agent_dictionary['return_per_episode']

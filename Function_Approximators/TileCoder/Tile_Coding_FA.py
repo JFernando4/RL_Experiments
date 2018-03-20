@@ -34,11 +34,6 @@ class TileCoderFA(FunctionApproximatorBase):
         current_estimate = self.get_value(state, action)
         value = correction * (nstep_return - current_estimate)
         scaled_state = np.multiply(np.asarray(state).flatten(), self.scale_factor)
-        # scaled_state = []
-        # for i in range(len(state)):
-        #     scaleFactor = self.numTilings / self.state_space_range[i]
-        #     scaled_state.append(scaleFactor * state[i])
-
         tile_indices = asarray(
             tiles(self.iht, self.numTilings, scaled_state),
             dtype=int) + (action * self.numTiles)

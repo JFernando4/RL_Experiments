@@ -49,6 +49,6 @@ class EnvironmentBase(object):
         self._env_dictionary = new_dictionary
 
     @abc.abstractmethod
-    def set_render(self):
+    def set_render(self, *args):
         """ Set render to true if the environment has the option to render """
         return

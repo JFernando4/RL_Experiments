@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from Function_Approximators.Neural_Networks.NN_Utilities.Layer_Training_Priority import Layer_Training_Priority
+from Function_Approximators.Neural_Networks.NN_Utilities.layer_training_priority import Layer_Training_Priority
 from Function_Approximators.Neural_Networks.NN_Utilities.buffer import Buffer
 from Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
 

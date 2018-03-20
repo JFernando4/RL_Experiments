@@ -15,7 +15,7 @@ class RL_ALgorithmBase(object):
         return
 
     @abc.abstractmethod
-    def get_cummulative_reward(self):
+    def get_return_per_episode(self):
         """ Returns the cummulative reward so far """
         return
 

@@ -16,7 +16,7 @@ def training_loop(rl_agent, iterations=1, episodes_per_iteration=100, render=Fal
     for i in range(iterations):
         rl_agent.train(episodes_per_iteration)
         number_of_episodes = rl_agent.episode_number
-        frame_count = rl_agent.env.frame_count
+        frame_count = rl_agent.env.get_frame_count()
         average_return = np.average(rl_agent.return_per_episode[:])
 
         print("### Results after", number_of_episodes, "episodes and", frame_count, "frames ###")

@@ -32,15 +32,25 @@ class Mountain_Car(EnvironmentBase):
         self._actions = np.array([0, 1, 2], dtype=int)  # 0 = backward, 1 = coast, 2 = forward
         self._high = np.array([0.5, 0.07], dtype=np.float64)
         self._low = np.array([-1.2, -0.07], dtype=np.float64)
+        self._max_number_of_actions_per_episode = 50000         # To prevent episodes from going on forever
+        self._current_number_of_actions_per_episode = 0
 
     def reset(self):
         position = -0.6 + random() * 0.2
         velocity = 0.0
         self._current_state = np.array((position, velocity), dtype=np.float64)
+        self._current_number_of_actions_per_episode = 0
         return self._current_state
 
     " Update environment "
     def update(self, A):
+        # To prevent episodes from going on forever
+        self._current_number_of_actions_per_episode += 1
+        if self._current_number_of_actions_per_episode >= self._max_number_of_actions_per_episode:
+            reward = -1
+            terminate = True
+            return self._current_state, reward, terminate
+
         if A not in self._actions:
             raise ValueError("The action should be one of the following integers: {0, 1, 2}.")
         self.update_frame_count()
@@ -123,7 +133,7 @@ class Mountain_Car(EnvironmentBase):
             surface_slice_y_coord = []
 
             while current_velocity < (self._high[1] + velocity_shift):
-                current_state = (current_position, current_velocity)
+                current_state = np.array((current_position, current_velocity), dtype=np.float64)
 
                 q_values = np.array(fa.get_next_states_values(current_state))
                 p_values = tpolicy.probability_of_action(q_values, all_actions=True)
@@ -150,8 +160,9 @@ class Mountain_Car(EnvironmentBase):
     def plot_mc_surface(Z, X, Y, filename=None):
         fig = plt.figure()
         ax = fig.gca(projection='3d')
-        surf = ax.plot_surface(X,Y,Z, cmap=cm.coolwarm)
+        surf = ax.plot_wireframe(X,Y,Z, cmap=cm.coolwarm, linewidth=0.6)
         if filename is None:
             plt.show()
         else:
             plt.savefig(filename)
+        plt.close()

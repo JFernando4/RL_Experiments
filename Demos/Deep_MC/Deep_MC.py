@@ -7,7 +7,7 @@ from Demos.Demos_Utility.Training_Util import training_loop
 from Demos.Demos_Utility.Saving_Restoring_NN_Util import NN_Agent_History, save_graph, restore_graph
 
 """ Agent, Environment, and Function Approximator """
-from Environments.OpenAI.OpenAI_MountainCar import OpenAI_MountainCar_vE                # Environment
+from Environments.OG_MountainCar import Mountain_Car                                    # Environment
 from Function_Approximators.Neural_Networks.NN_Utilities import models                  # DL Model
 from Function_Approximators.Neural_Networks.Neural_Network import NeuralNetwork_FA      # Function Approximator
 from Policies.Epsilon_Greedy import EpsilonGreedyPolicy                                 # Policies
@@ -24,7 +24,7 @@ def main():
     agent_history = NN_Agent_History(experiment_path, restore)
 
     " Environment "
-    env = OpenAI_MountainCar_vE()
+    env = Mountain_Car()
     observation_dimensions = env.get_observation_dimensions()
     num_actions = env.get_num_actions()
 
@@ -49,7 +49,7 @@ def main():
         tpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.1)
         bpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.1)
         gamma = 1
-        n = 5
+        n = 10
         beta = 1
         sigma = 0.5
 
@@ -61,8 +61,10 @@ def main():
 
         " FA variables "
         batch_size = 1
-        alpha = 0.001
+        alpha = 0.000001
         training_steps = 1
+        percentile_index = 0
+        number_of_percentiles = 10
 
         model = models.Model_mFO(name=name, dim_out=dim_out, observation_dimensions=observation_dimensions,
                                  num_actions=num_actions, gate_fun=gate_fun,
@@ -71,18 +73,19 @@ def main():
         fa = NeuralNetwork_FA(model=model, optimizer=optimizer, numActions=num_actions,
                               batch_size=batch_size, alpha=alpha, tf_session=sess,
                               observation_dimensions=observation_dimensions, training_steps=training_steps,
-                              layer_training_print_freq=5000, percentile_to_train_index=0,
-                              number_of_percentiles=10)
+                              layer_training_print_freq=5000, percentile_to_train_index=percentile_index,
+                              number_of_percentiles=number_of_percentiles)
 
         agent = QSigma(n=n, gamma=gamma, beta=beta, sigma=sigma, environment=env, function_approximator=fa,
                        target_policy=tpolicy, behavior_policy=bpolicy)
 
     agent.fa.model.print_number_of_parameters(agent.fa.model.train_vars[0])
-    while env.frame_count < 10000000:
-        training_loop(rl_agent=agent, iterations=1, episodes_per_iteration=1, render=True, agent_render=False,
+    while env.get_frame_count() < 10000000:
+        training_loop(rl_agent=agent, iterations=1, episodes_per_iteration=1, render=False, agent_render=False,
                       final_epsilon=0.1, bpolicy_frames_before_target=100, decrease_epsilon=True)
 
     save_graph(experiment_path, sess)
     agent_history.save_training_history(experiment_path, agent)
+
 
 main()
