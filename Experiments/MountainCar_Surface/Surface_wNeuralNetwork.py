@@ -12,10 +12,10 @@ from Function_Approximators.Neural_Networks.NN_Utilities.models import Model_mFO
 
 class ExperimentAgent:
 
-    def __init__(self):
+    def __init__(self, alpha, beta, epsilon_bpolicy, epsilon_tpolicy, gamma, n, sigma):
         self.env = Mountain_Car()
-        self.tpolicy = EpsilonGreedyPolicy(epsilon=0.1, numActions=self.env.get_num_actions())
-        self.bpolicy = EpsilonGreedyPolicy(epsilon=0.1, numActions=self.env.get_num_actions())
+        self.tpolicy = EpsilonGreedyPolicy(epsilon=epsilon_tpolicy, numActions=self.env.get_num_actions())
+        self.bpolicy = EpsilonGreedyPolicy(epsilon=epsilon_bpolicy, numActions=self.env.get_num_actions())
 
         " Model Parameters "
         name = "experiment"
@@ -30,7 +30,6 @@ class ExperimentAgent:
 
         " Neural Network Parameters "
         batch_size = 1
-        alpha = 0.000001
         self.tf_session = tf.Session()
         number_of_percentiles = 0
         percentile_index = 0
@@ -42,13 +41,9 @@ class ExperimentAgent:
                                    training_steps=training_steps,percentile_to_train_index=percentile_index)
 
         " Agent Parameters "
-        n = 3
-        sigma = 0.5
-        beta = 1
-        gamma = 1
-
         self.agent = QSigma(n=n, gamma=gamma, beta=beta, sigma=sigma, environment=self.env,
                             function_approximator=self.fa, target_policy=self.tpolicy, behavior_policy=self.bpolicy)
+        self.agent_parameters = {"beta":beta, "gamma":gamma, "n":n, "bpolicy":self.bpolicy, "tpolicy":self.tpolicy}
 
     def train(self, num_episodes):
         self.agent.train(num_episodes=num_episodes)
@@ -56,21 +51,26 @@ class ExperimentAgent:
     def get_return_per_episode(self):
         return self.agent.get_return_per_episode()
 
-    def terminate_agent(self):
+    def reset_agent(self):
+        self.env = Mountain_Car()
         for var in tf.global_variables():
             self.tf_session.run(var.initializer)
-
+        self.agent = QSigma(beta=self.agent_parameters["beta"], gamma=self.agent_parameters["gamma"],
+                            n=self.agent_parameters["n"], behavior_policy=self.agent_parameters["bpolicy"],
+                            target_policy=self.agent_parameters["tpolicy"],
+                            environment=self.env, function_approximator=self.fa)
 
 class Experiment:
 
-    def __init__(self, experiment_path):
+    def __init__(self, experiment_path, alpha, beta, epsilon_bpolicy, epsilon_tpolicy, gamma, n, sigma):
         self.experiment_path = experiment_path
         self.data = None
-        self.agent = ExperimentAgent()
+        self.agent = ExperimentAgent(alpha=alpha, beta=beta, epsilon_bpolicy=epsilon_bpolicy,
+                                     epsilon_tpolicy=epsilon_tpolicy, gamma=gamma, n=n, sigma=sigma)
 
     def run_experiment(self):
         agent = self.agent
-        train_episodes = [1,10,25,50,100,200,500,1000,2000,3000,5000]
+        train_episodes = [1,10,25,50,100,200,500,1000,2000,3000,5000,7500,10000]
         surfaces = []
 
         number_of_episodes = 0
@@ -84,7 +84,7 @@ class Experiment:
 
         returns_per_episode = np.array(agent.get_return_per_episode())
         self.data = [train_episodes, np.array(surfaces), returns_per_episode]
-        agent.terminate_agent()
+        agent.reset_agent()
 
     def save_experiment_data(self, agent_name):
         if self.data is None:
@@ -94,12 +94,30 @@ class Experiment:
 
 
 if __name__ == "__main__":
-    working_directory = os.getcwd()
-    results_directory = working_directory + "/NN_f100_Results" #"/NeuralNetwork_Results"
-    number_of_iterations = 10
+    " Experiment Parameters "
+    # Results Directory Name
+    experiment_directory = "/Results_QSigma_n1"
+    experiment_results_directory = "/NN_f100"
+        # Tilecoder parameters
+    alpha = 0.000001
+        # RL agent parameters
+    beta = 1
+    epsilon_bpolicy = 0.1
+    epsilon_tpolicy = 0.1
+    gamma = 1
+    n = 1
+    sigma = 0.5
 
-    experiment = Experiment(results_directory)
-    offset = 0
+    " Running Experiment "
+    print("Running:", experiment_directory + experiment_results_directory)
+    working_directory = os.getcwd()
+    results_directory = working_directory + experiment_directory + experiment_results_directory
+    number_of_iterations = 4
+
+    experiment = Experiment(experiment_path=results_directory, alpha=alpha, beta=beta, epsilon_bpolicy=epsilon_bpolicy,
+                            epsilon_tpolicy=epsilon_tpolicy, gamma=gamma, n=n, sigma=sigma)
+
+    offset = 5 - number_of_iterations
     for i in range(number_of_iterations):
         print("Iteration", str(i+1+offset)+"...")
         experiment.run_experiment()

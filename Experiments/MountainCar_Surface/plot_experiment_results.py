@@ -36,18 +36,22 @@ def load_and_aggregate_results(pathname):
     return train_episodes, surfaces_data, returns_per_episode
 
 
-def plot_surfaces(results_list, pathname, extra_names=""):
+def plot_surfaces(results_list, pathname, extra_names="", suptitles=""):
     env = Mountain_Car()
     for results in results_list:
         train_episodes, surfaces_data, average_returns = results
+        fig = plt.figure(figsize=(60, 15), dpi=200)
         for i in range(len(train_episodes)):
             Z, X, Y = surfaces_data[i]
-            env.plot_mc_surface(-Z, X, Y, filename=pathname + "/Experiment_Plots/"
-                                                   + extra_names + "_" + str(train_episodes[i]))
+            subplot_parameters = {"rows": 2, "columns": np.ceil(len(train_episodes)/2), "index":i+1,
+                                  "suptitle":suptitles, "subplot_close": (i+1) == len(train_episodes)}
+            env.plot_mc_surface(fig, -Z, X, Y, filename=pathname + "/Plots/" + extra_names,
+                                subplot=True, subplot_arguments=subplot_parameters,
+                                plot_title=str(train_episodes[i]) + " episode(s)")
 
-        fig = plt.plot(np.arange(train_episodes[-1])+1, average_returns)
+        fig = plt.plot(np.arange(train_episodes[-1])+1, average_returns, linewidth=0.5)
         # plt.ylim([-1000,0])
-        plt.savefig(pathname + "/Experiment_Plots/" + extra_names + "_returns.png")
+        plt.savefig(pathname + "/Plots/" + extra_names + "_returns.png")
         plt.close()
 
 
@@ -57,14 +61,37 @@ def plot_average_return(results_list, pathname, extra_names=""):
 
 def main():
     working_dir = os.getcwd()
-    dir_names = ["/Results/TC_a1o6t8_QSigma_b1g1s1o2",
-                 "/TileCoder_16tilings_Results"]
-    extra_names = ["TC_a1o6t8_QSigma_b1g1s1o2",
-                   "TileCoder_16tilings"]
+    results_dir = [
+        "/Results_QSigma_n1"
+        # "/Results_Sarsa_n3",
+        # "/Results_TreeBackup_n3",
+        # "/Results_QSigma_n3",
+        # "/Results_QLearning",
+        # "/test_tilecoder"
+    ]
+    agent_result_names = [
+        ["/NN_f100", "/TC_t8", "/TC_t16", "/TC_t32", "/TC_t64"]
+        # ["/TC_t8", "/TC_t16", "/TC_t32", "/TC_t64"],
+        # ["/TC_t8", "/TC_t16", "/TC_t32", "/TC_t64"],
+        # ["/TC_t8", "/TC_t16", "/TC_t32", "/TC_t64"],
+        # ["/TC_t8", "/TC_t16", "/TC_t32", "/TC_t64"],
+        # ["/TC_t8", "/TC_t16", "/TC_t32", "/TC_t64"],
+        # ["/test_tc"]
+    ]
+    suptitles = [
+        ["Fully-Connected Neural Network with 100 Neurons",
+         "TileCoder with 8 Tilings",
+         "TileCoder with 16 Tilings",
+         "TileCoder with 32 Tilings",
+         "TileCoder with 64 Tilings"]
+    ]
 
-    for i in range(len(dir_names)):
-        train_episodes, surfaces, returns_per_episode = load_and_aggregate_results(working_dir+dir_names[i])
-        plot_surfaces([[train_episodes, surfaces, returns_per_episode]], working_dir, extra_names=extra_names[i])
+    for i in range(len(results_dir)):
+        for j in range(len(agent_result_names[i])):
+            train_episodes, surfaces, returns_per_episode = load_and_aggregate_results(working_dir+results_dir[i]+
+                                                                                       agent_result_names[i][j])
+            plot_surfaces([[train_episodes, surfaces, returns_per_episode]], working_dir+results_dir[i],
+                          extra_names=agent_result_names[i][j], suptitles=suptitles[i][j])
 
 
 main()

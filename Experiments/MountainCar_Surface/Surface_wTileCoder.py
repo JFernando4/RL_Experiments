@@ -10,20 +10,14 @@ from Policies.Epsilon_Greedy import EpsilonGreedyPolicy
 
 class ExperimentAgent:
 
-    def __init__(self):
+    def __init__(self, alpha, numTilings, beta, epsilon_bpolicy, epsilon_tpolicy, gamma, n, sigma):
         self.env = Mountain_Car()
-        self.fa = TileCoderFA(numTilings=16, numActions=self.env.get_num_actions(), alpha=1/6,
+        self.fa = TileCoderFA(numTilings=numTilings, numActions=self.env.get_num_actions(), alpha=alpha,
                               state_space_range=(self.env.get_high() - self.env.get_low()),
                               state_space_size=len(self.env.get_current_state()),
                               tiles_factor=4)
-        self.tpolicy = EpsilonGreedyPolicy(epsilon=0.1, numActions=self.env.get_num_actions())
-        self.bpolicy = EpsilonGreedyPolicy(epsilon=0.1, numActions=self.env.get_num_actions())
-
-        " Agent Parameters "
-        n = 3
-        sigma = 0.5
-        beta = 1
-        gamma = 1
+        self.tpolicy = EpsilonGreedyPolicy(epsilon=epsilon_tpolicy, numActions=self.env.get_num_actions())
+        self.bpolicy = EpsilonGreedyPolicy(epsilon=epsilon_bpolicy, numActions=self.env.get_num_actions())
 
         self.agent = QSigma(n=n, gamma=gamma, beta=beta, sigma=sigma, environment=self.env,
                             function_approximator=self.fa, target_policy=self.tpolicy, behavior_policy=self.bpolicy)
@@ -41,8 +35,9 @@ class Experiment:
         self.experiment_path = experiment_path
         self.data = None
 
-    def run_experiment(self):
-        agent = ExperimentAgent()
+    def run_experiment(self, alpha, numTilings, beta, epsilon_bpolicy, epsilon_tpolicy, gamma, n, sigma):
+        agent = ExperimentAgent(alpha=alpha, numTilings=numTilings, beta=beta, epsilon_bpolicy=epsilon_bpolicy,
+                                epsilon_tpolicy=epsilon_tpolicy, gamma=gamma, n=n, sigma=sigma)
         train_episodes = [1,10,25,50,100,200,500,1000,2000,3000,5000,7500,10000]
         surfaces = []
 
@@ -66,13 +61,32 @@ class Experiment:
 
 
 if __name__ == "__main__":
+    " Experiment Parameters "
+        # Results Directory Name
+    experiment_directory = "/Results_Sarsa_n3"
+    experiment_results_directory = "/TC_t32"
+        # Tilecoder parameters
+    alpha = 1/6
+    tilings = 32
+        # RL agent parameters
+    beta = 1
+    epsilon_bpolicy = 0.1
+    epsilon_tpolicy = 0.1
+    gamma = 1
+    n = 3
+    sigma = 1
+
+    " Running Experiment "
+    print("Running:", experiment_directory + experiment_results_directory)
     working_directory = os.getcwd()
-    results_directory = working_directory + "/TileCoder_16tilings_Results"
-    number_of_iterations = 10
+    results_directory = working_directory + experiment_directory + experiment_results_directory
+    number_of_iterations = 1
 
     experiment = Experiment(results_directory)
 
+    offset = 10 - number_of_iterations
     for i in range(number_of_iterations):
-        print("Iteration", str(i+1)+"...")
-        experiment.run_experiment()
-        experiment.save_experiment_data(agent_name="agent"+str(i+1))
+        print("Iteration", str(i+1+offset)+"...")
+        experiment.run_experiment(alpha=alpha, numTilings=tilings, beta=beta, epsilon_bpolicy=epsilon_bpolicy,
+                                  epsilon_tpolicy=epsilon_tpolicy, gamma=gamma, n=n, sigma=sigma)
+        experiment.save_experiment_data(agent_name="agent"+str(i+1+offset))

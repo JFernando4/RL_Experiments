@@ -1,5 +1,5 @@
 
-# Results Directory Naming Convention
+##### Results Directory Naming Convention #####
     FunctionApproximator_FCParameters_ReinforcementLearningMethod_RLparameters
 
     * Function Approximators: use intuitive acronyms with upper case instead of the full name.
@@ -29,3 +29,40 @@
         NN_a1o100000f100f10f5_QLearning_e1o10g1
             (Neural Network with alpha = 0.00001, layer 1 = fully connected with 100 neurons, layer 2 = fully connected
              with 10 neurons, layer 3 = fully connected with 5 neurons. Q-Learning agent with epsilon = 0.1, gamma = 1)
+
+
+##### Exceptions #####
+    * If the Results' Parent Directory contains the name of the RL method, then it is
+      omitted from the results directory's name.
+    * If there is a FixedParameters.txt file in the results directory that lists all the fixed parameters for the experiment,
+      then those parameters are omitted from the results directory's name.
+
+    Example:
+
+    Parent Directory: Results_QSigma_n3
+
+        FixedParameters.txt file:
+        "
+         Fixed Parameters:
+            Function Approximator: TileCoder
+                alpha = 0.5
+            Function Approximator: Neural Network
+                alpha = 0.0001
+            RL Agent: QSigma (The actual name of the algorithm being used, even if the resulting algorithm is QLearning)
+                beta = 1
+                epsilon behavior policy = 0.1
+                epsilon target policy = 0.1
+                gamma = 1
+                sigma = 0.5
+        "
+
+        Results Directory 1: TC_t8
+                (TileCoder with 8 tilings, RL agent as in the parent directory's name, n parameter as in the parent
+                 directory's name, and fixed parameters as in the FixedParameters.txt file)
+        Results Directory 2: TC_t32
+                (TileCoder with 16 tilings, RL agent as in the parent directory's name, n parameter as in the parent
+                 directory's name and fixed parameters as in the FixedParameters.txt file)
+        Results Directory 3: NN_f1000f100
+                (Neural Network with 1 fully connected layer with 1000 neurons and a second fully connected layer with
+                 100 neurons, the RL agent as in the parent directory's name, n parameter as in the parent directory's
+                 name and fixed parameters as in the FixedParameters.txt file)
