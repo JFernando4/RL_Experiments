@@ -60,6 +60,7 @@ class ExperimentAgent:
                             target_policy=self.agent_parameters["tpolicy"],
                             environment=self.env, function_approximator=self.fa)
 
+
 class Experiment:
 
     def __init__(self, experiment_path, alpha, beta, epsilon_bpolicy, epsilon_tpolicy, gamma, n, sigma):
@@ -112,7 +113,7 @@ if __name__ == "__main__":
     print("Running:", experiment_directory + experiment_results_directory)
     working_directory = os.getcwd()
     results_directory = working_directory + experiment_directory + experiment_results_directory
-    number_of_iterations = 4
+    number_of_iterations = 1
 
     experiment = Experiment(experiment_path=results_directory, alpha=alpha, beta=beta, epsilon_bpolicy=epsilon_bpolicy,
                             epsilon_tpolicy=epsilon_tpolicy, gamma=gamma, n=n, sigma=sigma)
