@@ -1,6 +1,8 @@
 
 # Results Directory Naming Convention
-    FunctionApproximator_FCParameters_ReinforcementLearningMethod_RLparameters
+
+** Template **
+FunctionApproximator_FCParameters_ReinforcementLearningMethod_RLparameters
 
     * Function Approximators: use intuitive acronyms with upper case instead of the full name.
         - Neural Network    =>      NN
