@@ -46,10 +46,9 @@ FunctionApproximator_FCParameters_ReinforcementLearningMethod_RLparameters
       - gamma = 1
 
 ## Exceptions
-    * If the Results' Parent Directory contains the name of the RL method, then it is
-      omitted from the results directory's name.
-    * If there is a FixedParameters.txt file in the results directory that lists all the fixed parameters for the experiment,
-      then those parameters are omitted from the results directory's name.
+
+1. If the Results' Parent Directory contains the name of the RL method, then it is omitted from the results directory's name.
+2. If there is a FixedParameters.txt file in the results directory that lists all the fixed parameters for the experiment, then those parameters are omitted from the results directory's name.
 
     Example:
 
