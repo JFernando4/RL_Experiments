@@ -5,23 +5,17 @@
 
 FunctionApproximator_FCParameters_ReinforcementLearningMethod_RLparameters
 
-- Function Approximators: use intuitive acronyms with upper case instead of the full name.
+- **Function Approximators**: use intuitive acronyms with upper case instead of the full name.
    - *Examples*
-      - Neural Network \rightarrow NN
-
-        - Neural Network    =>      NN
-        - TileCoder         =>      TC
-
-    * Reinforcement Learning Method: use the name of the method with only the first letter of each word capitalized
-                                     and without special characters.
-        - Q(sigma)          =>      QSigma
-        - Sarsa             =>      Sarsa
-        - Q-Learning        =>      QLearning
-        - Tree-backup       =>      TreeBackup
-
-    * Parameters: use the first letter of the parameter name as acronym. If another parameter starts with the same
-                  letter, use the second letter as well. Each parameter is followed immediately by its value. Use
-                  "o" to indicate "over." List them in alphabetical order.
+      - Neural Network: NN
+      - TileCoder: TC
+- **Reinforcement Learning Method**: use the name of the method with only the first letter of each word capitalized and without special characters.
+   - *Examples*
+      - Q(sigma): QSigma
+      - Sarsa: Sarsa
+      - Q-Learning: QLearning
+      - Tree-backup: TreeBackup
+- **Parameters**: use the first letter of the parameter name as acronym. If another parameter starts with the same letter, use the second letter as well. Each parameter is followed immediately by its value. Use "o" to indicate "over." List them in alphabetical order.
         - alpha = 1/10                                  =>      a1o10
         - beta = 1                                      =>      b1
         - tilings = 16                                  =>      t16
