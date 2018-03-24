@@ -1,10 +1,14 @@
 
 # Results Directory Naming Convention
 
-** Template **
+**Template**
+
 FunctionApproximator_FCParameters_ReinforcementLearningMethod_RLparameters
 
-    * Function Approximators: use intuitive acronyms with upper case instead of the full name.
+- Function Approximators: use intuitive acronyms with upper case instead of the full name.
+   - *Examples*
+      - Neural Network \rightarrow NN
+
         - Neural Network    =>      NN
         - TileCoder         =>      TC
 
