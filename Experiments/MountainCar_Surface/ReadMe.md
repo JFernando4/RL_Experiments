@@ -31,7 +31,7 @@
              with 10 neurons, layer 3 = fully connected with 5 neurons. Q-Learning agent with epsilon = 0.1, gamma = 1)
 
 
-##### Exceptions #####
+## Exceptions
     * If the Results' Parent Directory contains the name of the RL method, then it is
       omitted from the results directory's name.
     * If there is a FixedParameters.txt file in the results directory that lists all the fixed parameters for the experiment,
