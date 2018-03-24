@@ -69,14 +69,14 @@ Fixed Parameters:
 
 * *Parent Directory's Name:* Results_QSigma_n3
    
-   *Results Directory 1 Name:* TC_t8
-   
-   - TileCoder with 8 tilings, RL agent as in the parent directory's name, n parameter as in the parent directory's name, and other parameters as in the *FixedParameters.txt* file.
+   * *Results Directory 1 Name:* TC_t8
       
-   *Results Directory 2 Name:* TC_t32
-   
-   -TileCoder with 16 tilings, RL agent as in the parent directory's name, n parameter as in the parent directory's name, and other parameters as in the *FixedParameters.txt* file.
+      (TileCoder with 8 tilings, RL agent as in the parent directory's name, n parameter as in the parent directory's name, and other parameters as in the *FixedParameters.txt* file.)
       
-   *Results Directory 3 Name:* NN_f1000f100
+   * *Results Directory 2 Name:* TC_t32
+      
+      (TileCoder with 16 tilings, RL agent as in the parent directory's name, n parameter as in the parent directory's name, and other parameters as in the *FixedParameters.txt* file.)
+      
+   * *Results Directory 3 Name:* NN_f1000f100
    
-   -Neural Network with one fully connected layer with 1000 neurons and a second fully connected layer with 100 neurons, the RL agent as in the parent directory's name, n parameter as in the parent directory's name, and the rest of the parameters as in the *FixedParameters.txt* file.
+      (Neural Network with one fully connected layer with 1000 neurons and a second fully connected layer with 100 neurons, the RL agent as in the parent directory's name, n parameter as in the parent directory's name, and the rest of the parameters as in the *FixedParameters.txt* file.)
