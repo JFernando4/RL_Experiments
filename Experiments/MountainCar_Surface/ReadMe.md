@@ -69,11 +69,11 @@ Fixed Parameters:
 
 * *Parent Directory's Name:* Results_QSigma_n3
    
-   * *Results Directory 1 Name:* TC_t8
+   1. *Results Directory Name:* TC_t8
       
       (TileCoder with 8 tilings, RL agent as in the parent directory's name, n parameter as in the parent directory's name, and other parameters as in the *FixedParameters.txt* file.)
       
-   * *Results Directory 2 Name:* TC_t32
+   2. *Results Directory Name:* TC_t32
       
       (TileCoder with 16 tilings, RL agent as in the parent directory's name, n parameter as in the parent directory's name, and other parameters as in the *FixedParameters.txt* file.)
       
