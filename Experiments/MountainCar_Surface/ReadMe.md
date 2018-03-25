@@ -77,6 +77,6 @@ Fixed Parameters:
       
       (TileCoder with 16 tilings, RL agent as in the parent directory's name, n parameter as in the parent directory's name, and other parameters as in the *FixedParameters.txt* file.)
       
-   * *Results Directory 3 Name:* NN_f1000f100
+   3. *Results Directory 3 Name:* NN_f1000f100
    
       (Neural Network with one fully connected layer with 1000 neurons and a second fully connected layer with 100 neurons, the RL agent as in the parent directory's name, n parameter as in the parent directory's name, and the rest of the parameters as in the *FixedParameters.txt* file.)
