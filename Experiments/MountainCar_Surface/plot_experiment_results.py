@@ -36,6 +36,7 @@ def load_and_aggregate_results(pathname):
     return train_episodes, surfaces_data, returns_per_episode
 
 
+
 def plot_surfaces(results_list, pathname, extra_names="", suptitles=""):
     env = Mountain_Car()
     for results in results_list:
@@ -50,7 +51,7 @@ def plot_surfaces(results_list, pathname, extra_names="", suptitles=""):
                                 plot_title=str(train_episodes[i]) + " episode(s)")
 
         fig = plt.plot(np.arange(train_episodes[-1])+1, average_returns, linewidth=0.5)
-        # plt.ylim([-1000,0])
+        plt.ylim([-500,0])
         plt.savefig(pathname + "/Plots/" + extra_names + "_returns.png")
         plt.close()
 

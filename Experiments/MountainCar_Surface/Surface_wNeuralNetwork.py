@@ -19,7 +19,7 @@ class ExperimentAgent:
 
         " Model Parameters "
         name = "experiment"
-        dim_out = [500,500,500]
+        dim_out = [500,500]
         observation_dimensions = self.env.get_observation_dimensions()
         num_actions = self.env.get_num_actions()
         gate_fun = tf.nn.relu
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     " Experiment Parameters "
     # Results Directory Name
     experiment_directory = "/Results_QSigma_n1"
-    experiment_results_directory = "/NN_f500f500f500"
+    experiment_results_directory = "/NN_f500f500"
         # Tilecoder parameters
     alpha = 0.000001
         # RL agent parameters
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     print("Running:", experiment_directory + experiment_results_directory)
     working_directory = os.getcwd()
     results_directory = working_directory + experiment_directory + experiment_results_directory
-    number_of_iterations = 3
+    number_of_iterations = 4
     sample_size = 5
 
     experiment = Experiment(experiment_path=results_directory, alpha=alpha, beta=beta, epsilon_bpolicy=epsilon_bpolicy,
