@@ -12,18 +12,16 @@ from Function_Approximators.Neural_Networks.NN_Utilities.models import Model_mFO
 
 class ExperimentAgent:
 
-    def __init__(self, alpha, beta, epsilon_bpolicy, epsilon_tpolicy, gamma, n, sigma):
+    def __init__(self, alpha, beta, epsilon_bpolicy, epsilon_tpolicy, gamma, n, sigma, dim_out, fully_connected_layers):
         self.env = Mountain_Car()
         self.tpolicy = EpsilonGreedyPolicy(epsilon=epsilon_tpolicy, numActions=self.env.get_num_actions())
         self.bpolicy = EpsilonGreedyPolicy(epsilon=epsilon_bpolicy, numActions=self.env.get_num_actions())
 
         " Model Parameters "
         name = "experiment"
-        dim_out = [500,500]
         observation_dimensions = self.env.get_observation_dimensions()
         num_actions = self.env.get_num_actions()
         gate_fun = tf.nn.relu
-        fully_connected_layers = 1
         self.model = Model_mFO(name=name, dim_out=dim_out, observation_dimensions=observation_dimensions,
                                num_actions=num_actions, gate_fun=gate_fun,
                                fully_connected_layers=fully_connected_layers)
@@ -63,11 +61,13 @@ class ExperimentAgent:
 
 class Experiment:
 
-    def __init__(self, experiment_path, alpha, beta, epsilon_bpolicy, epsilon_tpolicy, gamma, n, sigma):
+    def __init__(self, experiment_path, alpha, beta, epsilon_bpolicy, epsilon_tpolicy, gamma, n, sigma,
+                 dim_out, fully_connected_layers):
         self.experiment_path = experiment_path
         self.data = None
         self.agent = ExperimentAgent(alpha=alpha, beta=beta, epsilon_bpolicy=epsilon_bpolicy,
-                                     epsilon_tpolicy=epsilon_tpolicy, gamma=gamma, n=n, sigma=sigma)
+                                     epsilon_tpolicy=epsilon_tpolicy, gamma=gamma, n=n, sigma=sigma, dim_out=dim_out,
+                                     fully_connected_layers=fully_connected_layers)
 
     def run_experiment(self):
         agent = self.agent
@@ -98,9 +98,11 @@ if __name__ == "__main__":
     " Experiment Parameters "
     # Results Directory Name
     experiment_directory = "/Results_QSigma_n1"
-    experiment_results_directory = "/NN_f500f500"
+    experiment_results_directory = "/NN_f500f500f500"
         # Tilecoder parameters
     alpha = 0.000001
+    dim_out = [500, 500, 500]
+    fully_connected_layers = 3
         # RL agent parameters
     beta = 1
     epsilon_bpolicy = 0.1
@@ -113,11 +115,12 @@ if __name__ == "__main__":
     print("Running:", experiment_directory + experiment_results_directory)
     working_directory = os.getcwd()
     results_directory = working_directory + experiment_directory + experiment_results_directory
-    number_of_iterations = 4
+    number_of_iterations = 5
     sample_size = 5
 
     experiment = Experiment(experiment_path=results_directory, alpha=alpha, beta=beta, epsilon_bpolicy=epsilon_bpolicy,
-                            epsilon_tpolicy=epsilon_tpolicy, gamma=gamma, n=n, sigma=sigma)
+                            epsilon_tpolicy=epsilon_tpolicy, gamma=gamma, n=n, sigma=sigma, dim_out=dim_out,
+                            fully_connected_layers=fully_connected_layers)
 
     offset = sample_size - number_of_iterations
     for i in range(number_of_iterations):

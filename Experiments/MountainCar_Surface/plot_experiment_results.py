@@ -71,7 +71,7 @@ def main():
         # "/test_tilecoder"
     ]
     agent_result_names = [
-        ["/NN_f100", "/NN_f1000", "/NN_f5000", "/NN_f10000", "/NN_f500f500f500"],
+        ["/NN_f100", "/NN_f1000", "/NN_f5000", "/NN_f10000", "/NN_f500f500", "/NN_f500f500f500"],
         # ["/TC_t8", "/TC_t16", "/TC_t32", "/TC_t64"],
         # ["/TC_t8", "/TC_t16", "/TC_t32", "/TC_t64"],
         # ["/TC_t8", "/TC_t16", "/TC_t32", "/TC_t64"],
@@ -84,6 +84,7 @@ def main():
          'Fully-Connected Neural Network with 1000 Neurons',
          "Fully-Connected Neural Network with 5000 Neurons",
          'Fully-Connected Neural Network with 10000 Neurons',
+         "Fully-Connected Neural Network with 500x500 Neurons"
          "Fully-Connected Neural Network with 500x500x500 Neurons",
          "TileCoder with 8 Tilings",
          "TileCoder with 16 Tilings",

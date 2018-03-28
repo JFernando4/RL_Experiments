@@ -177,8 +177,8 @@ def plot_average_return(results_dataframe, plot_parameters_dictionary, plot_poin
 
     assert check_uniform_list_length(results_dataframe), "The lists are not of equal length!"
 
-    window_size, color_opacity, upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type = \
-        get_plot_parameters_for_moving_average(plot_parameters_dictionary, number_of_plots=len(results_dataframe))
+    upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type = \
+        get_generic_plot_parameters(plot_parameters_dictionary, number_of_plots=len(results_dataframe))
 
 
     pass
