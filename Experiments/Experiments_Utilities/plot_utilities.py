@@ -1,8 +1,26 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
+from mpl_toolkits.mplot3d import Axes3D
 
 import Experiments.Experiments_Utilities.dir_management_utilities as dir_management_utilities
+
+
+def check_dict_else_return_default(some_key, some_dictionary, default_value):
+    assert isinstance(some_dictionary, dict), "Please, provide a dictionary!"
+
+    if some_key in some_dictionary.keys():
+        return some_dictionary[some_key]
+    else:
+        return default_value
+
+
+def title_generator(pathname, relevant_names):
+    list_of_names = pathname.split("/")
+    title = ""
+    for i in range(-relevant_names, 0):
+        title += " " + list_of_names[i]
+    return title
 
 
 """ Color Conversion Functions  """
@@ -107,19 +125,29 @@ def get_plot_parameters_for_moving_average(plot_parameters_dictionary, number_of
     return window_size, color_opacity, upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type
 
 
-def get_plot_parameters_for_surfaces(plot_parameters=dict()):
+def get_plot_parameters_for_surfaces(plot_parameters_dictionary):
     necessary_parameters = []
+    assert isinstance(plot_parameters_dictionary, dict), \
+        "You need to provide a dictionary for this function..."
 
-    if plot_parameters is None:
-        raise ValueError("Please provide parameters for the subplot.")
-    else:
-        for parameter in ["rows", "columns", "index", "subplot_close"]:
-            if parameter not in plot_parameters.keys():
-                raise ValueError("Missing parameter:" + " " + parameter)
-            necessary_parameters.append(plot_parameters[parameter])
+    for parameter in ["rows", "columns", "index", "subplot_close"]:
+        if parameter not in plot_parameters_dictionary.keys():
+            raise ValueError("Missing parameter:" + " " + parameter)
+        necessary_parameters.append(plot_parameters_dictionary[parameter])
 
     rows, columns, index, subplot_close = necessary_parameters
     return rows, columns, index, subplot_close
+
+
+def get_plot_parameters_for_multi_surfaces(plot_parameters_dictionary):
+    assert isinstance(plot_parameters_dictionary, dict), \
+        "You need to provide a dictionary for this function"
+
+    dpi = check_dict_else_return_default("dpi", plot_parameters_dictionary, 200)
+    fig_size = check_dict_else_return_default("fig_size", plot_parameters_dictionary, (60, 15))
+    rows = check_dict_else_return_default("rows", plot_parameters_dictionary, 2)
+
+    return dpi, fig_size, rows
 
 
 """ Plotting Functions """
@@ -203,8 +231,22 @@ def plot_surface(fig, Z, X, Y, plot_title=None, filename=None, subplot=False, pl
                 plt.savefig(filename)
             plt.close()
 
-def plot_multiple_surfaces(results_detaframe, pathname, suptittle):
-    pass
+
+def plot_multiple_surfaces(train_episodes, surface_data, plot_parameters_dir, pathname=None, relevant_names=2,
+                           extra_name=""):
+    dpi, fig_size, rows = get_plot_parameters_for_multi_surfaces(plot_parameters_dir)
+    columns = np.ceil(len(train_episodes)/rows)
+    suptitle = title_generator(pathname, relevant_names)
+
+    fig = plt.figure(figsize=fig_size, dpi=dpi)
+
+    for i in range(len(train_episodes)):
+        Z, X, Y = surface_data[i]
+        subplot_parameters = {"rows": rows, "columns": columns, "index": i + 1,
+                              "suptitle": suptitle, "subplot_close": (i + 1) == len(train_episodes)}
+        plot_title = str(train_episodes[i]) + " episode(s)"
+        plot_surface(fig=fig, Z=-Z, X=X, Y=Y, subplot=True, plot_parameters=subplot_parameters, plot_title=plot_title,
+                     filename=pathname + extra_name)
 
 
 def plot_average_return(results_dataframe, plot_parameters_dictionary, plot_points, pathname=None):

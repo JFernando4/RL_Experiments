@@ -9,7 +9,7 @@ def check_uniform_list_length(some_list_of_lists):
     return True
 
 
-def check_dir_exits_and_create(somepath):
+def check_dir_exists_and_create(somepath):
     dir_exists = os.path.exists(somepath)
     if not dir_exists:
         os.makedirs(somepath)

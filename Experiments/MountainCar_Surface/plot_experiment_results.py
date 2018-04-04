@@ -90,26 +90,29 @@ def plot_and_summarize_results(dir_to_load, plots_and_summary_dir, results_name)
     sample_mean, sample_std, degrees_of_freedom = average_and_aggregate_results(results_data_frame)
     ci_ub, ci_lb = summary_utilities.compute_confidence_interval(sample_mean, sample_std, 0.95, degrees_of_freedom)
 
-    pass
+    summary_utilities.create_results_file(plots_and_summary_dir, train_episodes, sample_mean, sample_std, ci_ub, ci_lb)
+
+    plot_utilities.plot_multiple_surfaces(train_episodes, aggregated_surface_data, plot_parameters_dir=dict(),
+                                          pathname=plots_and_summary_dir, extra_name="/value_function_surface.png")
 
 
-def plot_surfaces(results_list, pathname, extra_names="", suptitles=""):
-    for results in results_list:
-        train_episodes, surfaces_data, average_returns = results
-        fig = plt.figure(figsize=(60, 15), dpi=200)
-        for i in range(len(train_episodes)):
-            Z, X, Y = surfaces_data[i]
-            subplot_parameters = {"rows": 2, "columns": np.ceil(len(train_episodes)/2), "index":i+1,
-                                  "suptitle":suptitles, "subplot_close": (i+1) == len(train_episodes)}
-            plot_utilities.plot_surface(fig, -Z, X, Y, filename=pathname + "/Plots/" + extra_names,
-                                subplot=True, plot_parameters=subplot_parameters,
-                                plot_title=str(train_episodes[i]) + " episode(s)")
-
-        fig = plt.plot(np.arange(train_episodes[-1])+1, average_returns, linewidth=0.5)
-        plt.ylim([-500,0])
-        plt.savefig(pathname + "/Plots/" + extra_names + "_returns.png")
-        plt.close()
-
+# def plot_surfaces(results_list, pathname, extra_names="", suptitles=""):
+#     for results in results_list:
+#         train_episodes, surfaces_data, average_returns = results
+#         fig = plt.figure(figsize=(60, 15), dpi=200)
+#         for i in range(len(train_episodes)):
+#             Z, X, Y = surfaces_data[i]
+#             subplot_parameters = {"rows": 2, "columns": np.ceil(len(train_episodes)/2), "index":i+1,
+#                                   "suptitle":suptitles, "subplot_close": (i+1) == len(train_episodes)}
+#             plot_utilities.plot_surface(fig, -Z, X, Y, filename=pathname + "/Plots/" + extra_names,
+#                                 subplot=True, plot_parameters=subplot_parameters,
+#                                 plot_title=str(train_episodes[i]) + " episode(s)")
+#
+#         fig = plt.plot(np.arange(train_episodes[-1])+1, average_returns, linewidth=0.5)
+#         plt.ylim([-500,0])
+#         plt.savefig(pathname + "/Plots/" + extra_names + "_returns.png")
+#         plt.close()
+#
 
 def plot_average_return(results_list, pathname, extra_names=""):
     pass
@@ -145,8 +148,8 @@ def main():
     print("Storing plots in:", plots_summaries_dir)
     print(Style.RESET_ALL)
 
-    replot = True       # This option allows to not plot anything for a second time if the directory already exists
-    rl_results_names = ["QSigma_n1"]
+    replot = False       # This option allows to not plot anything for a second time if the directory already exists
+    rl_results_names = ["QSigma_n1", "QSigma_n3"]
 
     for rl_res_name in rl_results_names:
         rl_results_dir = os.path.join(results_dir, rl_res_name)
@@ -159,7 +162,7 @@ def main():
                 for end_result in fa_results:
                     print("\t\tWorking on", end_result + "...")
                     plot_dir = os.path.join(plots_summaries_dir, rl_res_name, fa_results_name, end_result)
-                    dir_exists = dir_management_util.check_dir_exits_and_create(plot_dir)
+                    dir_exists = dir_management_util.check_dir_exists_and_create(plot_dir)
 
                     if (not dir_exists) or replot:
                         results_name = {"RL_Method": rl_res_name,
