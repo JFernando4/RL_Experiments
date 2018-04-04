@@ -97,12 +97,12 @@ class Experiment:
 if __name__ == "__main__":
     " Experiment Parameters "
     # Results Directory Name
-    experiment_directory = "/Results_QSigma_n1"
-    experiment_results_directory = "/NN_f500f500f500"
+    experiment_directory = "/Results/QSigma_n3/Neural_Network"
+    experiment_results_directory = "/f500f500"
         # Tilecoder parameters
     alpha = 0.000001
-    dim_out = [500, 500, 500]
-    fully_connected_layers = 3
+    dim_out = [500, 500]
+    fully_connected_layers = len(dim_out)
         # RL agent parameters
     beta = 1
     epsilon_bpolicy = 0.1

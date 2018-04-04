@@ -1,13 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import cm
 
-""" Safe Checks """
-def check_uniform_list_length(some_list_of_lists):
-    some_length = len(some_list_of_lists[0])
-    for i in range(1, len(some_list_of_lists)):
-        if len(some_list_of_lists[i]) != some_length:
-            return False
-    return True
+import Experiments.Experiments_Utilities.dir_management_utilities as dir_management_utilities
 
 
 """ Color Conversion Functions  """
@@ -112,8 +107,23 @@ def get_plot_parameters_for_moving_average(plot_parameters_dictionary, number_of
     return window_size, color_opacity, upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type
 
 
+def get_plot_parameters_for_surfaces(plot_parameters=dict()):
+    necessary_parameters = []
+
+    if plot_parameters is None:
+        raise ValueError("Please provide parameters for the subplot.")
+    else:
+        for parameter in ["rows", "columns", "index", "subplot_close"]:
+            if parameter not in plot_parameters.keys():
+                raise ValueError("Missing parameter:" + " " + parameter)
+            necessary_parameters.append(plot_parameters[parameter])
+
+    rows, columns, index, subplot_close = necessary_parameters
+    return rows, columns, index, subplot_close
+
+
 """ Plotting Functions """
-    # Moving Average
+# Moving Average
 def plot_moving_average(results_dataframe, plot_parameters_dictionary, pathname=None, plot_raw_data=False):
     """
     plot_parameters are parameters specific to this function:
@@ -128,7 +138,7 @@ def plot_moving_average(results_dataframe, plot_parameters_dictionary, pathname=
     if type(results_dataframe[0]) != list:
         results_dataframe = [results_dataframe]
 
-    assert check_uniform_list_length(results_dataframe), "The lists are not of equal length!"
+    assert dir_management_utilities.check_uniform_list_length(results_dataframe), "The lists are not of equal length!"
 
     window_size, color_opacity, upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type = \
         get_plot_parameters_for_moving_average(plot_parameters_dictionary, number_of_plots=len(results_dataframe))
@@ -163,6 +173,40 @@ def plot_moving_average(results_dataframe, plot_parameters_dictionary, pathname=
     plt.close()
 
 
+# Surfaces
+def plot_surface(fig, Z, X, Y, plot_title=None, filename=None, subplot=False, plot_parameters=None):
+    subplot_close = True
+    if subplot:
+        subplot_rows, subplot_columns, subplot_index, subplot_close = get_plot_parameters_for_surfaces(plot_parameters)
+
+        ax = fig.add_subplot(subplot_rows, subplot_columns, subplot_index, projection='3d')
+        if "suptitle" in plot_parameters.keys():
+            plt.suptitle(plot_parameters['suptitle'])
+    else:
+        ax = fig.gca(projection='3d')
+
+    surf = ax.plot_wireframe(X,Y,Z, cmap=cm.coolwarm, linewidth=0.6)
+    if plot_title is not None:
+        ax.set_title(plot_title, pad=30, loc='center')
+
+    if not subplot:
+        if filename is None:
+            plt.show()
+        else:
+            plt.savefig(filename)
+        plt.close()
+    else:
+        if subplot_close:
+            if filename is None:
+                plt.show()
+            else:
+                plt.savefig(filename)
+            plt.close()
+
+def plot_multiple_surfaces(results_detaframe, pathname, suptittle):
+    pass
+
+
 def plot_average_return(results_dataframe, plot_parameters_dictionary, plot_points, pathname=None):
     """
     plot_parameters are parameters specific to this function:
@@ -175,10 +219,12 @@ def plot_average_return(results_dataframe, plot_parameters_dictionary, plot_poin
     if type(results_dataframe[0]) != list:
         results_dataframe = [results_dataframe]
 
-    assert check_uniform_list_length(results_dataframe), "The lists are not of equal length!"
+    assert dir_management_utilities.check_uniform_list_length(results_dataframe), "The lists are not of equal length!"
 
     upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type = \
         get_generic_plot_parameters(plot_parameters_dictionary, number_of_plots=len(results_dataframe))
 
 
     pass
+
+
