@@ -155,38 +155,3 @@ class Mountain_Car(EnvironmentBase):
         surface_x_coordinates = np.array(surface_x_coordinates)
         surface_y_coordinates = np.array(surface_y_coordinates)
         return surface, surface_x_coordinates, surface_y_coordinates
-
-    @staticmethod
-    def plot_mc_surface(fig, Z, X, Y, plot_title=None, filename=None, subplot=False, subplot_arguments=None):
-        if subplot:
-            if subplot_arguments is None:
-                raise ValueError("You need to provide the axis and index for the subplot.")
-            subplot_rows = subplot_arguments["rows"]
-            subplot_columns = subplot_arguments["columns"]
-            subplot_index = subplot_arguments["index"]
-
-            ax = fig.add_subplot(subplot_rows, subplot_columns, subplot_index, projection='3d')
-            if "suptitle" in subplot_arguments.keys():
-                plt.suptitle(subplot_arguments['suptitle'])
-        else:
-            ax = fig.gca(projection='3d')
-
-        surf = ax.plot_wireframe(X,Y,Z, cmap=cm.coolwarm, linewidth=0.6)
-        if plot_title is not None:
-            ax.set_title(plot_title, pad=30, loc='center')
-
-        if not subplot:
-            if filename is None:
-                plt.show()
-            else:
-                plt.savefig(filename)
-            plt.close()
-        else:
-            if "subplot_close" not in subplot_arguments.keys():
-                raise ValueError("You need to provide a flag for when to close the subplots.")
-            if subplot_arguments["subplot_close"]:
-                if filename is None:
-                    plt.show()
-                else:
-                    plt.savefig(filename)
-                plt.close()

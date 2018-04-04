@@ -29,23 +29,26 @@ def aggregate_and_average_results(results_data_frame):
         aggregated_surface_data += results_data_frame['surface_data'][i]
         aggregated_returns_per_episode += results_data_frame['returns_per_episode'][i]
 
-    aggregated_surface_data /= len(results_data_frame["surface_data"][0])
-    aggregated_returns_per_episode /= len(results_data_frame["returns_per_episode"][0])
+    aggregated_surface_data /= len(results_data_frame["surface_data"])
+    aggregated_returns_per_episode /= len(results_data_frame["returns_per_episode"])
     return aggregated_surface_data, aggregated_returns_per_episode
 
 
-def average_and_aggregate_results(results_data_frame):
+def average_and_aggregate_results(results_data_frame, average_points, average_window=None):
     assert dir_management_util.check_uniform_list_length(results_data_frame["returns_per_episode"])
-    assert dir_management_util.check_uniform_list_length(results_data_frame["train_episodes"])
 
-    average_results = np.zeros(shape=(len(results_data_frame["train_episodes"]),
-                                      len(results_data_frame["train_episodes"][0])), dtype=np.float64)
+    if average_window is None:
+        average_window = average_points
+
+    average_results = np.zeros(shape=(len(results_data_frame["returns_per_episode"]),
+                                      len(average_window)), dtype=np.float64)
 
     for j in range(len(results_data_frame["returns_per_episode"])):
-        temp_average_results = np.zeros(shape=len(results_data_frame["train_episodes"][0]))
-        for i in range(len(results_data_frame["train_episodes"][0])):
-            temp_index = results_data_frame["train_episodes"][j][i]
-            temp_average_results[i] += np.mean(results_data_frame["returns_per_episode"][j][:temp_index])
+        temp_average_results = np.zeros(shape=len(average_window))
+        for i in range(len(average_window)):
+            indx1 = average_points[i] - average_window[i]
+            indx2 = average_points[i]
+            temp_average_results[i] += np.mean(results_data_frame["returns_per_episode"][j][indx1:indx2])
         average_results[j] = temp_average_results
 
     sample_mean = np.apply_along_axis(np.mean, 0, average_results)
@@ -59,45 +62,36 @@ def average_and_aggregate_results(results_data_frame):
     return sample_mean, sample_std, degrees_of_freedmon
 
 
-def load_and_aggregate_results(pathname):
-    files = os.listdir(pathname)
-
-    train_episodes = None
-    surfaces_data = None
-    average_returns = None
-
-    for afile in files:
-        temp_data = pickle.load(open(pathname+"/"+afile, mode='rb'))
-
-        if train_episodes is None:
-            train_episodes = temp_data[0]
-            surfaces_data = temp_data[1]
-            average_returns = temp_data[2]
-        else:
-            surfaces_data += temp_data[1]
-            average_returns += temp_data[2]
-
-    surfaces_data = surfaces_data * (1 / len(files))
-    returns_per_episode = average_returns * (1 / len(files))
-
-    return train_episodes, surfaces_data, returns_per_episode
-
-
-def plot_and_summarize_results(dir_to_load, plots_and_summary_dir, results_name):
+def plot_and_summarize_results(dir_to_load, plots_and_summary_dir):
     results_data_frame = load_results(dir_to_load)
     train_episodes = results_data_frame["train_episodes"][0]
     aggregated_surface_data, aggregated_returns_per_episode = aggregate_and_average_results(results_data_frame)
-    sample_mean, sample_std, degrees_of_freedom = average_and_aggregate_results(results_data_frame)
-    ci_ub, ci_lb = summary_utilities.compute_confidence_interval(sample_mean, sample_std, 0.95, degrees_of_freedom)
 
-    summary_utilities.create_results_file(plots_and_summary_dir, train_episodes, sample_mean, sample_std, ci_ub, ci_lb)
+    average_points = [100 * (i+1) for i in range(100)]
+    average_window = [100 for _ in range(len(average_points))]
+    sample_mean, sample_std, degrees_of_freedom = average_and_aggregate_results(results_data_frame,
+                                                                                average_points,
+                                                                                average_window)
+    ci_ub, ci_lb, me = summary_utilities.compute_confidence_interval(sample_mean, sample_std, 0.95, degrees_of_freedom)
 
-    plot_utilities.plot_multiple_surfaces(train_episodes, aggregated_surface_data, plot_parameters_dir={},
-                                          pathname=plots_and_summary_dir, extra_name="/value_function_surface.png")
+    summary_utilities.create_results_file(plots_and_summary_dir, average_points, sample_mean, sample_std, ci_ub, ci_lb)
 
-    plot_utilities.plot_moving_average(aggregated_returns_per_episode, plot_parameters_dictionary={},
-                                       pathname=plots_and_summary_dir+"/moving_average.png",
-                                       )
+    # plot_utilities.plot_multiple_surfaces(train_episodes, aggregated_surface_data, plot_parameters_dir={},
+    #                                       pathname=plots_and_summary_dir+"/value_function_surface.png")
+
+    ma_parameters_dict = {"window_size": 100, "colors": ["#7E7E7E"], "color_opacity": 0.8,
+                          "lower_percentile_ylim": 2, "upper_fixed_ylim": True, "upper_ylim": 0}
+    ma_pathname = os.path.join(plots_and_summary_dir,
+                               "moving_average_win" + str(ma_parameters_dict["window_size"]) + ".png")
+    plot_utilities.plot_moving_average(aggregated_returns_per_episode, plot_parameters_dictionary=ma_parameters_dict,
+                                       pathname=ma_pathname, plot_raw_data=True)
+
+    ar_data_frame = [[average_points, sample_mean, me]]
+    ar_paramenters_dict = {"lower_percentile_ylim": 2, "colors": ["#7E7E7E"], "upper_fixed_ylim": True, "upper_ylim": 0}
+    ar_pathname = os.path.join(plots_and_summary_dir,
+                               "average_return.png")
+    plot_utilities.plot_average_return(results_dataframe=ar_data_frame, plot_parameters_dictionary=ar_paramenters_dict,
+                                       pathname=ar_pathname)
 
 
 def main():
@@ -116,22 +110,22 @@ def main():
     for rl_res_name in rl_results_names:
         rl_results_dir = os.path.join(results_dir, rl_res_name)
         print("Working on", rl_res_name, "results...")
+
         for fa_results_name in function_approximators_names:
             print("\tWorking on", fa_results_name, "results...")
             fa_results_dir = os.path.join(rl_results_dir, fa_results_name)
+
             if os.path.isdir(fa_results_dir):
                 fa_results = os.listdir(fa_results_dir)
+
                 for end_result in fa_results:
                     print("\t\tWorking on", end_result + "...")
                     plot_dir = os.path.join(plots_summaries_dir, rl_res_name, fa_results_name, end_result)
                     dir_exists = dir_management_util.check_dir_exists_and_create(plot_dir)
 
                     if (not dir_exists) or replot:
-                        results_name = {"RL_Method": rl_res_name,
-                                        "Function_Approximator": fa_results_name + "_" + end_result}
                         dir_to_load = os.path.join(fa_results_dir, end_result)
-                        plot_and_summarize_results(dir_to_load=dir_to_load, plots_and_summary_dir=plot_dir,
-                                                   results_name=results_name)
+                        plot_and_summarize_results(dir_to_load=dir_to_load, plots_and_summary_dir=plot_dir)
 
 
 main()

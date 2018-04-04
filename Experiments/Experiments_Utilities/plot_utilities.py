@@ -40,6 +40,16 @@ def rgb_to_hex(rgb_tuple=(255,255,255)):
     return hexcode
 
 
+def increase_color_opacity(hexcode="#000000", opacity=0.3):
+    rgb_color = hex_to_rgb(hexcode)
+    for i in range(len(rgb_color)):
+        rgb_color[i] += int(rgb_color[i] * opacity)
+        if rgb_color[i] > 255:
+            rgb_color[i] = 255
+    lighter_hex_color = rgb_to_hex(rgb_color)
+    return lighter_hex_color
+
+
 def generate_random_colors(number_of_colors):
     colors = []
     for i in range(number_of_colors):
@@ -66,6 +76,10 @@ def get_generic_plot_parameters(plot_parameters_dictionary, number_of_plots):
 
     upper_percentile_ylim = check_dict_else_return_default("upper_percentile_ylim", ppd, 100)
     lower_percentile_ylim = check_dict_else_return_default("lower_percentile_ylim", ppd, 0)
+    upper_fixed_ylim = check_dict_else_return_default("upper_fixed_ylim", ppd, False)
+    upper_ylim = check_dict_else_return_default("upper_ylim", ppd, 1)
+    lower_fixed_ylim = check_dict_else_return_default("lower_fixed_ylim", ppd, False)
+    lower_ylim = check_dict_else_return_default("lower_ylim", ppd, 0)
     line_width = check_dict_else_return_default("line_width", ppd, 1)
 
     # line colors
@@ -88,12 +102,13 @@ def get_generic_plot_parameters(plot_parameters_dictionary, number_of_plots):
     else:
         line_type = ["-" for _ in range(number_of_plots)]
 
-    return upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type
+    return upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type, upper_fixed_ylim, upper_ylim, \
+           lower_fixed_ylim, lower_ylim
 
 
 def get_plot_parameters_for_moving_average(plot_parameters_dictionary, number_of_plots):
     """ Function for extracting the parameters for the function plot_moving_average """
-    ppd_keys = plot_parameters_dictionary.keys
+    ppd_keys = plot_parameters_dictionary.keys()
     ppd = plot_parameters_dictionary
     # window_size
     if "window_size" in ppd_keys:
@@ -107,10 +122,12 @@ def get_plot_parameters_for_moving_average(plot_parameters_dictionary, number_of
     else:
         color_opacity = 0.3  # 70% lighter than the original
 
-    upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type = \
+    upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type, upper_fixed_ylim, upper_ylim, \
+    lower_fixed_ylim, lower_ylim = \
         get_generic_plot_parameters(plot_parameters_dictionary, number_of_plots=number_of_plots)
 
-    return window_size, color_opacity, upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type
+    return window_size, color_opacity, upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type, \
+           upper_fixed_ylim, upper_ylim, lower_fixed_ylim, lower_ylim
 
 
 def get_plot_parameters_for_surfaces(plot_parameters_dictionary):
@@ -140,51 +157,58 @@ def get_plot_parameters_for_multi_surfaces(plot_parameters_dictionary):
 
 """ Plotting Functions """
 # Moving Average
-def plot_moving_average(results_dataframe, plot_parameters_dictionary, pathname=None, plot_raw_data=False,
-                        extra_name=""):
+def plot_moving_average(results_dataframe, plot_parameters_dictionary, pathname=None, plot_raw_data=False):
     """
-    plot_parameters are parameters specific to this function:
+    plot_parameters_dictionary contains are parameters specific to this function:
         - window_size = Moving average window size (default: 50)
         - color_opacity = The color opacity of the raw data plot (default: 0.70)
-        - upper_percentile_for_ylim = what percentile to use for the upper bound of the ylim (default: 100)
-        - lower_percentile_for_ylim = what percentile to use for the lower bound of the ylim (default: 0)
+        - upper_percentile_ylim = what percentile to use for the upper bound of the ylim (default: 100)
+        - lower_percentile_ylim = what percentile to use for the lower bound of the ylim (default: 0)
         - colors (default: random hex key colors)
         - line_width (default: 1)
         - line_type (default: '-')
+        - upper(lower)_fixed_ylim = indicates whether to use a fixed value for the upper (lower) ylim (default: False)
+        - upper(lower)_ylim = indicates the value for the upper (lower) ylim (default upper: 1, default lower: 0)
     """
     if type(results_dataframe[0]) != list:
         results_dataframe = [results_dataframe]
 
     assert dir_management_utilities.check_uniform_list_length(results_dataframe), "The lists are not of equal length!"
 
-    window_size, color_opacity, upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type = \
+    window_size, color_opacity, upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type, \
+    upper_fixed_ylim, upper_ylim, lower_fixed_ylim, lower_ylim = \
         get_plot_parameters_for_moving_average(plot_parameters_dictionary, number_of_plots=len(results_dataframe))
+
+    if plot_raw_data:
+        for i in range(len(results_dataframe)):
+            experiment_results = results_dataframe[i]
+            if plot_raw_data:
+                raw_data_color = increase_color_opacity(colors[i], color_opacity)
+                plt.plot(np.arange(len(experiment_results)) + 1, experiment_results, color=raw_data_color)
 
     for i in range(len(results_dataframe)):
         experiment_results = results_dataframe[i]
         episode_number, average_return = get_moving_average_data(experiment_results, window_size)
-        plt.plot(episode_number, average_return, color=colors[i], linewidth=line_width, linestyle=line_type)
-        if plot_raw_data:
-            raw_data_color = np.ceil(hex_to_rgb(colors[i]) * color_opacity)
-            raw_data_color = rgb_to_hex(raw_data_color.astype(int))
-            plt.plot(np.arange(len(experiment_results))+1, experiment_results, color=raw_data_color)
+        plt.plot(episode_number, average_return, color=colors[i], linewidth=line_width, linestyle=line_type[i])
 
     plt.xlim([0, len(results_dataframe[0])])
 
-    upper_ylim = np.percentile(results_dataframe[0], upper_percentile_ylim)
-    for i in range(1, len(results_dataframe)):
-        temp_upper_ylim = np.percentile(results_dataframe[i], upper_percentile_ylim)
-        if temp_upper_ylim < upper_ylim:
-            upper_ylim = temp_upper_ylim
-    lower_ylim = np.percentile(results_dataframe[0], lower_percentile_ylim)
-    for i in range(1, len(results_dataframe)):
-        temp_lower_ylim = np.percentile(results_dataframe[i], lower_percentile_ylim)
-        if temp_lower_ylim > lower_ylim:
-            lower_ylim = temp_lower_ylim
+    if not upper_fixed_ylim:
+        upper_ylim = np.percentile(results_dataframe[0], upper_percentile_ylim)
+        for i in range(1, len(results_dataframe)):
+            temp_upper_ylim = np.percentile(results_dataframe[i], upper_percentile_ylim)
+            if temp_upper_ylim < upper_ylim:
+                upper_ylim = temp_upper_ylim
+    if not lower_fixed_ylim:
+        lower_ylim = np.percentile(results_dataframe[0], lower_percentile_ylim)
+        for i in range(1, len(results_dataframe)):
+            temp_lower_ylim = np.percentile(results_dataframe[i], lower_percentile_ylim)
+            if temp_lower_ylim > lower_ylim:
+                lower_ylim = temp_lower_ylim
     plt.ylim([lower_ylim, upper_ylim])
 
     if pathname is not None:
-        plt.savefig(pathname + "_MA" + str(window_size) + ".png")
+        plt.savefig(pathname)
     else:
         plt.show()
     plt.close()
@@ -221,8 +245,7 @@ def plot_surface(fig, Z, X, Y, plot_title=None, filename=None, subplot=False, pl
             plt.close()
 
 
-def plot_multiple_surfaces(train_episodes, surface_data, plot_parameters_dir, pathname=None, relevant_names=2,
-                           extra_name=""):
+def plot_multiple_surfaces(train_episodes, surface_data, plot_parameters_dir, pathname=None, relevant_names=2):
     dpi, fig_size, rows = get_plot_parameters_for_multi_surfaces(plot_parameters_dir)
     columns = np.ceil(len(train_episodes)/rows)
     suptitle = title_generator(pathname, relevant_names)
@@ -235,27 +258,49 @@ def plot_multiple_surfaces(train_episodes, surface_data, plot_parameters_dir, pa
                               "suptitle": suptitle, "subplot_close": (i + 1) == len(train_episodes)}
         plot_title = str(train_episodes[i]) + " episode(s)"
         plot_surface(fig=fig, Z=-Z, X=X, Y=Y, subplot=True, plot_parameters=subplot_parameters, plot_title=plot_title,
-                     filename=pathname + extra_name)
+                     filename=pathname)
 
 
-def plot_average_return(results_dataframe, plot_parameters_dictionary, plot_points, pathname=None):
+def plot_average_return(results_dataframe, plot_parameters_dictionary, pathname=None):
     """
     plot_parameters are parameters specific to this function:
-        - upper_percentile_for_ylim = what percentile to use for the upper bound of the ylim (default: 100)
-        - lower_percentile_for_ylim = what percentile to use for the lower bound of the ylim (default: 0)
+        - upper_percentile_ylim = what percentile to use for the upper bound of the ylim (default: 100)
+        - lower_percentile_ylim = what percentile to use for the lower bound of the ylim (default: 0)
         - colors (default: random hex key colors)
         - line_width (default: 1)
-        - line_type (default: '-')
+        - line_type (default: ['-'])
+        - upper(lower)_fixed_ylim = indicates whether to use a fixed value for the upper (lower) ylim (default: False)
+        - upper(lower)_ylim = indicates the value for the upper (lower) ylim (default upper: 1, default lower: 0)
     """
     if type(results_dataframe[0]) != list:
         results_dataframe = [results_dataframe]
 
     assert dir_management_utilities.check_uniform_list_length(results_dataframe), "The lists are not of equal length!"
 
-    upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type = \
+    upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type, upper_fixed_ylim, upper_ylim, \
+    lower_fixed_ylim, lower_ylim = \
         get_generic_plot_parameters(plot_parameters_dictionary, number_of_plots=len(results_dataframe))
 
+    for i in range(len(results_dataframe)):
+        episode_number, mean, me = results_dataframe[i]
+        plt.errorbar(episode_number, mean, yerr=me, color=colors[i], linewidth=line_width, )
 
-    pass
+    if not upper_fixed_ylim:
+        upper_ylim = np.percentile(results_dataframe[0], upper_percentile_ylim)
+        for i in range(1, len(results_dataframe)):
+            temp_upper_ylim = np.percentile(results_dataframe[i], upper_percentile_ylim)
+            if temp_upper_ylim < upper_ylim:
+                upper_ylim = temp_upper_ylim
+    if not lower_fixed_ylim:
+        lower_ylim = np.percentile(results_dataframe[0], lower_percentile_ylim)
+        for i in range(1, len(results_dataframe)):
+            temp_lower_ylim = np.percentile(results_dataframe[i], lower_percentile_ylim)
+            if temp_lower_ylim > lower_ylim:
+                lower_ylim = temp_lower_ylim
+    plt.ylim([lower_ylim, upper_ylim])
 
-
+    if pathname is not None:
+        plt.savefig(pathname)
+    else:
+        plt.show()
+    plt.close()
