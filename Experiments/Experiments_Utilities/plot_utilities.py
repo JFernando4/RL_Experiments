@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
+from colorama import Fore, Style
 
 import Experiments.Experiments_Utilities.dir_management_utilities as dir_management_utilities
 
@@ -62,19 +63,12 @@ def get_moving_average_data(experiment_results, window_size=50):
 def get_generic_plot_parameters(plot_parameters_dictionary, number_of_plots):
     ppd = plot_parameters_dictionary
     ppd_keys = plot_parameters_dictionary.keys()
-        # upper_percentile_ylim
-    if "upper_percentile_ylim" in ppd_keys:
-        upper_percentile_ylim = ppd["upper_percentile_ylim"]
-    else:
-        upper_percentile_ylim = 100
 
-        # lower_percentile_ylim
-    if "lower_percentile_ylim" in ppd_keys:
-        lower_percentile_ylim = ppd["lower_percentile_ylim"]
-    else:
-        lower_percentile_ylim = 0
+    upper_percentile_ylim = check_dict_else_return_default("upper_percentile_ylim", ppd, 100)
+    lower_percentile_ylim = check_dict_else_return_default("lower_percentile_ylim", ppd, 0)
+    line_width = check_dict_else_return_default("line_width", ppd, 1)
 
-        # line colors
+    # line colors
     if "colors" in ppd_keys:
         if len(ppd["colors"]) != number_of_plots:
             print("Warning: Not enough colors for the plot. Random colors have been generated instead!")
@@ -84,13 +78,7 @@ def get_generic_plot_parameters(plot_parameters_dictionary, number_of_plots):
     else:
         colors = generate_random_colors(number_of_plots)
 
-        # line width
-    if "line_width" in ppd_keys:
-        line_width = ppd["line_width"]
-    else:
-        line_width = 1
-
-        # line type
+    # line type
     if "line_types" in ppd_keys:
         if len(ppd["line_types"]) != number_of_plots:
             print("Warning: Not enough line types for the plot. The line type has been set to \"-\".")
@@ -152,7 +140,8 @@ def get_plot_parameters_for_multi_surfaces(plot_parameters_dictionary):
 
 """ Plotting Functions """
 # Moving Average
-def plot_moving_average(results_dataframe, plot_parameters_dictionary, pathname=None, plot_raw_data=False):
+def plot_moving_average(results_dataframe, plot_parameters_dictionary, pathname=None, plot_raw_data=False,
+                        extra_name=""):
     """
     plot_parameters are parameters specific to this function:
         - window_size = Moving average window size (default: 50)

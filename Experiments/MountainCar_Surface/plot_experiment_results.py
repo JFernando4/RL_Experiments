@@ -92,51 +92,13 @@ def plot_and_summarize_results(dir_to_load, plots_and_summary_dir, results_name)
 
     summary_utilities.create_results_file(plots_and_summary_dir, train_episodes, sample_mean, sample_std, ci_ub, ci_lb)
 
-    plot_utilities.plot_multiple_surfaces(train_episodes, aggregated_surface_data, plot_parameters_dir=dict(),
+    plot_utilities.plot_multiple_surfaces(train_episodes, aggregated_surface_data, plot_parameters_dir={},
                                           pathname=plots_and_summary_dir, extra_name="/value_function_surface.png")
 
+    plot_utilities.plot_moving_average(aggregated_returns_per_episode, plot_parameters_dictionary={},
+                                       pathname=plots_and_summary_dir+"/moving_average.png",
+                                       )
 
-# def plot_surfaces(results_list, pathname, extra_names="", suptitles=""):
-#     for results in results_list:
-#         train_episodes, surfaces_data, average_returns = results
-#         fig = plt.figure(figsize=(60, 15), dpi=200)
-#         for i in range(len(train_episodes)):
-#             Z, X, Y = surfaces_data[i]
-#             subplot_parameters = {"rows": 2, "columns": np.ceil(len(train_episodes)/2), "index":i+1,
-#                                   "suptitle":suptitles, "subplot_close": (i+1) == len(train_episodes)}
-#             plot_utilities.plot_surface(fig, -Z, X, Y, filename=pathname + "/Plots/" + extra_names,
-#                                 subplot=True, plot_parameters=subplot_parameters,
-#                                 plot_title=str(train_episodes[i]) + " episode(s)")
-#
-#         fig = plt.plot(np.arange(train_episodes[-1])+1, average_returns, linewidth=0.5)
-#         plt.ylim([-500,0])
-#         plt.savefig(pathname + "/Plots/" + extra_names + "_returns.png")
-#         plt.close()
-#
-
-def plot_average_return(results_list, pathname, extra_names=""):
-    pass
-
-
-# def main():
-#     working_dir = os.getcwd()
-#     results_dir = [
-#         "/Results_QSigma_n1"
-#     ]
-#     agent_result_names = [
-#         ["/NN_f500f500f500f500", "/NN_f500f500f500f500f500"],
-#     ]
-#     suptitles = [
-#         ["Fully-Connected Neural Network with 500x500x500x500 Neurons",
-#          "Fully-Connected Neural Network with 500x500x500x500x500 Neurons"]
-#     ]
-#
-#     for i in range(len(results_dir)):
-#         for j in range(len(agent_result_names[i])):
-#             train_episodes, surfaces, returns_per_episode = load_and_aggregate_results(working_dir+results_dir[i]+
-#                                                                                        agent_result_names[i][j])
-#             plot_surfaces([[train_episodes, surfaces, returns_per_episode]], working_dir+results_dir[i],
-#                           extra_names=agent_result_names[i][j], suptitles=suptitles[i][j])
 
 def main():
     experiment_dir = os.getcwd()
@@ -148,7 +110,7 @@ def main():
     print("Storing plots in:", plots_summaries_dir)
     print(Style.RESET_ALL)
 
-    replot = False       # This option allows to not plot anything for a second time if the directory already exists
+    replot = True       # This option allows to not plot anything for a second time if the directory already exists
     rl_results_names = ["QSigma_n1", "QSigma_n3"]
 
     for rl_res_name in rl_results_names:
