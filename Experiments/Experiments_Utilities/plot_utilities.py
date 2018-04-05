@@ -264,19 +264,26 @@ def plot_surface(fig, Z, X, Y, plot_title=None, filename=None, subplot=False, pl
             plt.close()
 
 
-def plot_multiple_surfaces(train_episodes, surface_data, plot_parameters_dir, pathname=None):
+def plot_multiple_surfaces(train_episodes, surface_data, xcoord, ycoord, plot_parameters_dir, pathname=None):
+    assert dir_management_utilities.check_uniform_list_length(surface_data), "The lists must be all of equal length."
+    if not isinstance(surface_data, list):
+        surface_data = [surface_data]
+
     dpi, fig_size, rows, plot_title = get_plot_parameters_for_multi_surfaces(plot_parameters_dir)
     columns = np.ceil(len(train_episodes)/rows)
 
     fig = plt.figure(figsize=fig_size, dpi=dpi)
 
-    for i in range(len(train_episodes)):
-        Z, X, Y = surface_data[i]
-        subplot_parameters = {"rows": rows, "columns": columns, "index": i + 1,
-                              "suptitle": plot_title, "subplot_close": (i + 1) == len(train_episodes)}
-        subplot_title = str(train_episodes[i]) + " episode(s)"
-        plot_surface(fig=fig, Z=-Z, X=X, Y=Y, subplot=True, plot_parameters=subplot_parameters,
-                     plot_title=subplot_title, filename=pathname)
+    for j in range(len(surface_data)):
+        for i in range(len(train_episodes)):
+            Z = surface_data[j][i]
+            X = xcoord[i]
+            Y = ycoord[i]
+            subplot_parameters = {"rows": rows, "columns": columns, "index": i + 1,
+                                  "suptitle": plot_title, "subplot_close": (i + 1) == len(train_episodes)}
+            subplot_title = str(train_episodes[i]) + " episode(s)"
+            plot_surface(fig=fig, Z=-Z, X=X, Y=Y, subplot=True, plot_parameters=subplot_parameters,
+                         plot_title=subplot_title, filename=pathname)
 
 
 # Average Return Plot

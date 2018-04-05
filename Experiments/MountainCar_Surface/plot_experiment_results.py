@@ -11,27 +11,40 @@ import Experiments.Experiments_Utilities.dir_management_utilities as dir_managem
 
 def load_results(pathname):
     files = os.listdir(pathname)
-    results_data_frame = {"train_episodes": [], "surface_data": [], "returns_per_episode": []}
+    results_data_frame = {"train_episodes": [], "surface_data": [], "xcoord": [], "ycoord": [],
+                          "surface_by_action_data": [], "returns_per_episode": [], "number_of_attempts": [],
+                          "number_of_unsuccessful_attempts": []}
     for afile in files:
-        temp_train_episodes, temp_surface_data, temp_returns_per_episode = \
+        temp_train_episodes, temp_surface_data, temp_xcoord, temp_ycoord, temp_surface_by_action_data, \
+        temp_returns_per_episode, temp_number_of_attempts, temp_number_of_unsuccessful_attempts = \
             pickle.load(open(pathname + "/" + afile, mode='rb'))
         results_data_frame["train_episodes"].append(temp_train_episodes)
         results_data_frame["surface_data"].append(temp_surface_data)
+        results_data_frame["xcoord"].append(temp_xcoord)
+        results_data_frame["ycoord"].append(temp_ycoord)
+        tsba_shape = temp_surface_by_action_data.shape
+        new_shape = (tsba_shape[1], tsba_shape[0], tsba_shape[2], tsba_shape[3])
+        results_data_frame["surface_by_action_data"].append(temp_surface_by_action_data.reshape(new_shape))
         results_data_frame["returns_per_episode"].append(temp_returns_per_episode)
+        results_data_frame["number_of_attempts"].append(temp_number_of_attempts)
+        results_data_frame["number_of_unsuccessful_attempts"].append(temp_number_of_unsuccessful_attempts)
     return results_data_frame
 
 
 def aggregate_and_average_results(results_data_frame):
     aggregated_surface_data = np.zeros(shape=results_data_frame["surface_data"][0].shape)
+    aggregated_surface_by_action_data = np.zeros(shape=results_data_frame["surface_by_action_data"][0].shape)
     aggregated_returns_per_episode = np.zeros(shape=results_data_frame["returns_per_episode"][0].shape)
 
     for i in range(len(results_data_frame["surface_data"])):
         aggregated_surface_data += results_data_frame['surface_data'][i]
+        aggregated_surface_by_action_data += results_data_frame['surface_by_action_data'][i]
         aggregated_returns_per_episode += results_data_frame['returns_per_episode'][i]
 
     aggregated_surface_data /= len(results_data_frame["surface_data"])
+    aggregated_surface_by_action_data /= len(results_data_frame["surface_by_action_data"])
     aggregated_returns_per_episode /= len(results_data_frame["returns_per_episode"])
-    return aggregated_surface_data, aggregated_returns_per_episode
+    return aggregated_surface_data, aggregated_surface_by_action_data, aggregated_returns_per_episode
 
 
 def average_and_aggregate_results(results_data_frame, average_points, average_window=None):
@@ -65,7 +78,8 @@ def average_and_aggregate_results(results_data_frame, average_points, average_wi
 def plot_and_summarize_results(dir_to_load, plots_and_summary_dir, surface_plot=True, ma_plot=True, ar_plot=True):
     results_data_frame = load_results(dir_to_load)
     train_episodes = results_data_frame["train_episodes"][0]
-    aggregated_surface_data, aggregated_returns_per_episode = aggregate_and_average_results(results_data_frame)
+    aggregated_surface_data, aggregated_surface_by_action_data, aggregated_returns_per_episode =\
+        aggregate_and_average_results(results_data_frame)
 
     average_points = [100 * (i+1) for i in range(100)]
     average_window = [100 for _ in range(len(average_points))]
@@ -78,9 +92,17 @@ def plot_and_summarize_results(dir_to_load, plots_and_summary_dir, surface_plot=
     plot_title = plot_utilities.title_generator(plots_and_summary_dir, 2)
 
     if surface_plot:
-        plot_utilities.plot_multiple_surfaces(train_episodes, aggregated_surface_data,
-                        plot_parameters_dir={"plot_title": plot_title},
-                        pathname=plots_and_summary_dir+"/value_function_surface.png")
+        # plot_utilities.plot_multiple_surfaces(train_episodes, surface_data=aggregated_surface_data,
+        #                 xcoord=results_data_frame["xcoord"][0], ycoord=results_data_frame["ycoord"][0],
+        #                 plot_parameters_dir={"plot_title": plot_title},
+        #                 pathname=plots_and_summary_dir+"/value_function_surface.png")
+        for i in range(len(aggregated_surface_by_action_data)):
+            plot_utilities.plot_multiple_surfaces(train_episodes, surface_data=aggregated_surface_by_action_data[i],
+                                                  xcoord=results_data_frame["xcoord"][0],
+                                                  ycoord=results_data_frame["ycoord"][0],
+                                                  plot_parameters_dir={"plot_title": plot_title},
+                                                  pathname=plots_and_summary_dir + "/value_function_surface"+str(i)+".png")
+
 
     if ma_plot:
         ma_parameters_dict = {"window_size": 100, "colors": ["#7E7E7E"], "color_opacity": 0.8,
@@ -113,10 +135,10 @@ def main():
     print(Style.RESET_ALL)
 
     replot = True       # This option allows to not plot anything for a second time if the directory already exists
-    surface_plot = False
-    ma_plot = True
-    ar_plot = True
-    rl_results_names = ["QSigma_n1", "QSigma_n3"]
+    surface_plot = True
+    ma_plot = False
+    ar_plot = False
+    rl_results_names = ["QSigma_n3"]
 
     for rl_res_name in rl_results_names:
         rl_results_dir = os.path.join(results_dir, rl_res_name)
