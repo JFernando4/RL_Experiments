@@ -81,6 +81,9 @@ def get_generic_plot_parameters(plot_parameters_dictionary, number_of_plots):
     lower_fixed_ylim = check_dict_else_return_default("lower_fixed_ylim", ppd, False)
     lower_ylim = check_dict_else_return_default("lower_ylim", ppd, 0)
     line_width = check_dict_else_return_default("line_width", ppd, 1)
+    plot_title = check_dict_else_return_default("plot_title", ppd, "")
+    x_title = check_dict_else_return_default("x_title", ppd, "")
+    y_title = check_dict_else_return_default("y_title", ppd, "")
 
     # line colors
     if "colors" in ppd_keys:
@@ -103,7 +106,7 @@ def get_generic_plot_parameters(plot_parameters_dictionary, number_of_plots):
         line_type = ["-" for _ in range(number_of_plots)]
 
     return upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type, upper_fixed_ylim, upper_ylim, \
-           lower_fixed_ylim, lower_ylim
+           lower_fixed_ylim, lower_ylim, plot_title, x_title, y_title
 
 
 def get_plot_parameters_for_moving_average(plot_parameters_dictionary, number_of_plots):
@@ -123,11 +126,11 @@ def get_plot_parameters_for_moving_average(plot_parameters_dictionary, number_of
         color_opacity = 0.3  # 70% lighter than the original
 
     upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type, upper_fixed_ylim, upper_ylim, \
-    lower_fixed_ylim, lower_ylim = \
+    lower_fixed_ylim, lower_ylim, plot_title, x_title, y_title = \
         get_generic_plot_parameters(plot_parameters_dictionary, number_of_plots=number_of_plots)
 
     return window_size, color_opacity, upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type, \
-           upper_fixed_ylim, upper_ylim, lower_fixed_ylim, lower_ylim
+           upper_fixed_ylim, upper_ylim, lower_fixed_ylim, lower_ylim, plot_title, x_title, y_title
 
 
 def get_plot_parameters_for_surfaces(plot_parameters_dictionary):
@@ -151,12 +154,25 @@ def get_plot_parameters_for_multi_surfaces(plot_parameters_dictionary):
     dpi = check_dict_else_return_default("dpi", plot_parameters_dictionary, 200)
     fig_size = check_dict_else_return_default("fig_size", plot_parameters_dictionary, (60, 15))
     rows = check_dict_else_return_default("rows", plot_parameters_dictionary, 2)
+    plot_title = check_dict_else_return_default("plot_title", plot_parameters_dictionary, "")
 
-    return dpi, fig_size, rows
+    return dpi, fig_size, rows, plot_title
+
+
+def get_plot_parameters_for_average_return(plot_parameters_dictionary, number_of_plots):
+    ebars_opacity = check_dict_else_return_default("ebars_opacity", plot_parameters_dictionary, 0.3)
+    ebars_linewidth = check_dict_else_return_default("ebars_linewidth", plot_parameters_dictionary, 1)
+
+    upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type, upper_fixed_ylim, upper_ylim, \
+    lower_fixed_ylim, lower_ylim, plot_title, x_title, y_title\
+        = get_generic_plot_parameters(plot_parameters_dictionary, number_of_plots)
+
+    return ebars_opacity, ebars_linewidth, upper_percentile_ylim, lower_percentile_ylim, colors, line_width, \
+           line_type, upper_fixed_ylim, upper_ylim, lower_fixed_ylim, lower_ylim, plot_title, x_title, y_title
 
 
 """ Plotting Functions """
-# Moving Average
+# Moving Average Plot
 def plot_moving_average(results_dataframe, plot_parameters_dictionary, pathname=None, plot_raw_data=False):
     """
     plot_parameters_dictionary contains are parameters specific to this function:
@@ -176,7 +192,7 @@ def plot_moving_average(results_dataframe, plot_parameters_dictionary, pathname=
     assert dir_management_utilities.check_uniform_list_length(results_dataframe), "The lists are not of equal length!"
 
     window_size, color_opacity, upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type, \
-    upper_fixed_ylim, upper_ylim, lower_fixed_ylim, lower_ylim = \
+    upper_fixed_ylim, upper_ylim, lower_fixed_ylim, lower_ylim, plot_title, x_title, y_title = \
         get_plot_parameters_for_moving_average(plot_parameters_dictionary, number_of_plots=len(results_dataframe))
 
     if plot_raw_data:
@@ -192,6 +208,9 @@ def plot_moving_average(results_dataframe, plot_parameters_dictionary, pathname=
         plt.plot(episode_number, average_return, color=colors[i], linewidth=line_width, linestyle=line_type[i])
 
     plt.xlim([0, len(results_dataframe[0])])
+    plt.title(plot_title)
+    plt.ylabel(y_title)
+    plt.xlabel(x_title)
 
     if not upper_fixed_ylim:
         upper_ylim = np.percentile(results_dataframe[0], upper_percentile_ylim)
@@ -214,7 +233,7 @@ def plot_moving_average(results_dataframe, plot_parameters_dictionary, pathname=
     plt.close()
 
 
-# Surfaces
+# Surfaces Plots
 def plot_surface(fig, Z, X, Y, plot_title=None, filename=None, subplot=False, plot_parameters=None):
     subplot_close = True
     if subplot:
@@ -245,25 +264,27 @@ def plot_surface(fig, Z, X, Y, plot_title=None, filename=None, subplot=False, pl
             plt.close()
 
 
-def plot_multiple_surfaces(train_episodes, surface_data, plot_parameters_dir, pathname=None, relevant_names=2):
-    dpi, fig_size, rows = get_plot_parameters_for_multi_surfaces(plot_parameters_dir)
+def plot_multiple_surfaces(train_episodes, surface_data, plot_parameters_dir, pathname=None):
+    dpi, fig_size, rows, plot_title = get_plot_parameters_for_multi_surfaces(plot_parameters_dir)
     columns = np.ceil(len(train_episodes)/rows)
-    suptitle = title_generator(pathname, relevant_names)
 
     fig = plt.figure(figsize=fig_size, dpi=dpi)
 
     for i in range(len(train_episodes)):
         Z, X, Y = surface_data[i]
         subplot_parameters = {"rows": rows, "columns": columns, "index": i + 1,
-                              "suptitle": suptitle, "subplot_close": (i + 1) == len(train_episodes)}
-        plot_title = str(train_episodes[i]) + " episode(s)"
-        plot_surface(fig=fig, Z=-Z, X=X, Y=Y, subplot=True, plot_parameters=subplot_parameters, plot_title=plot_title,
-                     filename=pathname)
+                              "suptitle": plot_title, "subplot_close": (i + 1) == len(train_episodes)}
+        subplot_title = str(train_episodes[i]) + " episode(s)"
+        plot_surface(fig=fig, Z=-Z, X=X, Y=Y, subplot=True, plot_parameters=subplot_parameters,
+                     plot_title=subplot_title, filename=pathname)
 
 
+# Average Return Plot
 def plot_average_return(results_dataframe, plot_parameters_dictionary, pathname=None):
     """
     plot_parameters are parameters specific to this function:
+        - ebars_opacity = the opacity of the error bars (default: 0.3)
+        - ebars_linewidth = the line width of the error bars (default: 1)
         - upper_percentile_ylim = what percentile to use for the upper bound of the ylim (default: 100)
         - lower_percentile_ylim = what percentile to use for the lower bound of the ylim (default: 0)
         - colors (default: random hex key colors)
@@ -277,13 +298,15 @@ def plot_average_return(results_dataframe, plot_parameters_dictionary, pathname=
 
     assert dir_management_utilities.check_uniform_list_length(results_dataframe), "The lists are not of equal length!"
 
-    upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type, upper_fixed_ylim, upper_ylim, \
-    lower_fixed_ylim, lower_ylim = \
-        get_generic_plot_parameters(plot_parameters_dictionary, number_of_plots=len(results_dataframe))
+    ebars_opacity, ebars_linewidth, upper_percentile_ylim, lower_percentile_ylim, colors, line_width, line_type, \
+    upper_fixed_ylim, upper_ylim, lower_fixed_ylim, lower_ylim, plot_title, x_title, y_title = \
+        get_plot_parameters_for_average_return(plot_parameters_dictionary, number_of_plots=len(results_dataframe))
 
     for i in range(len(results_dataframe)):
         episode_number, mean, me = results_dataframe[i]
-        plt.errorbar(episode_number, mean, yerr=me, color=colors[i], linewidth=line_width, )
+        ebar_color = increase_color_opacity(colors[i], opacity=ebars_opacity)
+        plt.errorbar(episode_number, mean, yerr=me, color=ebar_color, linewidth=ebars_linewidth)
+        plt.errorbar(episode_number, mean, yerr=None, color=colors[i], linewidth=line_width)
 
     if not upper_fixed_ylim:
         upper_ylim = np.percentile(results_dataframe[0], upper_percentile_ylim)
@@ -298,6 +321,9 @@ def plot_average_return(results_dataframe, plot_parameters_dictionary, pathname=
             if temp_lower_ylim > lower_ylim:
                 lower_ylim = temp_lower_ylim
     plt.ylim([lower_ylim, upper_ylim])
+    plt.title(plot_title)
+    plt.ylabel(y_title)
+    plt.xlabel(x_title)
 
     if pathname is not None:
         plt.savefig(pathname)

@@ -16,6 +16,8 @@ class EpsilonGreedyPolicy(PolicyBase):
     """ Chooses an action from q according to the probability epsilon"""
     def choose_action(self, q_value):
         p = uniform()
+        if True in (np.array(q_value) == np.inf):
+            raise ValueError("One of the Q-Values has a value of infinity.")
         if p < self.epsilon:
             action = randint(self.numActions)
         else:

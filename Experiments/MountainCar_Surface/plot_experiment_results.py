@@ -62,7 +62,7 @@ def average_and_aggregate_results(results_data_frame, average_points, average_wi
     return sample_mean, sample_std, degrees_of_freedmon
 
 
-def plot_and_summarize_results(dir_to_load, plots_and_summary_dir):
+def plot_and_summarize_results(dir_to_load, plots_and_summary_dir, surface_plot=True, ma_plot=True, ar_plot=True):
     results_data_frame = load_results(dir_to_load)
     train_episodes = results_data_frame["train_episodes"][0]
     aggregated_surface_data, aggregated_returns_per_episode = aggregate_and_average_results(results_data_frame)
@@ -75,23 +75,31 @@ def plot_and_summarize_results(dir_to_load, plots_and_summary_dir):
     ci_ub, ci_lb, me = summary_utilities.compute_confidence_interval(sample_mean, sample_std, 0.95, degrees_of_freedom)
 
     summary_utilities.create_results_file(plots_and_summary_dir, average_points, sample_mean, sample_std, ci_ub, ci_lb)
+    plot_title = plot_utilities.title_generator(plots_and_summary_dir, 2)
 
-    # plot_utilities.plot_multiple_surfaces(train_episodes, aggregated_surface_data, plot_parameters_dir={},
-    #                                       pathname=plots_and_summary_dir+"/value_function_surface.png")
+    if surface_plot:
+        plot_utilities.plot_multiple_surfaces(train_episodes, aggregated_surface_data,
+                        plot_parameters_dir={"plot_title": plot_title},
+                        pathname=plots_and_summary_dir+"/value_function_surface.png")
 
-    ma_parameters_dict = {"window_size": 100, "colors": ["#7E7E7E"], "color_opacity": 0.8,
-                          "lower_percentile_ylim": 2, "upper_fixed_ylim": True, "upper_ylim": 0}
-    ma_pathname = os.path.join(plots_and_summary_dir,
-                               "moving_average_win" + str(ma_parameters_dict["window_size"]) + ".png")
-    plot_utilities.plot_moving_average(aggregated_returns_per_episode, plot_parameters_dictionary=ma_parameters_dict,
-                                       pathname=ma_pathname, plot_raw_data=True)
+    if ma_plot:
+        ma_parameters_dict = {"window_size": 100, "colors": ["#7E7E7E"], "color_opacity": 0.8,
+                              "lower_percentile_ylim": 2, "upper_fixed_ylim": True, "upper_ylim": 0,
+                              "plot_title": plot_title, "x_title": "Episodes", "y_title": "Average Return per Episode"}
+        ma_pathname = os.path.join(plots_and_summary_dir,
+                                   "moving_average_win" + str(ma_parameters_dict["window_size"]) + ".png")
+        plot_utilities.plot_moving_average(aggregated_returns_per_episode, plot_parameters_dictionary=ma_parameters_dict,
+                                           pathname=ma_pathname, plot_raw_data=True)
 
-    ar_data_frame = [[average_points, sample_mean, me]]
-    ar_paramenters_dict = {"lower_percentile_ylim": 2, "colors": ["#7E7E7E"], "upper_fixed_ylim": True, "upper_ylim": 0}
-    ar_pathname = os.path.join(plots_and_summary_dir,
-                               "average_return.png")
-    plot_utilities.plot_average_return(results_dataframe=ar_data_frame, plot_parameters_dictionary=ar_paramenters_dict,
-                                       pathname=ar_pathname)
+    if ar_plot:
+        ar_data_frame = [[average_points, sample_mean, me]]
+        ar_paramenters_dict = {"lower_percentile_ylim": 1, "colors": ["#7E7E7E"], "upper_fixed_ylim": True,
+                               "upper_ylim": 0, "ebars_opacity": 0.7, "ebars_linewidth": 0.7, "plot_title": plot_title,
+                               "x_title": "Episodes", "y_title": "Average Return per Episode"}
+        ar_pathname = os.path.join(plots_and_summary_dir,
+                                   "average_return.png")
+        plot_utilities.plot_average_return(results_dataframe=ar_data_frame, plot_parameters_dictionary=ar_paramenters_dict,
+                                           pathname=ar_pathname)
 
 
 def main():
@@ -105,6 +113,9 @@ def main():
     print(Style.RESET_ALL)
 
     replot = True       # This option allows to not plot anything for a second time if the directory already exists
+    surface_plot = False
+    ma_plot = True
+    ar_plot = True
     rl_results_names = ["QSigma_n1", "QSigma_n3"]
 
     for rl_res_name in rl_results_names:
@@ -125,7 +136,8 @@ def main():
 
                     if (not dir_exists) or replot:
                         dir_to_load = os.path.join(fa_results_dir, end_result)
-                        plot_and_summarize_results(dir_to_load=dir_to_load, plots_and_summary_dir=plot_dir)
+                        plot_and_summarize_results(dir_to_load=dir_to_load, plots_and_summary_dir=plot_dir,
+                                                   surface_plot=surface_plot, ma_plot=ma_plot, ar_plot=ar_plot)
 
 
 main()

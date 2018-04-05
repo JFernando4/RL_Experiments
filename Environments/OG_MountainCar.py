@@ -124,11 +124,13 @@ class Mountain_Car(EnvironmentBase):
         current_velocity = self._low[1]
 
         surface = []
+        surface_by_action = [[] for _ in range(self.get_num_actions())]
         surface_x_coordinates = []
         surface_y_coordinates = []
 
         while current_position < (self._high[0] + position_shift):
             surface_slice = []
+            surface_by_action_slice = [[] for _ in range(self.get_num_actions())]
             surface_slice_x_coord = []
             surface_slice_y_coord = []
 
@@ -136,6 +138,8 @@ class Mountain_Car(EnvironmentBase):
                 current_state = np.array((current_position, current_velocity), dtype=np.float64)
 
                 q_values = np.array(fa.get_next_states_values(current_state))
+                for i in range(self.get_num_actions()):
+                    surface_by_action_slice[i].append(q_values[i])
                 p_values = tpolicy.probability_of_action(q_values, all_actions=True)
                 state_value = np.sum(q_values * p_values)
 
@@ -145,6 +149,8 @@ class Mountain_Car(EnvironmentBase):
                 current_velocity += velocity_shift
 
             surface.append(surface_slice)
+            for i in range(self.get_num_actions()):
+                surface_by_action[i].append(surface_by_action_slice[i])
             surface_x_coordinates.append(surface_slice_x_coord)
             surface_y_coordinates.append(surface_slice_y_coord)
 
@@ -152,6 +158,7 @@ class Mountain_Car(EnvironmentBase):
             current_position += position_shift
 
         surface = np.array(surface)
+        surface_by_action = np.array(surface_by_action)
         surface_x_coordinates = np.array(surface_x_coordinates)
         surface_y_coordinates = np.array(surface_y_coordinates)
-        return surface, surface_x_coordinates, surface_y_coordinates
+        return surface, surface_x_coordinates, surface_y_coordinates, surface_by_action

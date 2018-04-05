@@ -3,6 +3,7 @@ import numpy as np
 import os
 import tensorflow as tf
 
+import Experiments.Experiments_Utilities.dir_management_utilities as dir_management_utilities
 from Environments.OG_MountainCar import Mountain_Car
 from RL_Algorithms.Q_Sigma import QSigma
 from Policies.Epsilon_Greedy import EpsilonGreedyPolicy
@@ -73,24 +74,46 @@ class Experiment:
         agent = self.agent
         train_episodes = [1,10,25,50,100,200,500,1000,2000,3000,5000,7500,10000]
         surfaces = []
+        xcoords = []
+        ycoords = []
+        surfaces_by_action = []
 
-        number_of_episodes = 0
-        for i in train_episodes:
-            print("\tTraining", str(i), "episode(s)...")
-            episodes_to_train = i - number_of_episodes
-            agent.train(episodes_to_train)
-            surface = agent.env.get_surface(fa=agent.fa, tpolicy=agent.tpolicy, granularity=0.01)
-            surfaces.append(surface)
-            number_of_episodes += episodes_to_train
+        successful_training = False
+        number_of_attempts = 0
+        number_of_unsuccesful_attempts = 0
+
+        while not successful_training:
+            try:
+                number_of_attempts += 1
+                number_of_episodes = 0
+                for i in train_episodes:
+                    print("\tTraining", str(i), "episode(s)...")
+                    episodes_to_train = i - number_of_episodes
+                    agent.train(episodes_to_train)
+                    surface, xcoord, ycoord, surface_by_action = agent.env.get_surface(fa=agent.fa,
+                                                                                       tpolicy=agent.tpolicy,
+                                                                                       granularity=0.01)
+                    surfaces.append(surface)
+                    xcoords.append(xcoord)
+                    ycoords.append(ycoord)
+                    surfaces_by_action.append(surface_by_action)
+                    number_of_episodes += episodes_to_train
+                successful_training = True
+            except ValueError:
+                number_of_unsuccesful_attempts += 1
+                print("Unsuccessful attempt! Restarting training...")
+                self.agent.reset_agent()
 
         returns_per_episode = np.array(agent.get_return_per_episode())
-        self.data = [train_episodes, np.array(surfaces), returns_per_episode]
+
+        self.data = [train_episodes, np.array(surfaces), np.array(xcoords), np.array(ycoords),
+                     np.array(surfaces_by_action), returns_per_episode, number_of_attempts,
+                     number_of_unsuccesful_attempts]
         agent.reset_agent()
 
     def save_experiment_data(self, agent_name):
         if self.data is None:
             raise ValueError("There's no experiment data!")
-
         pickle.dump(self.data, open(self.experiment_path + "/" + agent_name + ".p", mode="wb"))
 
 
@@ -98,10 +121,10 @@ if __name__ == "__main__":
     " Experiment Parameters "
     # Results Directory Name
     experiment_directory = "/Results/QSigma_n3/Neural_Network"
-    experiment_results_directory = "/f500f500"
-        # Tilecoder parameters
+    experiment_results_directory = "/f100f100f100f100"
+        # Neural Network parameters
     alpha = 0.000001
-    dim_out = [500, 500]
+    dim_out = [100,100,100,100]
     fully_connected_layers = len(dim_out)
         # RL agent parameters
     beta = 1
@@ -115,6 +138,7 @@ if __name__ == "__main__":
     print("Running:", experiment_directory + experiment_results_directory)
     working_directory = os.getcwd()
     results_directory = working_directory + experiment_directory + experiment_results_directory
+    dir_management_utilities.check_dir_exists_and_create(results_directory)
     number_of_iterations = 5
     sample_size = 5
 
