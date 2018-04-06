@@ -22,9 +22,10 @@ def load_results(pathname):
         results_data_frame["surface_data"].append(temp_surface_data)
         results_data_frame["xcoord"].append(temp_xcoord)
         results_data_frame["ycoord"].append(temp_ycoord)
-        tsba_shape = temp_surface_by_action_data.shape
-        new_shape = (tsba_shape[1], tsba_shape[0], tsba_shape[2], tsba_shape[3])
-        results_data_frame["surface_by_action_data"].append(temp_surface_by_action_data.reshape(new_shape))
+        # tsba_shape = temp_surface_by_action_data.shape
+        # new_shape = (tsba_shape[1], tsba_shape[0], tsba_shape[2], tsba_shape[3])
+        # results_data_frame["surface_by_action_data"].append(temp_surface_by_action_data.reshape(new_shape))
+        results_data_frame["surface_by_action_data"].append(temp_surface_by_action_data)
         results_data_frame["returns_per_episode"].append(temp_returns_per_episode)
         results_data_frame["number_of_attempts"].append(temp_number_of_attempts)
         results_data_frame["number_of_unsuccessful_attempts"].append(temp_number_of_unsuccessful_attempts)
@@ -75,7 +76,8 @@ def average_and_aggregate_results(results_data_frame, average_points, average_wi
     return sample_mean, sample_std, degrees_of_freedmon
 
 
-def plot_and_summarize_results(dir_to_load, plots_and_summary_dir, surface_plot=True, ma_plot=True, ar_plot=True):
+def plot_and_summarize_results(dir_to_load, plots_and_summary_dir, surface_plot=True, ma_plot=True, ar_plot=True,
+                               av_surface_plot=True):
     results_data_frame = load_results(dir_to_load)
     train_episodes = results_data_frame["train_episodes"][0]
     aggregated_surface_data, aggregated_surface_by_action_data, aggregated_returns_per_episode =\
@@ -92,17 +94,18 @@ def plot_and_summarize_results(dir_to_load, plots_and_summary_dir, surface_plot=
     plot_title = plot_utilities.title_generator(plots_and_summary_dir, 2)
 
     if surface_plot:
-        # plot_utilities.plot_multiple_surfaces(train_episodes, surface_data=aggregated_surface_data,
-        #                 xcoord=results_data_frame["xcoord"][0], ycoord=results_data_frame["ycoord"][0],
-        #                 plot_parameters_dir={"plot_title": plot_title},
-        #                 pathname=plots_and_summary_dir+"/value_function_surface.png")
-        for i in range(len(aggregated_surface_by_action_data)):
-            plot_utilities.plot_multiple_surfaces(train_episodes, surface_data=aggregated_surface_by_action_data[i],
-                                                  xcoord=results_data_frame["xcoord"][0],
-                                                  ycoord=results_data_frame["ycoord"][0],
-                                                  plot_parameters_dir={"plot_title": plot_title},
-                                                  pathname=plots_and_summary_dir + "/value_function_surface"+str(i)+".png")
+        plot_utilities.plot_multiple_surfaces(train_episodes, surface_data=aggregated_surface_data,
+                        xcoord=results_data_frame["xcoord"][0], ycoord=results_data_frame["ycoord"][0],
+                        plot_parameters_dir={"plot_title": plot_title, "colors": ["#597891"]},
+                        pathname=plots_and_summary_dir+"/value_function_surface.png")
 
+    if av_surface_plot:
+        plot_utilities.plot_multiple_surfaces(train_episodes, surface_data=aggregated_surface_by_action_data,
+                                              xcoord=results_data_frame["xcoord"][0],
+                                              ycoord=results_data_frame["ycoord"][0],
+                                              plot_parameters_dir={"plot_title": plot_title,
+                                                                   "colors": ["#2A8FBD", "#FF6600", "#9061C2"]},
+                                              pathname=plots_and_summary_dir + "/action_value_function_surface.png")
 
     if ma_plot:
         ma_parameters_dict = {"window_size": 100, "colors": ["#7E7E7E"], "color_opacity": 0.8,
@@ -136,6 +139,7 @@ def main():
 
     replot = True       # This option allows to not plot anything for a second time if the directory already exists
     surface_plot = True
+    av_surface_plot = True
     ma_plot = False
     ar_plot = False
     rl_results_names = ["QSigma_n3"]
@@ -159,7 +163,8 @@ def main():
                     if (not dir_exists) or replot:
                         dir_to_load = os.path.join(fa_results_dir, end_result)
                         plot_and_summarize_results(dir_to_load=dir_to_load, plots_and_summary_dir=plot_dir,
-                                                   surface_plot=surface_plot, ma_plot=ma_plot, ar_plot=ar_plot)
+                                                   surface_plot=surface_plot, ma_plot=ma_plot, ar_plot=ar_plot,
+                                                   av_surface_plot=av_surface_plot)
 
 
 main()

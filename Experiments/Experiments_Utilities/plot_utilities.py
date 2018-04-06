@@ -133,7 +133,7 @@ def get_plot_parameters_for_moving_average(plot_parameters_dictionary, number_of
            upper_fixed_ylim, upper_ylim, lower_fixed_ylim, lower_ylim, plot_title, x_title, y_title
 
 
-def get_plot_parameters_for_surfaces(plot_parameters_dictionary):
+def get_plot_parameters_for_surfaces(plot_parameters_dictionary, number_of_plots):
     necessary_parameters = []
     assert isinstance(plot_parameters_dictionary, dict), \
         "You need to provide a dictionary for this function..."
@@ -143,8 +143,14 @@ def get_plot_parameters_for_surfaces(plot_parameters_dictionary):
             raise ValueError("Missing parameter:" + " " + parameter)
         necessary_parameters.append(plot_parameters_dictionary[parameter])
 
+    colors = check_dict_else_return_default("color", plot_parameters_dictionary, ["#7E7E7E"])
+    assert isinstance(colors, list), "The parameter \'colors\' has to be a list."
+    if len(colors) < number_of_plots:
+        print("Warning: not enough colors.")
+        colors = ["#7E7E7E" for _ in range(number_of_plots)]
+
     rows, columns, index, subplot_close = necessary_parameters
-    return rows, columns, index, subplot_close
+    return rows, columns, index, subplot_close, colors
 
 
 def get_plot_parameters_for_multi_surfaces(plot_parameters_dictionary):
@@ -155,8 +161,9 @@ def get_plot_parameters_for_multi_surfaces(plot_parameters_dictionary):
     fig_size = check_dict_else_return_default("fig_size", plot_parameters_dictionary, (60, 15))
     rows = check_dict_else_return_default("rows", plot_parameters_dictionary, 2)
     plot_title = check_dict_else_return_default("plot_title", plot_parameters_dictionary, "")
+    colors = check_dict_else_return_default("colors", plot_parameters_dictionary, ["#7E7E7E"])
 
-    return dpi, fig_size, rows, plot_title
+    return dpi, fig_size, rows, plot_title, colors
 
 
 def get_plot_parameters_for_average_return(plot_parameters_dictionary, number_of_plots):
@@ -235,17 +242,26 @@ def plot_moving_average(results_dataframe, plot_parameters_dictionary, pathname=
 
 # Surfaces Plots
 def plot_surface(fig, Z, X, Y, plot_title=None, filename=None, subplot=False, plot_parameters=None):
+    if len(Z.shape) < 3:
+        Z = Z.reshape([1] + list(Z.shape))
+    if len(Z.shape) < 2:
+        raise ValueError("The shape of the Z parameter has to be greater than 2.")
+
+    number_of_plots = len(Z)
     subplot_close = True
     if subplot:
-        subplot_rows, subplot_columns, subplot_index, subplot_close = get_plot_parameters_for_surfaces(plot_parameters)
+        subplot_rows, subplot_columns, subplot_index, subplot_close, colors = \
+            get_plot_parameters_for_surfaces(plot_parameters, number_of_plots)
 
         ax = fig.add_subplot(subplot_rows, subplot_columns, subplot_index, projection='3d')
         if "suptitle" in plot_parameters.keys():
             plt.suptitle(plot_parameters['suptitle'])
+        for i in range(len(Z)):
+            surf = ax.plot_wireframe(X, Y, Z[i], color=colors[i], linewidth=0.6)
     else:
         ax = fig.gca(projection='3d')
+        surf = ax.plot_wireframe(X, Y, Z[i], color="#7E7E7E", linewidth=0.6)
 
-    surf = ax.plot_wireframe(X,Y,Z, cmap=cm.coolwarm, linewidth=0.6)
     if plot_title is not None:
         ax.set_title(plot_title, pad=30, loc='center')
 
@@ -266,24 +282,22 @@ def plot_surface(fig, Z, X, Y, plot_title=None, filename=None, subplot=False, pl
 
 def plot_multiple_surfaces(train_episodes, surface_data, xcoord, ycoord, plot_parameters_dir, pathname=None):
     assert dir_management_utilities.check_uniform_list_length(surface_data), "The lists must be all of equal length."
-    if not isinstance(surface_data, list):
-        surface_data = [surface_data]
 
-    dpi, fig_size, rows, plot_title = get_plot_parameters_for_multi_surfaces(plot_parameters_dir)
+    dpi, fig_size, rows, plot_title, colors = get_plot_parameters_for_multi_surfaces(plot_parameters_dir)
     columns = np.ceil(len(train_episodes)/rows)
 
     fig = plt.figure(figsize=fig_size, dpi=dpi)
 
-    for j in range(len(surface_data)):
-        for i in range(len(train_episodes)):
-            Z = surface_data[j][i]
-            X = xcoord[i]
-            Y = ycoord[i]
-            subplot_parameters = {"rows": rows, "columns": columns, "index": i + 1,
-                                  "suptitle": plot_title, "subplot_close": (i + 1) == len(train_episodes)}
-            subplot_title = str(train_episodes[i]) + " episode(s)"
-            plot_surface(fig=fig, Z=-Z, X=X, Y=Y, subplot=True, plot_parameters=subplot_parameters,
-                         plot_title=subplot_title, filename=pathname)
+    for i in range(len(train_episodes)):
+        Z = surface_data[i]
+        X = xcoord[i]
+        Y = ycoord[i]
+        subplot_parameters = {"rows": rows, "columns": columns, "index": i + 1,
+                              "suptitle": plot_title, "color": colors,
+                              "subplot_close": (i + 1) == len(train_episodes)}
+        subplot_title = str(train_episodes[i]) + " episode(s)"
+        plot_surface(fig=fig, Z=-Z, X=X, Y=Y, subplot=True, plot_parameters=subplot_parameters,
+                     plot_title=subplot_title, filename=pathname)
 
 
 # Average Return Plot
