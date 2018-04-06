@@ -5,8 +5,8 @@ import os
 """ Summary Functions """
 # Confidence Interval
 def compute_confidence_interval(sample_mean, sample_std, proportion, degrees_of_freedom):
-    if degrees_of_freedom < 2:
-        return None, None
+    if degrees_of_freedom < 1:
+        return None, None, None
     sample_size = degrees_of_freedom +1
     t_dist = scipy.stats.t(df=degrees_of_freedom)
     upper_tail = 1 - ((1-proportion)/2)

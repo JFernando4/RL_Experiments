@@ -76,8 +76,8 @@ def average_and_aggregate_results(results_data_frame, average_points, average_wi
     return sample_mean, sample_std, degrees_of_freedmon
 
 
-def plot_and_summarize_results(dir_to_load, plots_and_summary_dir, surface_plot=True, ma_plot=True, ar_plot=True,
-                               av_surface_plot=True):
+def plot_and_summarize_results(dir_to_load, plots_and_summary_dir, results_file=True, surface_plot=True, ma_plot=True,
+                               ar_plot=True, av_surface_plot=True):
     results_data_frame = load_results(dir_to_load)
     train_episodes = results_data_frame["train_episodes"][0]
     aggregated_surface_data, aggregated_surface_by_action_data, aggregated_returns_per_episode =\
@@ -90,9 +90,10 @@ def plot_and_summarize_results(dir_to_load, plots_and_summary_dir, surface_plot=
                                                                                 average_window)
     ci_ub, ci_lb, me = summary_utilities.compute_confidence_interval(sample_mean, sample_std, 0.95, degrees_of_freedom)
 
-    summary_utilities.create_results_file(plots_and_summary_dir, average_points, sample_mean, sample_std, ci_ub, ci_lb)
-    plot_title = plot_utilities.title_generator(plots_and_summary_dir, 2)
+    if results_file:
+        summary_utilities.create_results_file(plots_and_summary_dir, average_points, sample_mean, sample_std, ci_ub, ci_lb)
 
+    plot_title = plot_utilities.title_generator(plots_and_summary_dir, 2)
     if surface_plot:
         plot_utilities.plot_multiple_surfaces(train_episodes, surface_data=aggregated_surface_data,
                         xcoord=results_data_frame["xcoord"][0], ycoord=results_data_frame["ycoord"][0],
@@ -138,6 +139,7 @@ def main():
     print(Style.RESET_ALL)
 
     replot = True       # This option allows to not plot anything for a second time if the directory already exists
+    results_file = False
     surface_plot = True
     av_surface_plot = True
     ma_plot = False
@@ -163,6 +165,7 @@ def main():
                     if (not dir_exists) or replot:
                         dir_to_load = os.path.join(fa_results_dir, end_result)
                         plot_and_summarize_results(dir_to_load=dir_to_load, plots_and_summary_dir=plot_dir,
+                                                   results_file=results_file,
                                                    surface_plot=surface_plot, ma_plot=ma_plot, ar_plot=ar_plot,
                                                    av_surface_plot=av_surface_plot)
 

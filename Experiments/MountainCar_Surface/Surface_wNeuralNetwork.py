@@ -77,6 +77,7 @@ class Experiment:
         xcoords = []
         ycoords = []
         surfaces_by_action = []
+        unsuccesful_training_data =[]
 
         successful_training = False
         number_of_attempts = 0
@@ -102,13 +103,15 @@ class Experiment:
             except ValueError:
                 number_of_unsuccesful_attempts += 1
                 print("Unsuccessful attempt! Restarting training...")
+                unsuccessful_agent_return_per_episode = self.agent.get_return_per_episode()
+                unsuccesful_training_data.append(unsuccessful_agent_return_per_episode)
                 self.agent.reset_agent()
 
         returns_per_episode = np.array(agent.get_return_per_episode())
 
         self.data = [train_episodes, np.array(surfaces), np.array(xcoords), np.array(ycoords),
                      np.array(surfaces_by_action), returns_per_episode, number_of_attempts,
-                     number_of_unsuccesful_attempts]
+                     number_of_unsuccesful_attempts, unsuccesful_training_data]
         agent.reset_agent()
 
     def save_experiment_data(self, agent_name):
@@ -122,16 +125,16 @@ if __name__ == "__main__":
     # Results Directory Name
     experiment_directory = "/Results/QSigma_n3/Neural_Network"
     experiment_results_directory = "/f100f100f100f100"
-        # Neural Network parameters
+    # Neural Network parameters
     alpha = 0.000001
     dim_out = [100,100,100,100]
     fully_connected_layers = len(dim_out)
-        # RL agent parameters
+    # RL agent parameters
     beta = 1
     epsilon_bpolicy = 0.1
     epsilon_tpolicy = 0.1
     gamma = 1
-    n = 1
+    n = 3
     sigma = 0.5
 
     " Running Experiment "
