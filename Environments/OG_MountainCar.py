@@ -34,8 +34,12 @@ class Mountain_Car(EnvironmentBase):
         self._low = np.array([-1.2, -0.07], dtype=np.float64)
         self._max_number_of_actions_per_episode = 50000         # To prevent episodes from going on forever
         self._current_number_of_actions_per_episode = 0
+        self._action_dictionary = {0: -1,   # accelerate backwards
+                                   1: 0,    # coast
+                                   2: 1}     # accelerate forwards}
 
     def reset(self):
+        # random() returns a random float in the half open interval [0,1)
         position = -0.6 + random() * 0.2
         velocity = 0.0
         self._current_state = np.array((position, velocity), dtype=np.float64)
@@ -53,6 +57,7 @@ class Mountain_Car(EnvironmentBase):
 
         if A not in self._actions:
             raise ValueError("The action should be one of the following integers: {0, 1, 2}.")
+        action = self._action_dictionary[A]
         self.update_frame_count()
         reward = -1.0
         terminate = False
@@ -60,7 +65,7 @@ class Mountain_Car(EnvironmentBase):
         current_position = self._current_state[0]
         current_velocity = self._current_state[1]
 
-        velocity = current_velocity + (0.001 * A) - (0.0025 * cos(3 * current_position))
+        velocity = current_velocity + (0.001 * action) - (0.0025 * cos(3 * current_position))
         position = current_position + velocity
 
         if velocity > 0.07:
