@@ -7,11 +7,6 @@ from Objects_Bases.Policy_Base import PolicyBase
 from pylab import random, cos
 import numpy as np
 
-" Plotting packages "
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import cm
-import matplotlib.pyplot as plt
-
 
 class Mountain_Car(EnvironmentBase):
 
