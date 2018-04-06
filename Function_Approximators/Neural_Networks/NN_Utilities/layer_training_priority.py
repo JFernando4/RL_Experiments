@@ -52,6 +52,7 @@ class Layer_Training_Priority:
             self._percentiles_full = True
         else:
             for index in range(self._number_of_percentiles):
+                assert isinstance(self._record[self._percentiles_indexes[index]], int), "self._record is None."
                 self._percentiles[index] += self._lr * (self._record[self._percentiles_indexes[index]]
                                                         - self._percentiles[index])
 
