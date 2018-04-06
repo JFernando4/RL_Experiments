@@ -53,8 +53,15 @@ class Layer_Training_Priority:
         else:
             for index in range(self._number_of_percentiles):
                 assert isinstance(self._record[self._percentiles_indexes[index]], int), "self._record is None."
-                self._percentiles[index] += self._lr * (self._record[self._percentiles_indexes[index]]
-                                                        - self._percentiles[index])
+                try:
+                    self._percentiles[index] += self._lr * (self._record[self._percentiles_indexes[index]]
+                                                            - self._percentiles[index])
+                except RuntimeWarning:
+                    print("Runtime Warning! Here's the relevant warning data:")
+                    print("File Name: layer_training_priority.py")
+                    print("self._record[self._percentiles_indexes[index]]:",
+                          self._record[self._percentiles_indexes[index]])
+                    print("self._percentiles[index]:", self._percentiles[index])
 
     def get_closest_percentile_index(self, td_error):
         smallest_difference = abs(self._percentiles[0] - td_error)
