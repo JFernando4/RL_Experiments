@@ -127,8 +127,9 @@ if __name__ == "__main__":
     experiment_results_directory = "/f100f100f100f100"
     # Neural Network parameters
     alpha = 0.000001
-    dim_out = [100,100,100,100]
-    fully_connected_layers = len(dim_out)
+    neurons_per_layer = 100
+    fully_connected_layers = 4
+    dim_out = [neurons_per_layer for _ in range(fully_connected_layers)]
     # RL agent parameters
     beta = 1
     epsilon_bpolicy = 0.1
