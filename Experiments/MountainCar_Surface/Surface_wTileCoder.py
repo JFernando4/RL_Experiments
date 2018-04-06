@@ -92,10 +92,10 @@ if __name__ == "__main__":
     " Experiment Parameters "
     # Results Directory Name
     experiment_directory = "/Results/QSigma_n3/TileCoder"
-    experiment_results_directory = "/t16"
+    experiment_results_directory = "/t8"
     # Tilecoder parameters
     alpha = 1/6
-    tilings = 16
+    tilings = 8
     # RL agent parameters
     beta = 1
     epsilon_bpolicy = 0.1
