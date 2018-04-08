@@ -323,24 +323,26 @@ def plot_average_return(results_dataframe, plot_parameters_dictionary, pathname=
     upper_fixed_ylim, upper_ylim, lower_fixed_ylim, lower_ylim, plot_title, x_title, y_title = \
         get_plot_parameters_for_average_return(plot_parameters_dictionary, number_of_plots=len(results_dataframe))
 
+    if not upper_fixed_ylim:
+        upper_ylim = np.inf
+    if not lower_fixed_ylim:
+        lower_ylim = -np.inf
+
     for i in range(len(results_dataframe)):
         episode_number, mean, me = results_dataframe[i]
         ebar_color = increase_color_opacity(colors[i], opacity=ebars_opacity)
         plt.errorbar(episode_number, mean, yerr=me, color=ebar_color, linewidth=ebars_linewidth)
         plt.errorbar(episode_number, mean, yerr=None, color=colors[i], linewidth=line_width)
 
-    if not upper_fixed_ylim:
-        upper_ylim = np.percentile(results_dataframe[0], upper_percentile_ylim)
-        for i in range(1, len(results_dataframe)):
-            temp_upper_ylim = np.percentile(results_dataframe[i], upper_percentile_ylim)
+        if not upper_fixed_ylim:
+            temp_upper_ylim = np.percentile(results_dataframe[i][1], upper_percentile_ylim)
             if temp_upper_ylim < upper_ylim:
                 upper_ylim = temp_upper_ylim
-    if not lower_fixed_ylim:
-        lower_ylim = np.percentile(results_dataframe[0], lower_percentile_ylim)
-        for i in range(1, len(results_dataframe)):
-            temp_lower_ylim = np.percentile(results_dataframe[i], lower_percentile_ylim)
+        if not lower_fixed_ylim:
+            temp_lower_ylim = np.percentile(results_dataframe[i][1], lower_percentile_ylim)
             if temp_lower_ylim > lower_ylim:
                 lower_ylim = temp_lower_ylim
+
     plt.ylim([lower_ylim, upper_ylim])
     plt.title(plot_title)
     plt.ylabel(y_title)

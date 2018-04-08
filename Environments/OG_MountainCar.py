@@ -27,7 +27,7 @@ class Mountain_Car(EnvironmentBase):
         self._actions = np.array([0, 1, 2], dtype=int)  # 0 = backward, 1 = coast, 2 = forward
         self._high = np.array([0.5, 0.07], dtype=np.float64)
         self._low = np.array([-1.2, -0.07], dtype=np.float64)
-        self._max_number_of_actions_per_episode = 50000         # To prevent episodes from going on forever
+        self._max_number_of_actions_per_episode = 5000         # To prevent episodes from going on forever
         self._current_number_of_actions_per_episode = 0
         self._action_dictionary = {0: -1,   # accelerate backwards
                                    1: 0,    # coast

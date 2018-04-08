@@ -16,7 +16,8 @@ def load_results(pathname):
                           "number_of_unsuccessful_attempts": []}
     for afile in files:
         temp_train_episodes, temp_surface_data, temp_xcoord, temp_ycoord, temp_surface_by_action_data, \
-        temp_returns_per_episode, temp_number_of_attempts, temp_number_of_unsuccessful_attempts = \
+        temp_returns_per_episode, temp_number_of_attempts, temp_number_of_unsuccessful_attempts, \
+        unssucessful_trianing_data = \
             pickle.load(open(pathname + "/" + afile, mode='rb'))
         results_data_frame["train_episodes"].append(temp_train_episodes)
         results_data_frame["surface_data"].append(temp_surface_data)
@@ -133,17 +134,17 @@ def main():
     print(Fore.YELLOW + "Plotting the results from the experiment in:", experiment_dir)
     results_dir = os.path.join(experiment_dir, "Results")
     print("Loading results from:", results_dir)
-    function_approximators_names = ["Neural_Network", "TileCoder"]
+    function_approximators_names = ["TileCoder"]#["Neural_Network", "TileCoder"]
     plots_summaries_dir = os.path.join(experiment_dir, "Plots_and_Summaries")
     print("Storing plots in:", plots_summaries_dir)
     print(Style.RESET_ALL)
 
     replot = True       # This option allows to not plot anything for a second time if the directory already exists
-    results_file = False
+    results_file = True
     surface_plot = True
     av_surface_plot = True
-    ma_plot = False
-    ar_plot = False
+    ma_plot = True
+    ar_plot = True
     rl_results_names = ["QSigma_n3"]
 
     for rl_res_name in rl_results_names:
