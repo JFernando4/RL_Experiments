@@ -15,8 +15,7 @@ class ExperimentAgent:
         self.env = Mountain_Car()
         self.fa = TileCoderFA(numTilings=numTilings, numActions=self.env.get_num_actions(), alpha=alpha,
                               state_space_range=(self.env.get_high() - self.env.get_low()),
-                              state_space_size=len(self.env.get_current_state()),
-                              tiles_factor=4)
+                              state_space_size=len(self.env.get_current_state()), tile_side_length=10)
         self.tpolicy = EpsilonGreedyPolicy(epsilon=epsilon_tpolicy, numActions=self.env.get_num_actions())
         self.bpolicy = EpsilonGreedyPolicy(epsilon=epsilon_bpolicy, numActions=self.env.get_num_actions())
 
@@ -92,10 +91,10 @@ if __name__ == "__main__":
     " Experiment Parameters "
     # Results Directory Name
     experiment_directory = "/Results/QSigma_n3/TileCoder"
-    experiment_results_directory = "/t16"
+    experiment_results_directory = "/t8"
     # Tilecoder parameters
     alpha = 1/6
-    tilings = 16
+    tilings = 8
     # RL agent parameters
     beta = 1
     epsilon_bpolicy = 0.1

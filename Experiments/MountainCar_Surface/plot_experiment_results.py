@@ -11,26 +11,29 @@ import Experiments.Experiments_Utilities.dir_management_utilities as dir_managem
 
 def load_results(pathname):
     files = os.listdir(pathname)
-    results_data_frame = {"train_episodes": [], "surface_data": [], "xcoord": [], "ycoord": [],
-                          "surface_by_action_data": [], "returns_per_episode": [], "number_of_attempts": [],
-                          "number_of_unsuccessful_attempts": []}
-    for afile in files:
-        temp_train_episodes, temp_surface_data, temp_xcoord, temp_ycoord, temp_surface_by_action_data, \
-        temp_returns_per_episode, temp_number_of_attempts, temp_number_of_unsuccessful_attempts, \
-        unssucessful_trianing_data = \
-            pickle.load(open(pathname + "/" + afile, mode='rb'))
-        results_data_frame["train_episodes"].append(temp_train_episodes)
-        results_data_frame["surface_data"].append(temp_surface_data)
-        results_data_frame["xcoord"].append(temp_xcoord)
-        results_data_frame["ycoord"].append(temp_ycoord)
-        # tsba_shape = temp_surface_by_action_data.shape
-        # new_shape = (tsba_shape[1], tsba_shape[0], tsba_shape[2], tsba_shape[3])
-        # results_data_frame["surface_by_action_data"].append(temp_surface_by_action_data.reshape(new_shape))
-        results_data_frame["surface_by_action_data"].append(temp_surface_by_action_data)
-        results_data_frame["returns_per_episode"].append(temp_returns_per_episode)
-        results_data_frame["number_of_attempts"].append(temp_number_of_attempts)
-        results_data_frame["number_of_unsuccessful_attempts"].append(temp_number_of_unsuccessful_attempts)
-    return results_data_frame
+    if len(files) < 1:
+        return None
+    else:
+        results_data_frame = {"train_episodes": [], "surface_data": [], "xcoord": [], "ycoord": [],
+                              "surface_by_action_data": [], "returns_per_episode": [], "number_of_attempts": [],
+                              "number_of_unsuccessful_attempts": []}
+        for afile in files:
+            temp_train_episodes, temp_surface_data, temp_xcoord, temp_ycoord, temp_surface_by_action_data, \
+            temp_returns_per_episode, temp_number_of_attempts, temp_number_of_unsuccessful_attempts, \
+            unssucessful_trianing_data = \
+                pickle.load(open(pathname + "/" + afile, mode='rb'))
+            results_data_frame["train_episodes"].append(temp_train_episodes)
+            results_data_frame["surface_data"].append(temp_surface_data)
+            results_data_frame["xcoord"].append(temp_xcoord)
+            results_data_frame["ycoord"].append(temp_ycoord)
+            # tsba_shape = temp_surface_by_action_data.shape
+            # new_shape = (tsba_shape[1], tsba_shape[0], tsba_shape[2], tsba_shape[3])
+            # results_data_frame["surface_by_action_data"].append(temp_surface_by_action_data.reshape(new_shape))
+            results_data_frame["surface_by_action_data"].append(temp_surface_by_action_data)
+            results_data_frame["returns_per_episode"].append(temp_returns_per_episode)
+            results_data_frame["number_of_attempts"].append(temp_number_of_attempts)
+            results_data_frame["number_of_unsuccessful_attempts"].append(temp_number_of_unsuccessful_attempts)
+        return results_data_frame
 
 
 def aggregate_and_average_results(results_data_frame):
@@ -80,53 +83,60 @@ def average_and_aggregate_results(results_data_frame, average_points, average_wi
 def plot_and_summarize_results(dir_to_load, plots_and_summary_dir, results_file=True, surface_plot=True, ma_plot=True,
                                ar_plot=True, av_surface_plot=True):
     results_data_frame = load_results(dir_to_load)
-    train_episodes = results_data_frame["train_episodes"][0]
-    aggregated_surface_data, aggregated_surface_by_action_data, aggregated_returns_per_episode =\
-        aggregate_and_average_results(results_data_frame)
+    if results_data_frame is not None:
+        train_episodes = results_data_frame["train_episodes"][0]
+        aggregated_surface_data, aggregated_surface_by_action_data, aggregated_returns_per_episode =\
+            aggregate_and_average_results(results_data_frame)
 
-    average_points = [100 * (i+1) for i in range(100)]
-    average_window = [100 for _ in range(len(average_points))]
-    sample_mean, sample_std, degrees_of_freedom = average_and_aggregate_results(results_data_frame,
-                                                                                average_points,
-                                                                                average_window)
-    ci_ub, ci_lb, me = summary_utilities.compute_confidence_interval(sample_mean, sample_std, 0.95, degrees_of_freedom)
+        average_points = [100 * (i+1) for i in range(100)]
+        average_window = [100 for _ in range(len(average_points))]
+        sample_mean, sample_std, degrees_of_freedom = average_and_aggregate_results(results_data_frame,
+                                                                                    average_points,
+                                                                                    average_window)
+        ci_ub, ci_lb, me = summary_utilities.compute_confidence_interval(sample_mean, sample_std, 0.95,
+                                                                         degrees_of_freedom)
 
-    if results_file:
-        summary_utilities.create_results_file(plots_and_summary_dir, average_points, sample_mean, sample_std, ci_ub, ci_lb)
+        if results_file:
+            summary_utilities.create_results_file(plots_and_summary_dir, average_points, sample_mean, sample_std,
+                                                  ci_ub, ci_lb)
 
-    plot_title = plot_utilities.title_generator(plots_and_summary_dir, 2)
-    if surface_plot:
-        plot_utilities.plot_multiple_surfaces(train_episodes, surface_data=aggregated_surface_data,
-                        xcoord=results_data_frame["xcoord"][0], ycoord=results_data_frame["ycoord"][0],
-                        plot_parameters_dir={"plot_title": plot_title, "colors": ["#597891"]},
-                        pathname=plots_and_summary_dir+"/value_function_surface.png")
+        plot_title = plot_utilities.title_generator(plots_and_summary_dir, 2)
+        if surface_plot:
+            plot_utilities.plot_multiple_surfaces(train_episodes, surface_data=aggregated_surface_data,
+                            xcoord=results_data_frame["xcoord"][0], ycoord=results_data_frame["ycoord"][0],
+                            plot_parameters_dir={"plot_title": plot_title, "colors": ["#597891"]},
+                            pathname=plots_and_summary_dir+"/value_function_surface.png")
 
-    if av_surface_plot:
-        plot_utilities.plot_multiple_surfaces(train_episodes, surface_data=aggregated_surface_by_action_data,
-                                              xcoord=results_data_frame["xcoord"][0],
-                                              ycoord=results_data_frame["ycoord"][0],
-                                              plot_parameters_dir={"plot_title": plot_title,
-                                                                   "colors": ["#2A8FBD", "#FF6600", "#9061C2"]},
-                                              pathname=plots_and_summary_dir + "/action_value_function_surface.png")
+        if av_surface_plot:
+            plot_utilities.plot_multiple_surfaces(train_episodes, surface_data=aggregated_surface_by_action_data,
+                                                  xcoord=results_data_frame["xcoord"][0],
+                                                  ycoord=results_data_frame["ycoord"][0],
+                                                  plot_parameters_dir={"plot_title": plot_title,
+                                                                       "colors": ["#2A8FBD", "#FF6600", "#9061C2"]},
+                                                  pathname=plots_and_summary_dir + "/action_value_function_surface.png")
 
-    if ma_plot:
-        ma_parameters_dict = {"window_size": 100, "colors": ["#7E7E7E"], "color_opacity": 0.8,
-                              "lower_percentile_ylim": 2, "upper_fixed_ylim": True, "upper_ylim": 0,
-                              "plot_title": plot_title, "x_title": "Episodes", "y_title": "Average Return per Episode"}
-        ma_pathname = os.path.join(plots_and_summary_dir,
-                                   "moving_average_win" + str(ma_parameters_dict["window_size"]) + ".png")
-        plot_utilities.plot_moving_average(aggregated_returns_per_episode, plot_parameters_dictionary=ma_parameters_dict,
-                                           pathname=ma_pathname, plot_raw_data=True)
+        if ma_plot:
+            ma_parameters_dict = {"window_size": 100, "colors": ["#7E7E7E"], "color_opacity": 0.8,
+                                  "lower_percentile_ylim": 2, "upper_fixed_ylim": True, "upper_ylim": 0,
+                                  "plot_title": plot_title, "x_title": "Episodes",
+                                  "y_title": "Average Return per Episode"}
+            ma_pathname = os.path.join(plots_and_summary_dir,
+                                       "moving_average_win" + str(ma_parameters_dict["window_size"]) + ".png")
+            plot_utilities.plot_moving_average(aggregated_returns_per_episode,
+                                               plot_parameters_dictionary=ma_parameters_dict,
+                                               pathname=ma_pathname, plot_raw_data=True)
 
-    if ar_plot:
-        ar_data_frame = [[average_points, sample_mean, me]]
-        ar_paramenters_dict = {"lower_percentile_ylim": 1, "colors": ["#7E7E7E"], "upper_fixed_ylim": True,
-                               "upper_ylim": 0, "ebars_opacity": 0.7, "ebars_linewidth": 0.7, "plot_title": plot_title,
-                               "x_title": "Episodes", "y_title": "Average Return per Episode"}
-        ar_pathname = os.path.join(plots_and_summary_dir,
-                                   "average_return.png")
-        plot_utilities.plot_average_return(results_dataframe=ar_data_frame, plot_parameters_dictionary=ar_paramenters_dict,
-                                           pathname=ar_pathname)
+        if ar_plot:
+            ar_data_frame = [[average_points, sample_mean, me]]
+            ar_paramenters_dict = {"lower_percentile_ylim": 1, "colors": ["#7E7E7E"], "upper_fixed_ylim": True,
+                                   "upper_ylim": 0, "ebars_opacity": 0.7, "ebars_linewidth": 0.7,
+                                   "plot_title": plot_title, "x_title": "Episodes",
+                                   "y_title": "Average Return per Episode"}
+            ar_pathname = os.path.join(plots_and_summary_dir,
+                                       "average_return.png")
+            plot_utilities.plot_average_return(results_dataframe=ar_data_frame,
+                                               plot_parameters_dictionary=ar_paramenters_dict,
+                                               pathname=ar_pathname)
 
 
 def main():
@@ -134,13 +144,13 @@ def main():
     print(Fore.YELLOW + "Plotting the results from the experiment in:", experiment_dir)
     results_dir = os.path.join(experiment_dir, "Results")
     print("Loading results from:", results_dir)
-    function_approximators_names = ["TileCoder"]#["Neural_Network", "TileCoder"]
+    function_approximators_names = ["Neural_Network", "TileCoder"]
     plots_summaries_dir = os.path.join(experiment_dir, "Plots_and_Summaries")
     print("Storing plots in:", plots_summaries_dir)
     print(Style.RESET_ALL)
 
     replot = True       # This option allows to not plot anything for a second time if the directory already exists
-    results_file = True
+    results_file = False
     surface_plot = True
     av_surface_plot = True
     ma_plot = True

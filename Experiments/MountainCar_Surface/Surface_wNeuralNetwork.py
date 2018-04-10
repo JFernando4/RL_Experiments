@@ -124,11 +124,11 @@ if __name__ == "__main__":
     " Experiment Parameters "
     # Results Directory Name
     experiment_directory = "/Results/QSigma_n3/Neural_Network"
-    experiment_results_directory = "/f100f100f100f100"
+    experiment_results_directory = "/f500"
     # Neural Network parameters
     alpha = 0.000001
-    neurons_per_layer = 100
-    fully_connected_layers = 4
+    neurons_per_layer = 500
+    fully_connected_layers = 1
     dim_out = [neurons_per_layer for _ in range(fully_connected_layers)]
     # RL agent parameters
     beta = 1
