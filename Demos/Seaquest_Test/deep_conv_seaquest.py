@@ -1,6 +1,5 @@
 """ Standard Packages """
 import tensorflow as tf
-import numpy as np
 
 """ Utilities """
 from Demos.Demos_Utility.Training_Util import training_loop
@@ -8,10 +7,10 @@ from Demos.Demos_Utility.Saving_Restoring_NN_Util import NN_Agent_History, save_
 
 """ Agent, Environment, and Function Approximator """
 from Environments.Arcade_Learning_Environment.ALE_Environment import ALE_Environment    # environment
-from Function_Approximators.Neural_Networks.NN_Utilities import models                  # DL Model
-from Function_Approximators.Neural_Networks.Neural_Network import NeuralNetwork_FA      # Function Approximator
-from Policies.Epsilon_Greedy import EpsilonGreedyPolicy                                 # Policies
-from RL_Algorithms.Q_Sigma import QSigma                                                # RL ALgorithm
+from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities import models
+from Experiments_Engine.Function_Approximators.Neural_Networks.Neural_Network import NeuralNetwork_FA      # Function Approximator
+from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy                                 # Policies
+from Experiments_Engine.RL_Algorithms.Q_Sigma import QSigma                                                # RL ALgorithm
 
 def main():
 
@@ -69,8 +68,8 @@ def main():
         training_steps = 1
 
         model = models.Model_nCPmFO(name=name, dim_out=dim_out, observation_dimensions=observation_dimensions,
-                                       num_actions=num_actions, gate_fun=gate_fun, convolutional_layers=conv_layers,
-                                       filter_dims=filter_dims, fully_connected_layers=fully_connected_layers)
+                                    num_actions=num_actions, gate_fun=gate_fun, convolutional_layers=conv_layers,
+                                    filter_dims=filter_dims, fully_connected_layers=fully_connected_layers)
         fa = NeuralNetwork_FA(model=model, optimizer=optimizer, numActions=num_actions,
                               batch_size=batch_size, alpha=alpha, tf_session=sess,
                               observation_dimensions=observation_dimensions, training_steps=training_steps,

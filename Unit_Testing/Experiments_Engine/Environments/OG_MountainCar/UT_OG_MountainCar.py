@@ -1,9 +1,7 @@
 import unittest
 import numpy as np
 
-from Environments.OG_MountainCar import Mountain_Car
-from Function_Approximators.TileCoder.Tile_Coding_FA import TileCoderFA
-from Policies.Epsilon_Greedy import EpsilonGreedyPolicy
+from Experiments_Engine.Environments.OG_MountainCar import Mountain_Car
 
 
 class Test_MountainCar_Environment(unittest.TestCase):
@@ -34,27 +32,6 @@ class Test_MountainCar_Environment(unittest.TestCase):
             test_env.update_frame_count()
         test_env.reset()
         self.assertEqual(current_frame_count + random_int, test_env.get_frame_count())
-
-    def test_print_and_plot_surface(self):
-        test_env = self.mountain_car_init_from_scratch
-        state_space_range = test_env.get_high() - test_env.get_low()
-        function_approximmator = TileCoderFA(numTilings=8, numActions=test_env.get_num_actions(), alpha=0.1,
-                                             state_space_size=len(test_env.get_current_state()),
-                                             state_space_range=state_space_range,
-                                             tiles_factor=4)
-        test_policy = EpsilonGreedyPolicy(epsilon=0.1, numActions=test_env.get_num_actions())
-
-        print("Computing Surface...")
-        Z, X, Y = test_env.get_surface(fa=function_approximmator, tpolicy=test_policy,
-                                                            granularity=0.03)
-        print("Printing Surface...")
-        print(Z)
-        print("Printing Surface X Coordinates...")
-        print(X)
-        print("Printing Surface Y Coordinates...")
-        print(Y)
-        print("Plotting Surface and Saving Plot...")
-        test_env.plot_mc_surface(Z, X, Y, filename="unittest_Mountain_Car_3d_Surface.png")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,5 @@
 """ Standard Packages """
 import tensorflow as tf
-import numpy as np
 
 """ Utilities """
 from Demos.Demos_Utility.Training_Util import training_loop
@@ -8,10 +7,10 @@ from Demos.Demos_Utility.Saving_Restoring_NN_Util import NN_Agent_History, save_
 
 """ Agent, Environment, and Function Approximator """
 from Environments.OpenAI.OpenAI_FlappyBird import OpenAI_FlappyBird_vE                  # environment
-from Function_Approximators.Neural_Networks.NN_Utilities import models                  # DL Model
-from Function_Approximators.Neural_Networks.Neural_Network import NeuralNetwork_FA      # Function Approximator
-from Policies.Epsilon_Greedy import EpsilonGreedyPolicy                                 # Policies
-from RL_Algorithms.Q_Sigma import QSigma                                                # RL ALgorithm
+from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities import models
+from Experiments_Engine.Function_Approximators.Neural_Networks.Neural_Network import NeuralNetwork_FA      # Function Approximator
+from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy                                 # Policies
+from Experiments_Engine.RL_Algorithms.Q_Sigma import QSigma                                                # RL ALgorithm
 
 
 def main():

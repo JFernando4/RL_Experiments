@@ -1,6 +1,5 @@
 """ Standard Packages """
 import tensorflow as tf
-import numpy as np
 
 """ Utilities """
 from Demos.Demos_Utility.Training_Util import training_loop
@@ -8,10 +7,10 @@ from Demos.Demos_Utility.Saving_Restoring_NN_Util import NN_Agent_History, save_
 
 """ Agent, Environment, and Function Approximator """
 from Environments.OpenAI.OpenAI_FlappyBird import OpenAI_FlappyBird_vE                              # environment
-from Function_Approximators.Neural_Networks.NN_Utilities import models                              # DL Models
-from Function_Approximators.Neural_Networks.Double_Neural_Network import DoubleNeuralNetwork_FA     # Function Approximator
-from Policies.Epsilon_Greedy import EpsilonGreedyPolicy                                             # Policies
-from RL_Algorithms.Q_Sigma import QSigma                                                            # RL ALgorithm
+from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities import models
+from Experiments_Engine.Function_Approximators.Neural_Networks.Double_Neural_Network import DoubleNeuralNetwork_FA     # Function Approximator
+from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy                                             # Policies
+from Experiments_Engine.RL_Algorithms.Q_Sigma import QSigma                                                            # RL ALgorithm
 
 
 def main():
@@ -75,11 +74,11 @@ def main():
         training_steps = 4
         reward_path = True
 
-        model1 = models.Model_nCPmFO_RP(name=name+"_model1", dim_out=dim_out,
+        model1 = models.Model_nCPmFO_RP(name=name + "_model1", dim_out=dim_out,
                                         observation_dimensions=observation_dimensions, num_actions=num_actions-1,
                                         gate_fun=gate_fun, convolutional_layers=conv_layers, filter_dims=filter_dims,
                                         fully_connected_layers=fully_connected_layers, reward_path=reward_path, eta=eta)
-        model2 = models.Model_nCPmFO_RP(name=name+"model_2", dim_out=dim_out,
+        model2 = models.Model_nCPmFO_RP(name=name + "model_2", dim_out=dim_out,
                                         observation_dimensions=observation_dimensions, num_actions=num_actions-1,
                                         gate_fun=gate_fun, convolutional_layers=conv_layers, filter_dims=filter_dims,
                                         fully_connected_layers=fully_connected_layers, reward_path=reward_path, eta=eta)

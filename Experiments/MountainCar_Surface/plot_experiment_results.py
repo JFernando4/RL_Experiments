@@ -144,12 +144,12 @@ def main():
     print(Fore.YELLOW + "Plotting the results from the experiment in:", experiment_dir)
     results_dir = os.path.join(experiment_dir, "Results")
     print("Loading results from:", results_dir)
-    function_approximators_names = ["Neural_Network", "TileCoder"]
+    function_approximators_names = ["Neural_Network"]#, "TileCoder"]
     plots_summaries_dir = os.path.join(experiment_dir, "Plots_and_Summaries")
     print("Storing plots in:", plots_summaries_dir)
     print(Style.RESET_ALL)
 
-    replot = True       # This option allows to not plot anything for a second time if the directory already exists
+    replot = False       # This option allows to not plot anything for a second time if the directory already exists
     results_file = False
     surface_plot = True
     av_surface_plot = True

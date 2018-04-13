@@ -1,7 +1,7 @@
 import tensorflow as tf
 import pickle
 
-from Objects_Bases.Agent_Base import AgentBase
+from Experiments_Engine.Objects_Bases.Agent_Base import AgentBase
 
 
 class NN_Agent_History:

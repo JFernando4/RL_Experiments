@@ -4,11 +4,11 @@ import os
 import tensorflow as tf
 
 import Experiments.Experiments_Utilities.dir_management_utilities as dir_management_utilities
-from Environments.OG_MountainCar import Mountain_Car
-from RL_Algorithms.Q_Sigma import QSigma
-from Policies.Epsilon_Greedy import EpsilonGreedyPolicy
-from Function_Approximators.Neural_Networks.Neural_Network import NeuralNetwork_FA
-from Function_Approximators.Neural_Networks.NN_Utilities.models import Model_mFO
+from Experiments_Engine.Environments.OG_MountainCar import Mountain_Car
+from Experiments_Engine.RL_Algorithms.Q_Sigma import QSigma
+from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy
+from Experiments_Engine.Function_Approximators.Neural_Networks.Neural_Network import NeuralNetwork_FA
+from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.models import Model_mFO
 
 
 class ExperimentAgent:
@@ -124,11 +124,11 @@ if __name__ == "__main__":
     " Experiment Parameters "
     # Results Directory Name
     experiment_directory = "/Results/QSigma_n3/Neural_Network"
-    experiment_results_directory = "/f500"
+    experiment_results_directory = "/f500f500f500f500"
     # Neural Network parameters
     alpha = 0.000001
     neurons_per_layer = 500
-    fully_connected_layers = 1
+    fully_connected_layers = 4
     dim_out = [neurons_per_layer for _ in range(fully_connected_layers)]
     # RL agent parameters
     beta = 1

@@ -3,10 +3,10 @@ import numpy as np
 import os
 
 import Experiments.Experiments_Utilities.dir_management_utilities as dir_management_utilities
-from Environments.OG_MountainCar import Mountain_Car
-from RL_Algorithms.Q_Sigma import QSigma
-from Function_Approximators.TileCoder.Tile_Coding_FA import TileCoderFA
-from Policies.Epsilon_Greedy import EpsilonGreedyPolicy
+from Experiments_Engine.Environments.OG_MountainCar import Mountain_Car
+from Experiments_Engine.RL_Algorithms.Q_Sigma import QSigma
+from Experiments_Engine.Function_Approximators.TileCoder.Tile_Coding_FA import TileCoderFA
+from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy
 
 
 class ExperimentAgent:
