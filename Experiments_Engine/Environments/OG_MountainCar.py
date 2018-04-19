@@ -13,7 +13,7 @@ class Mountain_Car(EnvironmentBase):
     def __init__(self, env_dictionary=None):
         super().__init__()
 
-        " Environment Dictionary "
+        " Environment Dicti   onary "
         if env_dictionary is None:
             self._env_dictionary = {"frame_count": 0}
         else:

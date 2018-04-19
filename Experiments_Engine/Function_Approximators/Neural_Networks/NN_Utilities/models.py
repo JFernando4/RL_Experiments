@@ -1,8 +1,9 @@
 import tensorflow as tf
 import numpy as np
 import abc
-from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities import layers
 
+from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities import layers
+import Experiments_Engine.Error_Handling_Utilities.input_parameters_validation as input_parameters_validation
 
 def linear_transfer(x):
     return x
@@ -12,12 +13,20 @@ class ModelBase(object):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def __init__(self):
-        self._model_dictionary = None
+    def __init__(self, model_dictionary=None):
+        self._model_dictionary = model_dictionary
 
     @abc.abstractmethod
     def get_model_dictionary(self):
         return self._model_dictionary
+
+    @abc.abstractmethod
+    def replace_model_weights(self, new_vars, tf_session=tf.Session()):
+        pass
+
+    @abc.abstractmethod
+    def get_variables(self, tf_session=tf.Session()):
+        pass
 
     @staticmethod
     @abc.abstractmethod
@@ -31,12 +40,17 @@ class ModelBase(object):
             total += layer_total
         print("Total number of parameters:", total)
 
+    @abc.abstractmethod
+    def check_model_dictionary(self):
+        pass
+
 
 """
 Creates a model with n convolutinal layers followed by a pooling step and m fully connected layers followed by
 one linear output layer
 """
 class Model_nCPmFO(ModelBase):
+
     def __init__(self, name=None, dim_out=None, filter_dims=None, observation_dimensions=None, num_actions=None,
                  gate_fun=None, convolutional_layers=None, fully_connected_layers=None, SEED=None,
                  model_dictionary=None):
@@ -54,6 +68,8 @@ class Model_nCPmFO(ModelBase):
                                       "full_layers": fully_connected_layers}
         else:
             self._model_dictionary = model_dictionary
+
+        self.check_model_dictionary()
 
         " Dimensions "
         height, width, channels = self._model_dictionary["observation_dimensions"]
@@ -138,6 +154,14 @@ class Model_nCPmFO(ModelBase):
             var_list.append(tf_session.run(var_list[i]))
         return var_list
 
+    def check_model_dictionary(self):
+        keys_to_check = ["model_name", "output_dims", "filter_dims", "observation_dimensions", "num_actions",
+                         "gate_fun", "conv_layers", "full_layers"]
+        type_list = [str, list, list, list, int, ]
+        input_parameters_validation.check_dictionary_keys(keys_to_check, self._model_dictionary)
+
+
+        pass
 
 """
 Creates a model with m fully connected layers followed by one linear output layer
