@@ -1,49 +1,13 @@
 import tensorflow as tf
 import numpy as np
-import abc
 
 from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities import layers
 import Experiments_Engine.Error_Handling_Utilities.input_parameters_validation as input_parameters_validation
+from Experiments_Engine.Objects_Bases.NN_Model_Base import ModelBase
+
 
 def linear_transfer(x):
     return x
-
-
-class ModelBase(object):
-    __metaclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
-    def __init__(self, model_dictionary=None):
-        self._model_dictionary = model_dictionary
-
-    @abc.abstractmethod
-    def get_model_dictionary(self):
-        return self._model_dictionary
-
-    @abc.abstractmethod
-    def replace_model_weights(self, new_vars, tf_session=tf.Session()):
-        pass
-
-    @abc.abstractmethod
-    def get_variables(self, tf_session=tf.Session()):
-        pass
-
-    @staticmethod
-    @abc.abstractmethod
-    def print_number_of_parameters(parameter_list):
-        sess = tf.Session()
-        total = 0
-        for layer in range(int(len(parameter_list)/2)):
-            index = layer * 2
-            layer_total = sess.run(tf.size(parameter_list[index]) + tf.size(parameter_list[index+1]))
-            print("Number of parameters in layer", layer + 1, ":", layer_total)
-            total += layer_total
-        print("Total number of parameters:", total)
-
-    @abc.abstractmethod
-    def check_model_dictionary(self):
-        pass
-
 
 """
 Creates a model with n convolutinal layers followed by a pooling step and m fully connected layers followed by
@@ -143,24 +107,25 @@ class Model_nCPmFO(ModelBase):
     def replace_model_weights(self, new_vars, tf_session=tf.Session()):
         if not isinstance(new_vars, list):
             new_vars = [new_vars]
-        assert len(new_vars) == len(self.train_vars), "The list of variables need to have the same length!"
+        assert len(new_vars) == len(self.train_vars[0]), "The lists of variables need to have the same length!"
 
-        for i in range(len(self.train_vars)):
-            tf_session.run(tf.assign(self.train_vars[i], new_vars[i]))
+        for i in range(len(self.train_vars[0])):
+            tf_session.run(tf.assign(self.train_vars[0][i], new_vars[i]))
 
-    def get_variables(self, tf_session=tf.Session()):
+    def get_variables_as_list(self, tf_session=tf.Session()):
         var_list = []
-        for i in range(len(self.train_vars)):
-            var_list.append(tf_session.run(var_list[i]))
+        for i in range(len(self.train_vars[0])):
+            var_list.append(tf_session.run(self.train_vars[0][i]))
         return var_list
+
+    def get_variables_as_tensor(self):
+        return self.train_vars[0]
 
     def check_model_dictionary(self):
         keys_to_check = ["model_name", "output_dims", "filter_dims", "observation_dimensions", "num_actions",
                          "gate_fun", "conv_layers", "full_layers"]
-        type_list = [str, list, list, list, int, ]
         input_parameters_validation.check_dictionary_keys(keys_to_check, self._model_dictionary)
-
-
+        " Finishing this later "
         pass
 
 """

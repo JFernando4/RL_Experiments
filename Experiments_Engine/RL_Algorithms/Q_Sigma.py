@@ -3,6 +3,7 @@ from Experiments_Engine.Objects_Bases.Environment_Base import EnvironmentBase
 from Experiments_Engine.Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
 from Experiments_Engine.Objects_Bases.Policy_Base import PolicyBase
 from numpy import inf, zeros
+import numpy as np
 
 class QSigma(RL_ALgorithmBase):
 
@@ -71,7 +72,7 @@ class QSigma(RL_ALgorithmBase):
                     reward_sum += R
 
                     q_values = self.fa.get_next_states_values(new_S)
-                    t_probabilities = self.tpolicy.probability_of_action(q_value=q_values, all_actions=True)
+                    t_probabilities = self.tpolicy.probability_of_action(q_values=q_values, all_actions=True)
                     expected_value = self.expected_action_value(q_values, t_probabilities)
 
                     if terminate:
@@ -86,9 +87,9 @@ class QSigma(RL_ALgorithmBase):
                         Q[(t+1) % (self.n+1)] = self.fa.get_value(new_S, new_A)
                         Delta[(t+1) % self.n] = R + (self.gamma * self.sigma * Q[(t+1) % (self.n+1)]) + \
                                                 (self.gamma * (1 - self.sigma) * expected_value) - Q[t % (self.n+1)]
-                        Mu[t % self.n] = self.bpolicy.probability_of_action(q_value=q_values, action=new_A,
+                        Mu[t % self.n] = self.bpolicy.probability_of_action(q_values=q_values, action=new_A,
                                                                             all_actions=False)
-                        Pi[t % self.n] = self.tpolicy.probability_of_action(q_value=q_values, action=new_A,
+                        Pi[t % self.n] = self.tpolicy.probability_of_action(q_values=q_values, action=new_A,
                                                                             all_actions=False)
                         A = new_A
 
@@ -113,6 +114,26 @@ class QSigma(RL_ALgorithmBase):
             self._agent_dictionary["timesteps_per_episode"].append(timesteps)
             self.adjust_sigma()
             self.env.reset()
+
+    def recursive_return_function(self, trajectory, n=0, base_value=None):
+        reward, action, qvalues, termination = trajectory.pop(0)
+        if termination:
+            base_rho = 1
+            return reward, base_rho
+        else:
+            tprobabilities = self.tpolicy.probability_of_action(q_values=qvalues, all_actions=True)
+            bprobabilities = self.bpolicy.probability_of_action(q_values=qvalues, all_actions=True)
+            assert bprobabilities[action] != 0, "The probability of the action under the behaviour policy mustn't be 0!"
+            rho = tprobabilities[action] / bprobabilities[action]
+            average_action_value = self.expected_action_value(qvalues, tprobabilities)
+            if n == self.n:
+                assert base_value is not None, "The base value of the recursive function can't be None."
+                return base_value
+            else:
+                return reward + \
+                       self.gamma * (rho * self.sigma + (1-self.sigma) * tprobabilities[action]) \
+                       * self.recursive_return_function(trajectory=trajectory, n=n+1, base_value=qvalues[action]) +\
+                       self.gamma * (1-self.sigma) * (average_action_value - tprobabilities[action] * qvalues[action])
 
     @staticmethod
     def expected_action_value(q_values, p_values):

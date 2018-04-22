@@ -9,7 +9,7 @@ from Experiments_Engine.Objects_Bases.Environment_Base import EnvironmentBase
 class ALE_Environment(EnvironmentBase):
     def __init__(self, display_screen=False, agent_render=False, frame_skip=4, repeat_action_probability=0.25,
                  max_num_frames=18000, color_averaging=True, frame_stack=4, games_directory=None, rom_file=None,
-                 env_dictionary=None):
+                 reward_clippling=False, env_dictionary=None):
         super().__init__()
 
         " Games directory path "
@@ -28,7 +28,8 @@ class ALE_Environment(EnvironmentBase):
                                     "color_averaging": color_averaging,
                                     "frame_stack": frame_stack,
                                     "rom_file": rom_file,
-                                    "frame_count": 0}
+                                    "frame_count": 0,
+                                    "reward_clipping":reward_clippling}
         else:
             self._env_dictionary = env_dictionary
 
@@ -41,6 +42,7 @@ class ALE_Environment(EnvironmentBase):
         self.frame_stack = self._env_dictionary["frame_stack"]
         self.rom_file = str.encode(self.games_directory + self._env_dictionary["rom_file"])
         self.frame_count = self._env_dictionary["frame_count"]
+        self.reward_clipping = self._env_dictionary["reward_clipping"]
 
         " Rendering Variables "
         self.env.setBool(b'display_screen', display_screen)
@@ -67,6 +69,11 @@ class ALE_Environment(EnvironmentBase):
 
     def update(self, action):
         reward = self.env.act(action)
+        if self.reward_clipping:
+            if reward >= 1:
+                reward = 1
+            elif reward <= -1:
+                reward = -1
         self.agent_state_display()
         new_frame = self.fix_state(self.env.getScreenGrayscale())
         current_state = np.delete(self.current_state, 0, axis=-1)
@@ -78,11 +85,12 @@ class ALE_Environment(EnvironmentBase):
 
     @staticmethod
     def fix_state(state):
-        off_top = 6
-        bottom = 188
-        off_left = 6
-        new_state = state[:][off_top:bottom][:]
-        new_state = np.delete(new_state, range(0, off_left + 1), 1)  # Eliminates 60 columns from the left
+        # off_top = 6
+        # bottom = 188
+        # off_left = 6
+        # new_state = state[:][off_top:bottom][:]
+        # new_state = np.delete(new_state, range(0, off_left + 1), 1)  # Eliminates 60 columns from the left
+        new_state = state
         new_state = resize(new_state, (84, 84, 1), mode="constant")
         return new_state
 
