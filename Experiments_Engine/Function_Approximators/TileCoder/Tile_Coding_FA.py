@@ -24,8 +24,6 @@ class TileCoderFA(FunctionApproximatorBase):
 
         if state_space_range is None: self.state_space_range = [1] * state_space_size
         else: self.state_space_range = state_space_range
-        # self.state_space_range = np.asarray(self.state_space_range).flatten() # It converts everything to a flat array
-        # self.scale_factor = np.divide(self.tile_side_length, self.state_space_range)
         self.scale_factor = self.tile_side_length
         super().__init__()
 

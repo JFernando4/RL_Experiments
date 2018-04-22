@@ -39,8 +39,133 @@ class QSigma(RL_ALgorithmBase):
         self.fa = function_approximator
         self.env = environment
 
+    def recursive_return_function(self, trajectory, n=0, base_value=None):
+        if n == self.n:
+            assert base_value is not None, "The base value of the recursive function can't be None."
+            return base_value
+        else:
+            reward, action, qvalues, termination = trajectory.pop(0)
+            if termination:
+                base_rho = 1
+                return reward, base_rho
+            else:
+                tprobabilities = self.tpolicy.probability_of_action(q_values=qvalues, all_actions=True)
+                bprobabilities = self.bpolicy.probability_of_action(q_values=qvalues, all_actions=True)
+                if bprobabilities[action] == 0:
+                    rho = 1
+                else:
+                    rho = tprobabilities[action] / bprobabilities[action]
+                average_action_value = self.expected_action_value(qvalues, tprobabilities)
+                return reward + \
+                       self.gamma * (rho * self.sigma + (1-self.sigma) * tprobabilities[action]) \
+                       * self.recursive_return_function(trajectory=trajectory, n=n+1, base_value=qvalues[action]) +\
+                       self.gamma * (1-self.sigma) * (average_action_value - tprobabilities[action] * qvalues[action])
+
+    @staticmethod
+    def expected_action_value(q_values, p_values):
+        expected = 0
+        for i in range(len(q_values)):
+            expected += q_values[i] * p_values[i]
+        return expected
+
+    def sample_run(self, tpolicy=False, render=True):
+        policy = self.bpolicy
+        self.env.set_render(render)
+        if tpolicy:
+            policy = self.tpolicy
+
+        self.env.reset()
+        terminate = False
+        S = self.env.get_current_state()
+        while not terminate:
+            q_values = self.fa.get_next_states_values(S)
+            A = policy.choose_action(q_values)
+            S, _, terminate = self.env.update(A)
+
+        self.env.set_render()
+        self.env.reset()
+
+    def increase_episode_number(self):
+        self.episode_number += 1
+        self._agent_dictionary["episode_number"] = self.episode_number
+
+    def adjust_sigma(self):
+        self.sigma *= self.beta
+        self._agent_dictionary['sigma'] = self.sigma
+
+    def get_agent_dictionary(self):
+        return self._agent_dictionary
+
+    def get_return_per_episode(self):
+        return self._agent_dictionary['return_per_episode']
 
     def train(self, num_episodes):
+        if num_episodes == 0: return
+
+        Actions = zeros(self.n + 1, dtype=int)
+        States = [[] for _ in range(self.n + 1)]
+
+        for episode in range(num_episodes):
+            # Record Keeping
+            episode_reward_sum = 0
+            episode_timesteps = 1
+            self.increase_episode_number()
+
+            # Current State, Action, and Q_values
+            S = self.env.get_current_state()
+            q_values = self.fa.get_next_states_values(S)
+            A = self.bpolicy.choose_action(q_values)
+            T = inf
+            t = 0
+
+            # Storing
+            States[t % (self.n + 1)] = S
+            Actions[t % (self.n + 1)] = A
+
+            # Trajectory
+            trajectory = []
+
+            while 1:
+                if t < T:
+                    # Step in the environment
+                    new_S, R, terminate = self.env.update(A)
+
+                    # Updating Q_values and State
+                    States[(t+1) % (self.n+1)] = new_S
+                    S = new_S
+                    q_values = self.fa.get_next_states_values(S)
+
+                    # Record Keeping
+                    episode_timesteps += 1
+                    episode_reward_sum += R
+
+                    if terminate:
+                        T = t + 1
+                    else:
+                        A = self.bpolicy.choose_action(q_values)
+                        Actions[(t + 1) % (self.n + 1)] = A
+
+                        # Storing Trajectory
+                        trajectory.append([R, A, q_values, terminate])
+
+                tau = t - self.n + 1
+                if (len(trajectory) == self.n) and (tau >= 0): # These two statements are equivalent
+                    temp_copy_of_trajectory = list(trajectory)
+                    G = self.recursive_return_function(temp_copy_of_trajectory)
+                    self.fa.update(States[tau % (self.n+1)], Actions[tau % (self.n+1)], nstep_return=G,
+                                   correction=1)
+                    trajectory.pop(0)
+
+                t += 1
+                if tau == T-1: break
+
+            self._agent_dictionary["return_per_episode"].append(episode_reward_sum)
+            self._agent_dictionary["timesteps_per_episode"].append(episode_timesteps)
+            self.adjust_sigma()
+            self.env.reset()
+
+##################### This function is obsolete #######################
+    def train_without_recursive_function(self, num_episodes):
         if num_episodes == 0: return
 
         Actions = zeros(self.n+1, dtype=int)
@@ -115,60 +240,4 @@ class QSigma(RL_ALgorithmBase):
             self.adjust_sigma()
             self.env.reset()
 
-    def recursive_return_function(self, trajectory, n=0, base_value=None):
-        reward, action, qvalues, termination = trajectory.pop(0)
-        if termination:
-            base_rho = 1
-            return reward, base_rho
-        else:
-            tprobabilities = self.tpolicy.probability_of_action(q_values=qvalues, all_actions=True)
-            bprobabilities = self.bpolicy.probability_of_action(q_values=qvalues, all_actions=True)
-            assert bprobabilities[action] != 0, "The probability of the action under the behaviour policy mustn't be 0!"
-            rho = tprobabilities[action] / bprobabilities[action]
-            average_action_value = self.expected_action_value(qvalues, tprobabilities)
-            if n == self.n:
-                assert base_value is not None, "The base value of the recursive function can't be None."
-                return base_value
-            else:
-                return reward + \
-                       self.gamma * (rho * self.sigma + (1-self.sigma) * tprobabilities[action]) \
-                       * self.recursive_return_function(trajectory=trajectory, n=n+1, base_value=qvalues[action]) +\
-                       self.gamma * (1-self.sigma) * (average_action_value - tprobabilities[action] * qvalues[action])
 
-    @staticmethod
-    def expected_action_value(q_values, p_values):
-        expected = 0
-        for i in range(len(q_values)):
-            expected += q_values[i] * p_values[i]
-        return expected
-
-    def sample_run(self, tpolicy=False, render=True):
-        policy = self.bpolicy
-        self.env.set_render(render)
-        if tpolicy:
-            policy = self.tpolicy
-
-        self.env.reset()
-        terminate = False
-        S = self.env.get_current_state()
-        while not terminate:
-            q_values = self.fa.get_next_states_values(S)
-            A = policy.choose_action(q_values)
-            S, _, terminate = self.env.update(A)
-
-        self.env.set_render()
-        self.env.reset()
-
-    def increase_episode_number(self):
-        self.episode_number += 1
-        self._agent_dictionary["episode_number"] = self.episode_number
-
-    def adjust_sigma(self):
-        self.sigma *= self.beta
-        self._agent_dictionary['sigma'] = self.sigma
-
-    def get_agent_dictionary(self):
-        return self._agent_dictionary
-
-    def get_return_per_episode(self):
-        return self._agent_dictionary['return_per_episode']
