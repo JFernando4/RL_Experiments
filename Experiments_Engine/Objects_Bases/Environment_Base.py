@@ -52,3 +52,8 @@ class EnvironmentBase(object):
     def set_render(self, *args):
         """ Set render to true if the environment has the option to render """
         return
+
+    @abc.abstractmethod
+    def get_env_info(self):
+        " Returns the current information about the environment that is relevant for summaries "
+        return

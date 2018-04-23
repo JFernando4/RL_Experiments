@@ -4,7 +4,7 @@ import numpy as np
 class Experience_Replay_Buffer:
 
     def __init__(self, buffer_size=10, batch_size=1, n=1, observation_dimensions=[2,2],
-                 observation_dtype=np.uint8):
+                 observation_dtype=np.uint8, reward_clipping=True):
         self._buff_sz = buffer_size
         self._batch_sz = batch_size
         self._n = n
@@ -14,6 +14,7 @@ class Experience_Replay_Buffer:
         self._buffer_full = False
         self._uptodate = []
         self._buffer = []
+        self._reward_clipping = reward_clipping
 
     def store_observation(self, reward, action, q_val, termination, state=np.array([0])):
         """
@@ -27,6 +28,13 @@ class Experience_Replay_Buffer:
              "up_to_date": True
          }
         """
+        if self._reward_clipping:
+            if reward > 0:
+                reward = 1
+            elif reward < 0:
+                reward = -1
+            else:
+                reward = reward
         observation = {"reward": reward,
                        "action": action,
                        "state": state.tobytes(),
@@ -49,9 +57,9 @@ class Experience_Replay_Buffer:
         if not self._buffer_full:
             if self._batch_sz > self._current_buffer_size - (self._n+1):
                 raise ValueError("The buffer is not big enough to sample from it.")
-            daindices = np.random.choice(self._current_buffer_size - (self._n+1), replace=False)
+            daindices = np.random.choice(self._current_buffer_size - (self._n+1), size=self._batch_sz, replace=False)
         else:
-            daindices = np.random.choice(self._buff_sz - (self._n+1), replace=False)
+            daindices = np.random.choice(self._buff_sz - (self._n+1), size=self._batch_sz, replace=False)
 
         dabatch = []
         for daindex in daindices:
@@ -62,7 +70,7 @@ class Experience_Replay_Buffer:
     def gather_data(self, daindex, update_function):
         trajectory = []
         current_index = daindex + 1
-        while current_index < (current_index + self._n):
+        while current_index < (daindex + 1 + self._n):
             temp_obs = self._buffer[current_index]
             if not self._uptodate[current_index]: # False if the observation is not up to date
                 state = np.frombuffer(temp_obs["state"], dtype=self._obs_dtype).reshape(shape=self._obs_dim)
@@ -84,7 +92,7 @@ class Experience_Replay_Buffer:
         self._uptodate[0:last_index] = [False] * (last_index)
 
     def ready_to_sample(self):
-        return self._batch_sz > (self._current_buffer_size - (self._n+1))
+        return self._batch_sz < (self._current_buffer_size - (self._n+1))
 
     """ Gettters """
     def get_obs_dtype(self):

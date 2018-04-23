@@ -18,7 +18,7 @@ class ALE_Environment(EnvironmentBase):
             self.games_directory = working_directory + "/Environments/Arcade_Learning_Environment/Supported_Roms/"
         else:
             self.games_directory = games_directory
-        if rom_file is None: raise ValueError("No rom file provided.")
+
 
         " Environment dictionary "
         if env_dictionary is None:
@@ -43,6 +43,7 @@ class ALE_Environment(EnvironmentBase):
         self.rom_file = str.encode(self.games_directory + self._env_dictionary["rom_file"])
         self.frame_count = self._env_dictionary["frame_count"]
         self.reward_clipping = self._env_dictionary["reward_clipping"]
+        if self.rom_file is None: raise ValueError("No rom file provided.")
 
         " Rendering Variables "
         self.env.setBool(b'display_screen', display_screen)
@@ -122,6 +123,9 @@ class ALE_Environment(EnvironmentBase):
 
     def get_observation_dtype(self):
         return self.current_state.dtype
+
+    def get_env_info(self):
+        return self.frame_count
 
     " Setters "
     def set_render(self, display_screen=False):

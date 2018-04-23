@@ -22,10 +22,9 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
     fa_dictionary           - fa dictionary from a previous session
     """
     def __init__(self, optimizer, target_network, update_network, return_function=QSigmaReturnFunction(),
-                 tnetwork_update_freq=10000,
-                 numActions=None, buffer_size = 100000, rlagent_n=3, obs_dtype=np.uint8,
-                 batch_size=32, alpha=0.00025,
-                 tf_session=None, obs_dim=None, restore=False, fa_dictionary=None):
+                 tnetwork_update_freq=10000, er_buffer=Experience_Replay_Buffer(),
+                 numActions=None, batch_size=32, alpha=0.00025, tf_session=None, obs_dim=None, restore=False,
+                 fa_dictionary=None):
         super().__init__()
         " Function Approximator Dictionary "
         if fa_dictionary is None:
@@ -35,11 +34,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
                                    "observation_dimensions": obs_dim,
                                    "train_loss_history": [],
                                    "tnetwork_update_freq": tnetwork_update_freq,
-                                   "number_of_updates": 0,
-                                   "er_buffer": Experience_Replay_Buffer(buffer_size=buffer_size, batch_size=batch_size,
-                                                                         n=rlagent_n, observation_dimensions=obs_dim,
-                                                                         observation_dtype=obs_dtype),
-                                   "return_function": return_function}
+                                   "number_of_updates": 0}
         else:
             self._fa_dictionary = fa_dictionary
 
@@ -49,10 +44,13 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         self.alpha = self._fa_dictionary["alpha"]
         self.observation_dimensions = self._fa_dictionary["observation_dimensions"]
         self.train_loss_history = self._fa_dictionary["train_loss_history"]
-        self.tnetwork_upd_freq = self._fa_dictionary["tnetwork_update_frequency"]
+        self.tnetwork_upd_freq = self._fa_dictionary["tnetwork_update_freq"]
         self.number_of_updates = self._fa_dictionary["number_of_updates"]
-        self.er_buffer = self._fa_dictionary["er_buffer"]
-        self.return_function = self._fa_dictionary["return_function"]
+
+        " Experience Replay Buffer and Return Function "
+        self.er_buffer = er_buffer
+        assert isinstance(self.er_buffer, Experience_Replay_Buffer), "You need to provide a buffer!"
+        self.return_function = return_function
 
         " Neural Network Models "
         self.target_network = target_network

@@ -11,9 +11,9 @@ class QSigma(RL_ALgorithmBase):
 
     def __init__(self, n=3, gamma=1, beta=1,
                  sigma=1, agent_dictionary=None, environment=EnvironmentBase(),
-                 function_approximator=FunctionApproximatorBase(),
+                 function_approximator=FunctionApproximatorBase(), steps_before_training=0,
                  target_policy=PolicyBase(), behavior_policy=PolicyBase(), use_er_buffer=False,
-                 er_buffer=Experience_Replay_Buffer(), compute_return=True, anneal_epsilon=False):
+                 er_buffer=Experience_Replay_Buffer(), compute_return=True, anneal_epsilon=False, save_env_info=True):
         super().__init__()
         """ Dictionary for Saving and Restoring """
         if agent_dictionary is None:
@@ -24,30 +24,38 @@ class QSigma(RL_ALgorithmBase):
                                      "return_per_episode": [],
                                      "timesteps_per_episode": [],
                                      "episode_number": 0,
-                                     "bpolicy": behavior_policy,
-                                     "tpolicy": target_policy,
                                      "use_er_buffer": use_er_buffer,
-                                     "er_buffer": er_buffer,
                                      "compute_return": compute_return,
-                                     "anneal_epsilon": anneal_epsilon}
+                                     "anneal_epsilon": anneal_epsilon,
+                                     "save_env_info": save_env_info,
+                                     "env_info": [],
+                                     "steps_before_training": steps_before_training,
+                                     "current_steps_before_training": 0}
         else:
             self._agent_dictionary = agent_dictionary
-        """ Hyperparameters """
+        """ Parameters that can be restored """
         self.n = self._agent_dictionary["n"]
         self.gamma = self._agent_dictionary["gamma"]
         self.beta = self._agent_dictionary["beta"]
         self.sigma = self._agent_dictionary["sigma"]
         self.use_er_buffer = self._agent_dictionary["use_er_buffer"]
-        self.er_buffer = self._agent_dictionary["er_buffer"]
         self.compute_return = self._agent_dictionary["compute_return"]
         self.anneal_epsilon = self._agent_dictionary["anneal_epsilon"]
-        """ History """
+        self.save_env_info = self._agent_dictionary["save_env_info"]
+        self.steps_before_training = self._agent_dictionary["steps_before_training"]
+            # History
         self.return_per_episode = self._agent_dictionary["return_per_episode"]
         self.episode_number = self._agent_dictionary["episode_number"]
-        """ Policies, function approximator, and environment """
-        self.bpolicy = self._agent_dictionary["bpolicy"]
-        self.tpolicy = self._agent_dictionary["tpolicy"]
+
+        " Parameters that can't be restored "
+            # Behaviour and Target Policies
+        self.bpolicy = behavior_policy
+        self.tpolicy = target_policy
+            # Experience Replay Buffer
+        self.er_buffer = er_buffer
+            # Function Approximator
         self.fa = function_approximator
+            # Environment
         self.env = environment
 
     def recursive_return_function(self, trajectory, n=0, base_value=None):
@@ -110,6 +118,9 @@ class QSigma(RL_ALgorithmBase):
     def get_return_per_episode(self):
         return self._agent_dictionary['return_per_episode']
 
+    def get_env_info(self):
+        return self._agent_dictionary["env_info"]
+
     def train(self, num_episodes):
         if num_episodes == 0: return
 
@@ -147,8 +158,11 @@ class QSigma(RL_ALgorithmBase):
                     # Step in the environment
                     new_S, R, terminate = self.env.update(A)
                     if self.anneal_epsilon:
-                        self.tpolicy.anneal_epsilon()
-                        self.bpolicy.anneal_epsilon()
+                        if self._agent_dictionary["current_steps_before_training"] >= self.steps_before_training:
+                            self.tpolicy.anneal_epsilon()
+                            self.bpolicy.anneal_epsilon()
+                        else:
+                            self._agent_dictionary["current_steps_before_training"] += 1
                     # Updating Q_values and State
                     States[(t+1) % (self.n+1)] = new_S
                     S = new_S
@@ -180,7 +194,8 @@ class QSigma(RL_ALgorithmBase):
                         G = self.recursive_return_function(temp_copy_of_trajectory)
                     else:
                         G = 0
-                    self.fa.update(States[tau % (self.n+1)], Actions[tau % (self.n+1)], nstep_return=G,
+                    if self._agent_dictionary["current_steps_before_training"] >= self.steps_before_training:
+                        self.fa.update(States[tau % (self.n+1)], Actions[tau % (self.n+1)], nstep_return=G,
                                    correction=1)
                     trajectory.pop(0)
 
@@ -189,5 +204,7 @@ class QSigma(RL_ALgorithmBase):
 
             self._agent_dictionary["return_per_episode"].append(episode_reward_sum)
             self._agent_dictionary["timesteps_per_episode"].append(episode_timesteps)
+            if self._agent_dictionary["save_env_info"]:
+                self._agent_dictionary["env_info"].append(self.env.get_env_info())
             self.adjust_sigma()
             self.env.reset()

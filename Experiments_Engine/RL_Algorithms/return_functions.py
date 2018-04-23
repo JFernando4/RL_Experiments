@@ -19,7 +19,7 @@ class QSigmaReturnFunction:
         return expected
 
     def recursive_return_function(self, trajectory, n=0, base_value=None):
-        if n == self.n:
+        if n == self._n:
             assert base_value is not None, "The base value of the recursive function can't be None."
             return base_value
         else:

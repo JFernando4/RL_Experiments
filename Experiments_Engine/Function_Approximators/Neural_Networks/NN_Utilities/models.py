@@ -17,7 +17,7 @@ class Model_nCPmFO(ModelBase):
 
     def __init__(self, name=None, dim_out=None, filter_dims=None, observation_dimensions=None, num_actions=None,
                  gate_fun=None, convolutional_layers=None, fully_connected_layers=None, SEED=None,
-                 model_dictionary=None):
+                 model_dictionary=None, strides=None):
         super().__init__()
 
         " Model Dictionary for Saving and Restoring "
@@ -29,7 +29,8 @@ class Model_nCPmFO(ModelBase):
                                       "num_actions": num_actions,
                                       "gate_fun": gate_fun,
                                       "conv_layers": convolutional_layers,
-                                      "full_layers": fully_connected_layers}
+                                      "full_layers": fully_connected_layers,
+                                      "strides": strides}
         else:
             self._model_dictionary = model_dictionary
 
@@ -45,6 +46,7 @@ class Model_nCPmFO(ModelBase):
         self.dim_out = self._model_dictionary["output_dims"]
         self.filter_dims = self._model_dictionary["filter_dims"]
         self.gate_fun = self._model_dictionary["gate_fun"]
+        self.strides = self._model_dictionary["strides"]
         total_layers = self.convolutional_layers + self.fully_connected_layers
 
         " Placehodler "
@@ -64,7 +66,7 @@ class Model_nCPmFO(ModelBase):
             W, b, z_hat, r_hat = layers.convolution_2d(
                 self.name, "conv_"+str(i+1), current_s_hat, self.filter_dims[i], dim_in_conv[i], self.dim_out[i],
                 tf.random_normal_initializer(stddev=1.0 / np.sqrt(self.filter_dims[i]**2 * dim_in_conv[i] + 1),
-                                             seed=SEED), self.gate_fun)
+                                             seed=SEED), self.gate_fun, stride=self.strides[i])
             # layer n + 1/2: pool
             s_hat = tf.nn.max_pool(
                 r_hat, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")

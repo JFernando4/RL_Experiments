@@ -49,9 +49,9 @@ class EpsilonGreedyPolicy(PolicyBase):
 
     """ Moves closer a step closer to the final epsilon """
     def anneal_epsilon(self):
-        self.annealing_steps += 1
         if self.annealing_steps < self.annealing_period:
             self.epsilon = self.initial_epsilon - ((self.initial_epsilon - self.final_epsilon) *
                            min(1, self.annealing_steps / self.annealing_period))
+            self.annealing_steps += 1
         else:
             self.epsilon = self.final_epsilon
