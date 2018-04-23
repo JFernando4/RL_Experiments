@@ -6,11 +6,16 @@ import numpy as np
 
 class EpsilonGreedyPolicy(PolicyBase):
 
-    def __init__(self, numActions, epsilon=0.1):
+    def __init__(self, numActions, epsilon=0.1, anneal=False, final_epsilon=0.1, annealing_period=100000):
         self.epsilon = epsilon
         self.p_random = (self.epsilon / numActions)
         self.p_optimal = self.p_random + (1 - self.epsilon)
         self.numActions = numActions
+        self.anneal = anneal
+        self.initial_epsilon = epsilon
+        self.final_epsilon = final_epsilon
+        self.annealing_period = annealing_period
+        self.annealing_steps = 0
         super().__init__()
 
     """ Chooses an action from q according to the probability epsilon"""
@@ -41,3 +46,12 @@ class EpsilonGreedyPolicy(PolicyBase):
             return action_probabilities
         else:
             return action_probabilities[action]
+
+    """ Moves closer a step closer to the final epsilon """
+    def anneal_epsilon(self):
+        self.annealing_steps += 1
+        if self.annealing_steps < self.annealing_period:
+            self.epsilon = self.initial_epsilon - ((self.initial_epsilon - self.final_epsilon) *
+                           min(1, self.annealing_steps / self.annealing_period))
+        else:
+            self.epsilon = self.final_epsilon

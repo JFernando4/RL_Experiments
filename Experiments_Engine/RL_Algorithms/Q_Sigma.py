@@ -2,6 +2,8 @@ from Experiments_Engine.Objects_Bases.RL_Algorithm_Base import RL_ALgorithmBase
 from Experiments_Engine.Objects_Bases.Environment_Base import EnvironmentBase
 from Experiments_Engine.Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
 from Experiments_Engine.Objects_Bases.Policy_Base import PolicyBase
+from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.experience_replay_buffer import \
+    Experience_Replay_Buffer
 from numpy import inf, zeros
 import numpy as np
 
@@ -10,7 +12,8 @@ class QSigma(RL_ALgorithmBase):
     def __init__(self, n=3, gamma=1, beta=1,
                  sigma=1, agent_dictionary=None, environment=EnvironmentBase(),
                  function_approximator=FunctionApproximatorBase(),
-                 target_policy=PolicyBase(), behavior_policy=PolicyBase()):
+                 target_policy=PolicyBase(), behavior_policy=PolicyBase(), use_er_buffer=False,
+                 er_buffer=Experience_Replay_Buffer(), compute_return=True, anneal_epsilon=False):
         super().__init__()
         """ Dictionary for Saving and Restoring """
         if agent_dictionary is None:
@@ -22,7 +25,11 @@ class QSigma(RL_ALgorithmBase):
                                      "timesteps_per_episode": [],
                                      "episode_number": 0,
                                      "bpolicy": behavior_policy,
-                                     "tpolicy": target_policy}
+                                     "tpolicy": target_policy,
+                                     "use_er_buffer": use_er_buffer,
+                                     "er_buffer": er_buffer,
+                                     "compute_return": compute_return,
+                                     "anneal_epsilon": anneal_epsilon}
         else:
             self._agent_dictionary = agent_dictionary
         """ Hyperparameters """
@@ -30,6 +37,10 @@ class QSigma(RL_ALgorithmBase):
         self.gamma = self._agent_dictionary["gamma"]
         self.beta = self._agent_dictionary["beta"]
         self.sigma = self._agent_dictionary["sigma"]
+        self.use_er_buffer = self._agent_dictionary["use_er_buffer"]
+        self.er_buffer = self._agent_dictionary["er_buffer"]
+        self.compute_return = self._agent_dictionary["compute_return"]
+        self.anneal_epsilon = self._agent_dictionary["anneal_epsilon"]
         """ History """
         self.return_per_episode = self._agent_dictionary["return_per_episode"]
         self.episode_number = self._agent_dictionary["episode_number"]
@@ -115,6 +126,12 @@ class QSigma(RL_ALgorithmBase):
             S = self.env.get_current_state()
             q_values = self.fa.get_next_states_values(S)
             A = self.bpolicy.choose_action(q_values)
+
+            # Storing in the experience replay buffer
+            if self.use_er_buffer:
+                assert isinstance(self.er_buffer, Experience_Replay_Buffer) , "You need to provide a buffer!"
+                self.er_buffer.store_observation(reward=0, action=A, q_val=q_values, termination=False,
+                                                 state=np.array(S))
             T = inf
             t = 0
 
@@ -129,7 +146,9 @@ class QSigma(RL_ALgorithmBase):
                 if t < T:
                     # Step in the environment
                     new_S, R, terminate = self.env.update(A)
-
+                    if self.anneal_epsilon:
+                        self.tpolicy.anneal_epsilon()
+                        self.bpolicy.anneal_epsilon()
                     # Updating Q_values and State
                     States[(t+1) % (self.n+1)] = new_S
                     S = new_S
@@ -148,10 +167,19 @@ class QSigma(RL_ALgorithmBase):
                         # Storing Trajectory
                         trajectory.append([R, A, q_values, terminate])
 
+                        # Storing in the experience replay buffer
+                        if self.use_er_buffer:
+                            assert isinstance(self.er_buffer, Experience_Replay_Buffer), "You need to provide a buffer"
+                            self.er_buffer.store_observation(reward=R, action=A, q_val=q_values, termination=terminate,
+                                                             state=np.array(S))
+
                 tau = t - self.n + 1
                 if (len(trajectory) == self.n) and (tau >= 0): # These two statements are equivalent
                     temp_copy_of_trajectory = list(trajectory)
-                    G = self.recursive_return_function(temp_copy_of_trajectory)
+                    if self.compute_return:
+                        G = self.recursive_return_function(temp_copy_of_trajectory)
+                    else:
+                        G = 0
                     self.fa.update(States[tau % (self.n+1)], Actions[tau % (self.n+1)], nstep_return=G,
                                    correction=1)
                     trajectory.pop(0)
@@ -163,81 +191,3 @@ class QSigma(RL_ALgorithmBase):
             self._agent_dictionary["timesteps_per_episode"].append(episode_timesteps)
             self.adjust_sigma()
             self.env.reset()
-
-##################### This function is obsolete #######################
-    def train_without_recursive_function(self, num_episodes):
-        if num_episodes == 0: return
-
-        Actions = zeros(self.n+1, dtype=int)
-        States = [[] for _ in range(self.n+1)]
-        Q = zeros(self.n + 1)
-        Delta = zeros(self.n)
-        Pi = zeros(self.n)
-        Mu = zeros(self.n)
-        Sigma = zeros(self.n)
-
-        for episode in range(num_episodes):
-            self.increase_episode_number()
-            S = self.env.get_current_state()
-            q_values = self.fa.get_next_states_values(S)
-            A = self.bpolicy.choose_action(q_values)
-            reward_sum = 0
-            T = inf
-            t = 0
-            timesteps = 1
-            States[t % (self.n+1)] = S
-            Actions[t % (self.n+1)] = A
-            Q[t % (self.n+1)] = self.fa.get_value(S, A)
-
-            while 1:
-                if t < T:
-                    new_S, R, terminate = self.env.update(A)
-                    timesteps += 1
-                    States[(t+1) % (self.n+1)] = new_S
-                    reward_sum += R
-
-                    q_values = self.fa.get_next_states_values(new_S)
-                    t_probabilities = self.tpolicy.probability_of_action(q_values=q_values, all_actions=True)
-                    expected_value = self.expected_action_value(q_values, t_probabilities)
-
-                    if terminate:
-                        T = t+1
-                        Delta[t % self.n] = R - self.fa.get_value(States[t % (self.n+1)], Actions[t % (self.n+1)])
-                        # print("exterminate!")
-                    else:
-                        Sigma[t % self.n] = self.sigma
-                        new_A = self.bpolicy.choose_action(q_values)
-                        # print("The action is:", new_A, "\tThe q_values are:", q_values)
-                        Actions[(t+1) % (self.n+1)] = new_A
-                        Q[(t+1) % (self.n+1)] = self.fa.get_value(new_S, new_A)
-                        Delta[(t+1) % self.n] = R + (self.gamma * self.sigma * Q[(t+1) % (self.n+1)]) + \
-                                                (self.gamma * (1 - self.sigma) * expected_value) - Q[t % (self.n+1)]
-                        Mu[t % self.n] = self.bpolicy.probability_of_action(q_values=q_values, action=new_A,
-                                                                            all_actions=False)
-                        Pi[t % self.n] = self.tpolicy.probability_of_action(q_values=q_values, action=new_A,
-                                                                            all_actions=False)
-                        A = new_A
-
-                Tau = t - self.n + 1
-                if Tau >= 0:
-                    E = 1
-                    G = Q[Tau % (self.n+1)]
-                    Rho = 1
-                    for k in range(Tau, min(T, Tau + self.n)):
-                        if Mu[k % self.n] == 0:                     # For safety
-                            break
-                        G += E * Delta[k % self.n]
-                        E = self.gamma * E * ((1-self.sigma) * Pi[k % self.n] + self.sigma)
-                        Rho *= (1-self.sigma) + (self.sigma * (Pi[k % self.n] / Mu[k % self.n]))
-                    # Qtau = self.fa.get_value(States[Tau % (self.n+1)], Actions[Tau % (self.n+1)])
-                    self.fa.update(States[Tau % (self.n+1)], Actions[Tau % (self.n+1)],
-                                   nstep_return=G, correction=Rho)
-                t += 1
-                if Tau == T - 1: break
-
-            self._agent_dictionary["return_per_episode"].append(reward_sum)
-            self._agent_dictionary["timesteps_per_episode"].append(timesteps)
-            self.adjust_sigma()
-            self.env.reset()
-
-
