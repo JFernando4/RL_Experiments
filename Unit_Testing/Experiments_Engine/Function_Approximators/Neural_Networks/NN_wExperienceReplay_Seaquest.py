@@ -67,7 +67,7 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         batch_size = 32
         er_buffer = Experience_Replay_Buffer(buffer_size=buffer_size, batch_size=batch_size, n=self.n,
                                              observation_dimensions=obs_dims, observation_dtype=obs_dtype,
-                                             return_function=return_function)
+                                             return_function=return_function, frame_stack=4)
 
         """ Neural Network """
         alpha = 0.00025

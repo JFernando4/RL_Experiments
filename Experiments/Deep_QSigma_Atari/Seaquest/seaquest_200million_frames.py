@@ -26,7 +26,7 @@ class ExperimentAgent():
 
         " Environment "
         self.env_parameters = {"frame_skip": 4, "repeat_action_probability": 0.25, "max_num_frames": 18000,
-                                "color_averaging": True, "frame_stack": 4,
+                                "color_averaging": True, "frame_stack": 1,
                                 "rom_file": self.rom_name, "frame_count": 0, "reward_clipping": False}
         self.env = ALE_Environment(games_directory=self.games_directory, env_dictionary=self.env_parameters)
         obs_dims = self.env.get_observation_dimensions()
@@ -67,7 +67,7 @@ class ExperimentAgent():
         batch_size = 32
         er_buffer = Experience_Replay_Buffer(buffer_size=buffer_size, batch_size=batch_size, n=self.n,
                                              observation_dimensions=obs_dims, observation_dtype=obs_dtype,
-                                             return_function=return_function)
+                                             return_function=return_function, frame_stack=4)
 
         """ Neural Network """
         alpha = 0.00025
