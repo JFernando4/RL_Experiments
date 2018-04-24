@@ -52,23 +52,22 @@ class ExperimentAgent():
         self.target_network = Model_nCPmFO(model_dictionary=self.target_network_parameters)
         self.update_network = Model_nCPmFO(model_dictionary=self.update_network_parameters)
 
-        """ Experience Replay Buffer """
-        buffer_size = 100000
-        batch_size = 32
-        er_buffer = Experience_Replay_Buffer(buffer_size=buffer_size, batch_size=batch_size, n=self.n,
-                                             observation_dimensions=obs_dims, observation_dtype=obs_dtype)
-
         """ Policies """
-        annealing_period = 1000000
-        target_epsilon = 0.01
-        initial_epsilon = 1
+        target_epsilon = 0.1
         self.target_policy = EpsilonGreedyPolicy(numActions=num_actions, epsilon=target_epsilon, anneal=False)
-        self.behavior_policy = EpsilonGreedyPolicy(numActions=num_actions, epsilon=initial_epsilon, anneal=True,
-                                                   annealing_period=annealing_period, final_epsilon=target_epsilon)
+        self.behavior_policy = EpsilonGreedyPolicy(numActions=num_actions, epsilon=target_epsilon, anneal=False,
+                                              annealing_period=0, final_epsilon=0.1)
 
         """ Return Function """
         return_function = QSigmaReturnFunction(n=self.n, sigma=self.sigma, gamma=self.gamma, tpolicy=self.target_policy,
                                                bpolicy=self.behavior_policy)
+
+        """ Experience Replay Buffer """
+        buffer_size = 100000
+        batch_size = 32
+        er_buffer = Experience_Replay_Buffer(buffer_size=buffer_size, batch_size=batch_size, n=self.n,
+                                             observation_dimensions=obs_dims, observation_dtype=obs_dtype,
+                                             return_function=return_function)
 
         """ Neural Network """
         alpha = 0.00025

@@ -27,7 +27,8 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         self.env_parameters = {"frame_skip": 4, "repeat_action_probability": 0.25, "max_num_frames": 18000,
                                "color_averaging": True, "frame_stack": 1,
                                "rom_file": self.rom_name, "frame_count": 0, "reward_clipping": False}
-        self.env = ALE_Environment(games_directory=self.games_directory, env_dictionary=self.env_parameters)
+        self.env = ALE_Environment(games_directory=self.games_directory, env_dictionary=self.env_parameters,
+                                   display_screen=True)
         obs_dims = self.env.get_observation_dimensions()
         obs_dtype = self.env.get_observation_dtype()
         num_actions = self.env.get_num_actions()
@@ -51,6 +52,12 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         self.target_network = Model_nCPmFO(model_dictionary=self.target_network_parameters)
         self.update_network = Model_nCPmFO(model_dictionary=self.update_network_parameters)
 
+        """ Policies """
+        target_epsilon = 0.1
+        self.target_policy = EpsilonGreedyPolicy(numActions=num_actions, epsilon=target_epsilon, anneal=False)
+        self.behavior_policy = EpsilonGreedyPolicy(numActions=num_actions, epsilon=target_epsilon, anneal=False,
+                                              annealing_period=0, final_epsilon=0.1)
+
         """ Return Function """
         return_function = QSigmaReturnFunction(n=self.n, sigma=self.sigma, gamma=self.gamma, tpolicy=self.target_policy,
                                                bpolicy=self.behavior_policy)
@@ -62,16 +69,9 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
                                              observation_dimensions=obs_dims, observation_dtype=obs_dtype,
                                              return_function=return_function)
 
-        """ Policies """
-        target_epsilon = 0.01
-        self.target_policy = EpsilonGreedyPolicy(numActions=num_actions, epsilon=target_epsilon, anneal=False)
-        self.behavior_policy = EpsilonGreedyPolicy(numActions=num_actions, epsilon=1, anneal=True,
-                                              annealing_period=1000000, final_epsilon=target_epsilon)
-
         """ Neural Network """
         alpha = 0.00025
         tnetwork_update_freq = 10000
-
         self.fa_parameters = {"num_actions": num_actions,
                               "batch_size": batch_size,
                               "alpha": alpha,

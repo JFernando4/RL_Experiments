@@ -1,9 +1,10 @@
 from Experiments_Engine.Objects_Bases.RL_Algorithm_Base import RL_ALgorithmBase
 from Experiments_Engine.Objects_Bases.Environment_Base import EnvironmentBase
 from Experiments_Engine.Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
-from Experiments_Engine.Objects_Bases.Policy_Base import PolicyBase
 from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.experience_replay_buffer import \
     Experience_Replay_Buffer
+
+from Experiments_Engine.Policies import EpsilonGreedyPolicy
 from numpy import inf, zeros
 import numpy as np
 
@@ -12,7 +13,7 @@ class QSigma(RL_ALgorithmBase):
     def __init__(self, n=3, gamma=1, beta=1,
                  sigma=1, agent_dictionary=None, environment=EnvironmentBase(),
                  function_approximator=FunctionApproximatorBase(), steps_before_training=0,
-                 target_policy=PolicyBase(), behavior_policy=PolicyBase(), use_er_buffer=False,
+                 target_policy=EpsilonGreedyPolicy(), behavior_policy=EpsilonGreedyPolicy(), use_er_buffer=False,
                  er_buffer=Experience_Replay_Buffer(), compute_return=True, anneal_epsilon=False, save_env_info=True):
         super().__init__()
         """ Dictionary for Saving and Restoring """
@@ -141,8 +142,7 @@ class QSigma(RL_ALgorithmBase):
             # Storing in the experience replay buffer
             if self.use_er_buffer:
                 assert isinstance(self.er_buffer, Experience_Replay_Buffer) , "You need to provide a buffer!"
-                self.er_buffer.store_observation(reward=0, action=A, q_val=q_values, termination=False,
-                                                 state=np.array(S))
+                self.er_buffer.store_observation(reward=0, action=A, terminate=False, state=np.array(S))
             T = inf
             t = 0
 
@@ -184,8 +184,7 @@ class QSigma(RL_ALgorithmBase):
                         # Storing in the experience replay buffer
                         if self.use_er_buffer:
                             assert isinstance(self.er_buffer, Experience_Replay_Buffer), "You need to provide a buffer"
-                            self.er_buffer.store_observation(reward=R, action=A, q_val=q_values, termination=terminate,
-                                                             state=np.array(S))
+                            self.er_buffer.store_observation(reward=R, action=A, terminate=terminate, state=np.array(S))
 
                 tau = t - self.n + 1
                 if (len(trajectory) == self.n) and (tau >= 0): # These two statements are equivalent
