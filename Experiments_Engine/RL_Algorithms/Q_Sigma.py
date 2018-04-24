@@ -12,28 +12,30 @@ class QSigma(RL_ALgorithmBase):
 
     def __init__(self, n=3, gamma=1, beta=1,
                  sigma=1, agent_dictionary=None, environment=EnvironmentBase(),
-                 function_approximator=FunctionApproximatorBase(), steps_before_training=0,
+                 function_approximator=FunctionApproximatorBase(), rand_steps_before_training=0,
                  target_policy=EpsilonGreedyPolicy(), behavior_policy=EpsilonGreedyPolicy(), use_er_buffer=False,
                  er_buffer=Experience_Replay_Buffer(), compute_return=True, anneal_epsilon=False, save_env_info=True):
         super().__init__()
+
         """ Dictionary for Saving and Restoring """
         if agent_dictionary is None:
-            self._agent_dictionary ={"n": n,
-                                     "gamma": gamma,
-                                     "beta": beta,
-                                     "sigma": sigma,
-                                     "return_per_episode": [],
-                                     "timesteps_per_episode": [],
-                                     "episode_number": 0,
-                                     "use_er_buffer": use_er_buffer,
-                                     "compute_return": compute_return,
-                                     "anneal_epsilon": anneal_epsilon,
-                                     "save_env_info": save_env_info,
-                                     "env_info": [],
-                                     "steps_before_training": steps_before_training,
-                                     "current_steps_before_training": 0}
+            self._agent_dictionary = {"n": n,
+                                      "gamma": gamma,
+                                      "beta": beta,
+                                      "sigma": sigma,
+                                      "return_per_episode": [],
+                                      "timesteps_per_episode": [],
+                                      "episode_number": 0,
+                                      "use_er_buffer": use_er_buffer,
+                                      "compute_return": compute_return,
+                                      "anneal_epsilon": anneal_epsilon,
+                                      "save_env_info": save_env_info,
+                                      "env_info": [],
+                                      "rand_steps_before_training": rand_steps_before_training,
+                                      "rand_steps_count": 0}
         else:
             self._agent_dictionary = agent_dictionary
+
         """ Parameters that can be restored """
         self.n = self._agent_dictionary["n"]
         self.gamma = self._agent_dictionary["gamma"]
@@ -43,7 +45,7 @@ class QSigma(RL_ALgorithmBase):
         self.compute_return = self._agent_dictionary["compute_return"]
         self.anneal_epsilon = self._agent_dictionary["anneal_epsilon"]
         self.save_env_info = self._agent_dictionary["save_env_info"]
-        self.steps_before_training = self._agent_dictionary["steps_before_training"]
+        self.rand_steps_before_training = self._agent_dictionary["rand_steps_before_training"]
             # History
         self.return_per_episode = self._agent_dictionary["return_per_episode"]
         self.episode_number = self._agent_dictionary["episode_number"]
@@ -137,11 +139,18 @@ class QSigma(RL_ALgorithmBase):
             # Current State, Action, and Q_values
             S = self.env.get_current_state()
             q_values = self.fa.get_next_states_values(S)
-            A = self.bpolicy.choose_action(q_values)
+            if self._agent_dictionary["rand_steps_count"] > self.rand_steps_before_training:
+                A = self.bpolicy.choose_action(q_values)
+                if self.anneal_epsilon:
+                    self.tpolicy.anneal_epsilon()
+                    self.bpolicy.anneal_epsilon()
+            else:
+                A = np.random.randint(len(q_values))
+                self._agent_dictionary["rand_steps_count"] += 1
 
             # Storing in the experience replay buffer
             if self.use_er_buffer:
-                assert isinstance(self.er_buffer, Experience_Replay_Buffer) , "You need to provide a buffer!"
+                assert isinstance(self.er_buffer, Experience_Replay_Buffer), "You need to provide a buffer!"
                 self.er_buffer.store_observation(reward=0, action=A, terminate=False,
                                                  state=self.env.get_bottom_frame_in_stack())
             T = inf
@@ -158,12 +167,7 @@ class QSigma(RL_ALgorithmBase):
                 if t < T:
                     # Step in the environment
                     new_S, R, terminate = self.env.update(A)
-                    if self.anneal_epsilon:
-                        if self._agent_dictionary["current_steps_before_training"] >= self.steps_before_training:
-                            self.tpolicy.anneal_epsilon()
-                            self.bpolicy.anneal_epsilon()
-                        else:
-                            self._agent_dictionary["current_steps_before_training"] += 1
+
                     # Updating Q_values and State
                     States[(t+1) % (self.n+1)] = new_S
                     S = new_S
@@ -176,7 +180,15 @@ class QSigma(RL_ALgorithmBase):
                     if terminate:
                         T = t + 1
                     else:
-                        A = self.bpolicy.choose_action(q_values)
+                        if self._agent_dictionary["rand_steps_count"] > self.rand_steps_before_training:
+                            A = self.bpolicy.choose_action(q_values)
+                            if self.anneal_epsilon:
+                                self.tpolicy.anneal_epsilon()
+                                self.bpolicy.anneal_epsilon()
+                        else:
+                            A = np.random.randint(len(q_values))
+                            self._agent_dictionary["rand_steps_count"] += 1
+
                         Actions[(t + 1) % (self.n + 1)] = A
 
                         # Storing Trajectory
@@ -195,7 +207,7 @@ class QSigma(RL_ALgorithmBase):
                         G = self.recursive_return_function(temp_copy_of_trajectory)
                     else:
                         G = 0
-                    if self._agent_dictionary["current_steps_before_training"] >= self.steps_before_training:
+                    if self._agent_dictionary["rand_steps_count"] >= self.rand_steps_before_training:
                         self.fa.update(States[tau % (self.n+1)], Actions[tau % (self.n+1)], nstep_return=G,
                                    correction=1)
                     trajectory.pop(0)

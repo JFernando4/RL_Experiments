@@ -96,8 +96,8 @@ class ExperimentAgent():
         self.agent_parameters = {"n": self.n, "gamma": self.gamma, "beta": 1, "sigma": self.sigma,
                                   "return_per_episode": [], "timesteps_per_episode": [], "episode_number": 0,
                                   "use_er_buffer": True, "compute_return": False, "anneal_epsilon": True,
-                                  "save_env_info": True, "env_info": [], "steps_before_training": steps_before_training,
-                                  "current_steps_before_training": 0}
+                                  "save_env_info": True, "env_info": [], "rand_steps_before_training": steps_before_training,
+                                  "rand_steps_count": 0}
         self.agent = QSigma(environment=self.env, function_approximator=self.function_approximator,
                             target_policy=self.target_policy, behavior_policy=self.behavior_policy,
                             use_er_buffer=True, er_buffer=er_buffer,
