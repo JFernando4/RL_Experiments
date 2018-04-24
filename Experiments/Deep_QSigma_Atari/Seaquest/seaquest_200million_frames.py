@@ -22,7 +22,7 @@ class ExperimentAgent():
         " Agent's Parameters "
         self.n = 3
         self.gamma = 0.99
-        self.sigma = 5
+        self.sigma = 0.5
 
         " Environment Parameters "
         self.frame_stack = 4
@@ -123,7 +123,7 @@ class Experiment():
         episode_number = 0
         while self.agent.get_number_of_frames() < max_number_of_frames:
             episode_number += 1
-            print("\nTraining episode", episode_number, "...")
+            print("\nTraining episode", str(episode_number) + "...")
             self.agent.train(1)
             return_per_episode, environment_data = self.agent.get_training_data()
             print("The average return is:", np.average(return_per_episode))

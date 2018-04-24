@@ -37,7 +37,7 @@ class ALE_Environment(EnvironmentBase):
         " Environment variables"
         self.env = ALEInterface()
         self.env.setInt(b'frame_skip', self._env_dictionary["frame_skip"])
-        self.env.setInt(b'random_seed', int(time.time()))
+        self.env.setInt(b'random_seed', 0)
         self.env.setFloat(b'repeat_action_probability', self._env_dictionary["repeat_action_probability"])
         self.env.setInt(b"max_num_frames", self._env_dictionary["max_num_frames"])
         self.env.setBool(b"color_averaging", self._env_dictionary["color_averaging"])
