@@ -1,5 +1,5 @@
 from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy
-
+import numpy as np
 
 class QSigmaReturnFunction:
 
@@ -13,9 +13,12 @@ class QSigmaReturnFunction:
 
     @staticmethod
     def expected_action_value(q_values, p_values):
-        expected = 0
-        for i in range(len(q_values)):
-            expected += q_values[i] * p_values[i]
+        if not isinstance(q_values, np.ndarray):
+            q_values = np.array(q_values)
+        if not isinstance(p_values, np.ndarray):
+            p_values = np.array(q_values)
+
+        expected = np.sum(q_values * p_values)
         return expected
 
     def recursive_return_function(self, trajectory, n=0, base_value=None):

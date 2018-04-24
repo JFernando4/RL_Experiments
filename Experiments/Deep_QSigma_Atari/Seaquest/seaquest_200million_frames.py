@@ -85,7 +85,7 @@ class ExperimentAgent():
         tf_sess = tf.Session()
         self.function_approximator = NeuralNetwork_FA(optimizer=optimizer, target_network=self.target_network,
                                                       update_network=self.update_network, er_buffer=er_buffer,
-                                                      return_function=return_function, tf_session=tf_sess,
+                                                      tf_session=tf_sess,
                                                       fa_dictionary=self.fa_parameters)
 
         """ RL Agent """

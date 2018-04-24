@@ -6,7 +6,7 @@ import numpy as np
 
 class EpsilonGreedyPolicy(PolicyBase):
 
-    def __init__(self, numActions, epsilon=0.1, anneal=False, final_epsilon=0.1, annealing_period=100000):
+    def __init__(self, numActions=2, epsilon=0.1, anneal=False, final_epsilon=0.1, annealing_period=100000):
         self.epsilon = epsilon
         self.p_random = (self.epsilon / numActions)
         self.p_optimal = self.p_random + (1 - self.epsilon)

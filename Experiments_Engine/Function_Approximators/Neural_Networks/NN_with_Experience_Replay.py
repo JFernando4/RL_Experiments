@@ -4,7 +4,6 @@ import tensorflow as tf
 from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.experience_replay_buffer import \
     Experience_Replay_Buffer
 from Experiments_Engine.Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
-from Experiments_Engine.RL_Algorithms.return_functions import QSigmaReturnFunction
 
 " Neural Network function approximator "
 class NeuralNetwork_FA(FunctionApproximatorBase):
@@ -21,7 +20,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
     restore                 - whether variables are being restored from a previous session
     fa_dictionary           - fa dictionary from a previous session
     """
-    def __init__(self, optimizer, target_network, update_network, return_function=QSigmaReturnFunction(),
+    def __init__(self, optimizer, target_network, update_network,
                  tnetwork_update_freq=10000, er_buffer=Experience_Replay_Buffer(),
                  numActions=None, batch_size=32, alpha=0.00025, tf_session=None, obs_dim=None, restore=False,
                  fa_dictionary=None):
@@ -50,7 +49,6 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         " Experience Replay Buffer and Return Function "
         self.er_buffer = er_buffer
         assert isinstance(self.er_buffer, Experience_Replay_Buffer), "You need to provide a buffer!"
-        self.return_function = return_function
 
         " Neural Network Models "
         self.target_network = target_network
@@ -79,10 +77,10 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
             sample_actions = []
             sample_returns = []
             for data_point in batch:
-                state, action, trajectory = data_point
+                state, action, rl_return = data_point
                 sample_frames.append(state)
                 sample_actions.append(action)
-                sample_returns.append(self.return_function.recursive_return_function(trajectory=trajectory, n=0))
+                sample_returns.append(rl_return)
             sample_frames = np.array(sample_frames, dtype=self.er_buffer.get_obs_dtype())
             sample_actions = np.column_stack((np.arange(len(sample_actions)), sample_actions))
             sample_returns = np.array(sample_returns)

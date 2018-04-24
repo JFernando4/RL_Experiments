@@ -25,7 +25,7 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
 
         " Environment "
         self.env_parameters = {"frame_skip": 4, "repeat_action_probability": 0.25, "max_num_frames": 18000,
-                               "color_averaging": True, "frame_stack": 4,
+                               "color_averaging": True, "frame_stack": 1,
                                "rom_file": self.rom_name, "frame_count": 0, "reward_clipping": False}
         self.env = ALE_Environment(games_directory=self.games_directory, env_dictionary=self.env_parameters)
         obs_dims = self.env.get_observation_dimensions()
@@ -51,22 +51,22 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         self.target_network = Model_nCPmFO(model_dictionary=self.target_network_parameters)
         self.update_network = Model_nCPmFO(model_dictionary=self.update_network_parameters)
 
+        """ Return Function """
+        return_function = QSigmaReturnFunction(n=self.n, sigma=self.sigma, gamma=self.gamma, tpolicy=self.target_policy,
+                                               bpolicy=self.behavior_policy)
+
         """ Experience Replay Buffer """
         buffer_size = 100000
         batch_size = 32
-        obs_dtype = self.env.get_observation_dtype()
         er_buffer = Experience_Replay_Buffer(buffer_size=buffer_size, batch_size=batch_size, n=self.n,
-                                             observation_dimensions=obs_dims, observation_dtype=obs_dtype)
+                                             observation_dimensions=obs_dims, observation_dtype=obs_dtype,
+                                             return_function=return_function)
 
         """ Policies """
         target_epsilon = 0.01
         self.target_policy = EpsilonGreedyPolicy(numActions=num_actions, epsilon=target_epsilon, anneal=False)
         self.behavior_policy = EpsilonGreedyPolicy(numActions=num_actions, epsilon=1, anneal=True,
                                               annealing_period=1000000, final_epsilon=target_epsilon)
-
-        """ Return Function """
-        return_function = QSigmaReturnFunction(n=self.n, sigma=self.sigma, gamma=self.gamma, tpolicy=self.target_policy,
-                                               bpolicy=self.behavior_policy)
 
         """ Neural Network """
         alpha = 0.00025
@@ -83,7 +83,7 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         tf_sess = tf.Session()
         self.function_approximator = NeuralNetwork_FA(optimizer=optimizer, target_network=self.target_network,
                                                       update_network=self.update_network, er_buffer=er_buffer,
-                                                      return_function=return_function, tf_session=tf_sess,
+                                                      tf_session=tf_sess,
                                                       fa_dictionary=self.fa_parameters)
 
         """ RL Agent """
