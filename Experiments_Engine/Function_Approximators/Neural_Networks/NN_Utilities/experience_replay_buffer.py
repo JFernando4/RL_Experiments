@@ -5,7 +5,7 @@ from Experiments_Engine.Policies import EpsilonGreedyPolicy
 
 class Experience_Replay_Buffer:
 
-    def __init__(self, buffer_size=10, batch_size=1, gamma=0.99, sigma=0.5, frame_stack=4, observation_dimensions=[2,2],
+    def __init__(self, buffer_size=10, batch_size=1, frame_stack=4, observation_dimensions=[2,2],
                  n=3, tpolicy=EpsilonGreedyPolicy(), bpolicy=EpsilonGreedyPolicy(), observation_dtype=np.uint8,
                  reward_clipping=True, return_function=QSigmaReturnFunction()):
 
@@ -26,7 +26,7 @@ class Experience_Replay_Buffer:
         self.reward_clipping = reward_clipping
 
         self.state = CircularBuffer(self.buff_sz, shape=tuple(observation_dimensions), dtype=observation_dtype)
-        self.action = CircularBuffer(self.buff_sz, shape=(), dtype=np.float32)
+        self.action = CircularBuffer(self.buff_sz, shape=(), dtype=np.uint8)
         self.reward = CircularBuffer(self.buff_sz, shape=(), dtype=np.int32)
         self.terminate = CircularBuffer(self.buff_sz, shape=(), dtype=np.bool)
         self.qsigma_return = CircularBuffer(self.buff_sz, shape=(), dtype=np.float32)
@@ -99,10 +99,15 @@ class Experience_Replay_Buffer:
             for i in range(self.current_index):
                 self.uptodate.set_item(i, False)
 
-    def stack_frames(self, index):
-        frame = np.empty(shape=self.obs_dim + [self.frame_stack], dtype=self.obs_dtype)
-        for i in range(index, self.frame_stack + 1):
-            frame[i % index] = self.state[i]
+    def stack_frames(self, indx):
+        frame = self.state[indx]
+        for i in range(indx + 1, indx + self.frame_stack):
+            if self.terminate[i]:
+                for _ in range(i, indx + self.frame_stack):
+                    frame = np.concatenate((frame, self.state[i]), axis=-1)
+                break
+            else:
+                frame = np.concatenate((frame, self.state[i]), axis=-1)
         return frame
 
     def ready_to_sample(self):

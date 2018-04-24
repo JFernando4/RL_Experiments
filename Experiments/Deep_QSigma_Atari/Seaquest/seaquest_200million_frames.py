@@ -24,12 +24,16 @@ class ExperimentAgent():
         self.gamma = 0.99
         self.sigma = 5
 
+        " Environment Parameters "
+        self.frame_stack = 4
+
         " Environment "
         self.env_parameters = {"frame_skip": 4, "repeat_action_probability": 0.25, "max_num_frames": 18000,
-                                "color_averaging": True, "frame_stack": 1,
+                                "color_averaging": True, "frame_stack": self.frame_stack,
                                 "rom_file": self.rom_name, "frame_count": 0, "reward_clipping": False}
         self.env = ALE_Environment(games_directory=self.games_directory, env_dictionary=self.env_parameters)
-        obs_dims = self.env.get_observation_dimensions()
+        obs_dims = [84, 84, 1]
+        stacked_obs_dims = self.env.get_observation_dimensions()
         obs_dtype = self.env.get_observation_dtype()
         num_actions = self.env.get_num_actions()
 
@@ -42,10 +46,10 @@ class ExperimentAgent():
         strides = [4, 2, 1]
 
         self.target_network_parameters = {"model_name": "target", "output_dims": dim_out, "filter_dims": filter_dims,
-            "observation_dimensions": obs_dims, "num_actions": num_actions, "gate_fun": gate_fun,
+            "observation_dimensions": stacked_obs_dims, "num_actions": num_actions, "gate_fun": gate_fun,
             "conv_layers": conv_layers, "full_layers": full_layers,"strides": strides}
         self.update_network_parameters = {"model_name": "update", "output_dims": dim_out, "filter_dims": filter_dims,
-                                          "observation_dimensions": obs_dims, "num_actions": num_actions,
+                                          "observation_dimensions": stacked_obs_dims, "num_actions": num_actions,
                                           "gate_fun": gate_fun,
                                           "conv_layers": conv_layers, "full_layers": full_layers, "strides": strides}
 
@@ -76,11 +80,11 @@ class ExperimentAgent():
         self.fa_parameters = {"num_actions": num_actions,
                               "batch_size": batch_size,
                               "alpha": alpha,
-                              "observation_dimensions": obs_dims,
+                              "observation_dimensions": stacked_obs_dims,
                               "train_loss_history": [],
                               "tnetwork_update_freq": tnetwork_update_freq,
                               "number_of_updates": 0}
-        optimizer = lambda lr: tf.train.RMSPropOptimizer(learning_rate=lr, decay=0.95, momentum=0.95, epsilon=0.01)
+        optimizer = lambda lr: tf.train.RMSPropOptimizer(learning_rate=lr, decay=0.95, epsilon=0.01)
         tf_sess = tf.Session()
         self.function_approximator = NeuralNetwork_FA(optimizer=optimizer, target_network=self.target_network,
                                                       update_network=self.update_network, er_buffer=er_buffer,

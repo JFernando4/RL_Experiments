@@ -129,6 +129,9 @@ class ALE_Environment(EnvironmentBase):
     def get_env_info(self):
         return self.frame_count
 
+    def get_bottom_frame_in_stack(self):
+        return self.current_state[:,:, -self.frame_stack].reshape([84,84,1])
+
     " Setters "
     def set_render(self, display_screen=False):
         self.env.setBool(b'display_screen', display_screen)

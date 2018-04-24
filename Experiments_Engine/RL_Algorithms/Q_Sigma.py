@@ -142,7 +142,8 @@ class QSigma(RL_ALgorithmBase):
             # Storing in the experience replay buffer
             if self.use_er_buffer:
                 assert isinstance(self.er_buffer, Experience_Replay_Buffer) , "You need to provide a buffer!"
-                self.er_buffer.store_observation(reward=0, action=A, terminate=False, state=np.array(S))
+                self.er_buffer.store_observation(reward=0, action=A, terminate=False,
+                                                 state=self.env.get_bottom_frame_in_stack())
             T = inf
             t = 0
 
@@ -184,7 +185,8 @@ class QSigma(RL_ALgorithmBase):
                         # Storing in the experience replay buffer
                         if self.use_er_buffer:
                             assert isinstance(self.er_buffer, Experience_Replay_Buffer), "You need to provide a buffer"
-                            self.er_buffer.store_observation(reward=R, action=A, terminate=terminate, state=np.array(S))
+                            self.er_buffer.store_observation(reward=R, action=A, terminate=terminate,
+                                                             state=self.env.get_bottom_frame_in_stack())
 
                 tau = t - self.n + 1
                 if (len(trajectory) == self.n) and (tau >= 0): # These two statements are equivalent
