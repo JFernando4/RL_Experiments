@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 
 from Experiments_Engine.Environments.Arcade_Learning_Environment.ALE_Environment import ALE_Environment
-from Experiments_Engine.Function_Approximators.Neural_Networks.NN_with_Experience_Replay import NeuralNetwork_FA
+from Experiments_Engine.Function_Approximators.Neural_Networks.NN_with_Experience_Replay import NeuralNetwork_wER_FA
 from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.models import Model_nCPmFO
 from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.experience_replay_buffer import Experience_Replay_Buffer
 from Experiments_Engine.RL_Algorithms.return_functions import QSigmaReturnFunction
@@ -21,15 +21,18 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         " Agent's Parameters "
         self.n = 3
         self.gamma = 0.99
-        self.sigma = 5
+        self.sigma = 0.5
+
+        " Environment Parameters "
+        self.frame_stack = 4
 
         " Environment "
         self.env_parameters = {"frame_skip": 4, "repeat_action_probability": 0.25, "max_num_frames": 18000,
-                               "color_averaging": True, "frame_stack": 1,
+                               "color_averaging": True, "frame_stack": self.frame_stack,
                                "rom_file": self.rom_name, "frame_count": 0, "reward_clipping": False}
-        self.env = ALE_Environment(games_directory=self.games_directory, env_dictionary=self.env_parameters,
-                                   display_screen=True)
-        obs_dims = self.env.get_observation_dimensions()
+        self.env = ALE_Environment(games_directory=self.games_directory, env_dictionary=self.env_parameters)
+        obs_dims = [84, 84, 1]
+        stacked_obs_dims = self.env.get_observation_dimensions()
         obs_dtype = self.env.get_observation_dtype()
         num_actions = self.env.get_num_actions()
 
@@ -42,10 +45,11 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         strides = [4, 2, 1]
 
         self.target_network_parameters = {"model_name": "target", "output_dims": dim_out, "filter_dims": filter_dims,
-            "observation_dimensions": obs_dims, "num_actions": num_actions, "gate_fun": gate_fun,
-            "conv_layers": conv_layers, "full_layers": full_layers,"strides": strides}
+                                          "observation_dimensions": stacked_obs_dims, "num_actions": num_actions,
+                                          "gate_fun": gate_fun,
+                                          "conv_layers": conv_layers, "full_layers": full_layers, "strides": strides}
         self.update_network_parameters = {"model_name": "update", "output_dims": dim_out, "filter_dims": filter_dims,
-                                          "observation_dimensions": obs_dims, "num_actions": num_actions,
+                                          "observation_dimensions": stacked_obs_dims, "num_actions": num_actions,
                                           "gate_fun": gate_fun,
                                           "conv_layers": conv_layers, "full_layers": full_layers, "strides": strides}
 
@@ -56,7 +60,7 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         target_epsilon = 0.1
         self.target_policy = EpsilonGreedyPolicy(numActions=num_actions, epsilon=target_epsilon, anneal=False)
         self.behavior_policy = EpsilonGreedyPolicy(numActions=num_actions, epsilon=target_epsilon, anneal=False,
-                                              annealing_period=0, final_epsilon=0.1)
+                                                   annealing_period=0, final_epsilon=0.1)
 
         """ Return Function """
         return_function = QSigmaReturnFunction(n=self.n, sigma=self.sigma, gamma=self.gamma, tpolicy=self.target_policy,
@@ -72,29 +76,32 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         """ Neural Network """
         alpha = 0.00025
         tnetwork_update_freq = 10000
+
         self.fa_parameters = {"num_actions": num_actions,
                               "batch_size": batch_size,
                               "alpha": alpha,
-                              "observation_dimensions": obs_dims,
+                              "observation_dimensions": stacked_obs_dims,
                               "train_loss_history": [],
                               "tnetwork_update_freq": tnetwork_update_freq,
                               "number_of_updates": 0}
-        optimizer = lambda lr: tf.train.RMSPropOptimizer(learning_rate=lr, decay=0.95, momentum=0.95, epsilon=0.01)
+        optimizer = lambda lr: tf.train.RMSPropOptimizer(learning_rate=lr, decay=0.95, epsilon=0.01)
         tf_sess = tf.Session()
-        self.function_approximator = NeuralNetwork_FA(optimizer=optimizer, target_network=self.target_network,
-                                                      update_network=self.update_network, er_buffer=er_buffer,
-                                                      tf_session=tf_sess,
-                                                      fa_dictionary=self.fa_parameters)
+        self.function_approximator = NeuralNetwork_wER_FA(optimizer=optimizer, target_network=self.target_network,
+                                                          update_network=self.update_network, er_buffer=er_buffer,
+                                                          tf_session=tf_sess,
+                                                          fa_dictionary=self.fa_parameters)
 
         """ RL Agent """
         steps_before_training = 50000
         self.agent_parameters = {"n": self.n, "gamma": self.gamma, "beta": 1, "sigma": self.sigma,
-                                  "return_per_episode": [], "timesteps_per_episode": [], "episode_number": 0,
-                                  "use_er_buffer": True, "compute_return": False, "anneal_epsilon": True,
-                                  "save_env_info": True, "env_info": [], "steps_before_training": steps_before_training,
-                                  "current_steps_before_training": 0}
+                                 "return_per_episode": [], "timesteps_per_episode": [], "episode_number": 0,
+                                 "use_er_buffer": True, "compute_return": False, "anneal_epsilon": True,
+                                 "save_env_info": True, "env_info": [],
+                                 "rand_steps_before_training": steps_before_training,
+                                 "rand_steps_count": 0}
         self.agent = QSigma(environment=self.env, function_approximator=self.function_approximator,
-                            target_policy=self.target_policy, behavior_policy=self.behavior_policy, er_buffer=er_buffer,
+                            target_policy=self.target_policy, behavior_policy=self.behavior_policy,
+                            use_er_buffer=True, er_buffer=er_buffer,
                             agent_dictionary=self.agent_parameters)
 
         davariables = self.target_network.get_variables_as_list(tf_session=tf_sess)

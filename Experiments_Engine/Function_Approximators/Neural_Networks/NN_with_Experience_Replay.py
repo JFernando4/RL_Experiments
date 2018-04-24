@@ -6,7 +6,7 @@ from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.expe
 from Experiments_Engine.Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
 
 " Neural Network function approximator "
-class NeuralNetwork_FA(FunctionApproximatorBase):
+class NeuralNetwork_wER_FA(FunctionApproximatorBase):
     """
     target_model            - deep learning model architecture for target network
     update_model            - deep learning model architecture for update network
@@ -55,7 +55,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         self.update_network = update_network
 
         " Training and Learning Evaluation: Tensorflow and variables initializer "
-        self.optimizer = optimizer(self.alpha/self.batch_size)
+        self.optimizer = optimizer(self.alpha)
         if tf_session is None:
             self.sess = tf.Session()
         else:

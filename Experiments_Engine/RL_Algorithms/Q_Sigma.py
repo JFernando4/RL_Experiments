@@ -8,13 +8,12 @@ from Experiments_Engine.Policies import EpsilonGreedyPolicy
 from numpy import inf, zeros
 import numpy as np
 
+
 class QSigma(RL_ALgorithmBase):
 
-    def __init__(self, n=3, gamma=1, beta=1,
-                 sigma=1, agent_dictionary=None, environment=EnvironmentBase(),
-                 function_approximator=FunctionApproximatorBase(), rand_steps_before_training=0,
-                 target_policy=EpsilonGreedyPolicy(), behavior_policy=EpsilonGreedyPolicy(), use_er_buffer=False,
-                 er_buffer=Experience_Replay_Buffer(), compute_return=True, anneal_epsilon=False, save_env_info=True):
+    def __init__(self, environment, function_approximator, target_policy, behavior_policy, n=3, gamma=1, beta=1,
+                 sigma=1, agent_dictionary=None, rand_steps_before_training=0, use_er_buffer=False,
+                 er_buffer=None, compute_return=True, anneal_epsilon=False, save_env_info=True):
         super().__init__()
 
         """ Dictionary for Saving and Restoring """

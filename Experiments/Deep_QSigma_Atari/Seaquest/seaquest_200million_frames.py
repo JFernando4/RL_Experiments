@@ -4,7 +4,7 @@ import pickle
 import os
 
 from Experiments_Engine.Environments.Arcade_Learning_Environment.ALE_Environment import ALE_Environment
-from Experiments_Engine.Function_Approximators.Neural_Networks.NN_with_Experience_Replay import NeuralNetwork_FA
+from Experiments_Engine.Function_Approximators.Neural_Networks.NN_with_Experience_Replay import NeuralNetwork_wER_FA
 from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.models import Model_nCPmFO
 from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.experience_replay_buffer import Experience_Replay_Buffer
 from Experiments_Engine.RL_Algorithms.return_functions import QSigmaReturnFunction
@@ -86,10 +86,10 @@ class ExperimentAgent():
                               "number_of_updates": 0}
         optimizer = lambda lr: tf.train.RMSPropOptimizer(learning_rate=lr, decay=0.95, epsilon=0.01)
         tf_sess = tf.Session()
-        self.function_approximator = NeuralNetwork_FA(optimizer=optimizer, target_network=self.target_network,
-                                                      update_network=self.update_network, er_buffer=er_buffer,
-                                                      tf_session=tf_sess,
-                                                      fa_dictionary=self.fa_parameters)
+        self.function_approximator = NeuralNetwork_wER_FA(optimizer=optimizer, target_network=self.target_network,
+                                                          update_network=self.update_network, er_buffer=er_buffer,
+                                                          tf_session=tf_sess,
+                                                          fa_dictionary=self.fa_parameters)
 
         """ RL Agent """
         steps_before_training = 50000

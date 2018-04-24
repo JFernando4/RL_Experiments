@@ -94,7 +94,7 @@ class ALE_Environment(EnvironmentBase):
         # new_state = state[:][off_top:bottom][:]
         # new_state = np.delete(new_state, range(0, off_left + 1), 1)  # Eliminates 60 columns from the left
         new_state = state
-        new_state = resize(new_state, (84, 84, 1), mode="constant")
+        new_state = resize(new_state, (84, 84, 1), mode="constant").astype(np.uint8)
         return new_state
 
     def agent_state_display(self):
