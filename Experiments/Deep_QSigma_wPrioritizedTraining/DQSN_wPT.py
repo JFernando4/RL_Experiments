@@ -75,7 +75,8 @@ class ExperimentAgent():
                                      "compute_return": True, "anneal_epsilon": False, "save_env_info": True, "env_info": [],
                                      "rand_steps_before_training": 0, "rand_steps_count": 0}
             self.agent = QSigma(function_approximator=self.function_approximator, target_policy=self.target_policy,
-                                behavior_policy=self.behaviour_policy, environment=self.env)
+                                behavior_policy=self.behaviour_policy, environment=self.env,
+                                agent_dictionary=self.agent_parameters)
 
         else:
             agent_history = pickle.load(open(os.path.join(restore_data_dir, "agent_history.p"), mode="rb"))
@@ -91,7 +92,8 @@ class ExperimentAgent():
             self.function_approximator = NeuralNetwork_FA(optimizer=self.optimizer, neural_network=self.network,
                                                           fa_dictionary=self.fa_parameters, tf_session=self.tf_sess)
             self.agent = QSigma(function_approximator=self.function_approximator, target_policy=self.target_policy,
-                                behavior_policy=self.behaviour_policy, environment=self.env)
+                                behavior_policy=self.behaviour_policy, environment=self.env,
+                                agent_dictionary=self.agent_parameters)
 
             saver = tf.train.Saver()
             sourcepath = os.path.join(restore_data_dir, "agent_graph.ckpt")
@@ -172,6 +174,6 @@ if __name__ == "__main__":
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
 
-    experiment = Experiment(results_dir=results_directory, save_agent=True, restore_agent=False,
-                            max_number_of_frames=1000)
+    experiment = Experiment(results_dir=results_directory, save_agent=True, restore_agent=True,
+                            max_number_of_frames=10000)
     experiment.run_experiment()
