@@ -17,7 +17,7 @@ class Model_nCPmFO(ModelBase):
 
     def __init__(self, name=None, dim_out=None, filter_dims=None, observation_dimensions=None, num_actions=None,
                  gate_fun=None, convolutional_layers=None, fully_connected_layers=None, SEED=None,
-                 model_dictionary=None, strides=None):
+                 model_dictionary=None, strides=None, max_pool=True):
         super().__init__()
 
         " Model Dictionary for Saving and Restoring "
@@ -30,7 +30,8 @@ class Model_nCPmFO(ModelBase):
                                       "gate_fun": gate_fun,
                                       "conv_layers": convolutional_layers,
                                       "full_layers": fully_connected_layers,
-                                      "strides": strides}
+                                      "strides": strides,
+                                      "max_pool": True}
         else:
             self._model_dictionary = model_dictionary
 
@@ -48,6 +49,10 @@ class Model_nCPmFO(ModelBase):
         self.gate_fun = self._model_dictionary["gate_fun"]
         self.strides = self._model_dictionary["strides"]
         total_layers = self.convolutional_layers + self.fully_connected_layers
+        if "max_pool" in self._model_dictionary.keys():
+            self.max_pool = self._model_dictionary["max_pool"]
+        else:
+            self.max_pool = True
 
         " Placehodler "
         self.x_frames = tf.placeholder(tf.float32, shape=(None, height, width, channels))   # input frames
@@ -68,8 +73,11 @@ class Model_nCPmFO(ModelBase):
                 tf.random_normal_initializer(stddev=1.0 / np.sqrt(self.filter_dims[i]**2 * dim_in_conv[i] + 1),
                                              seed=SEED), self.gate_fun, stride=self.strides[i])
             # layer n + 1/2: pool
-            s_hat = tf.nn.max_pool(
-                r_hat, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
+            if self.max_pool:
+                s_hat = tf.nn.max_pool(
+                    r_hat, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
+            else:
+                s_hat = r_hat
 
             current_s_hat = s_hat
             self.train_vars.extend([W, b])

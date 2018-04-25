@@ -40,12 +40,12 @@ class ExperimentAgent():
             self.network_parameters = {"model_name": "network", "output_dims": dim_out, "filter_dims": filter_dims,
                                        "observation_dimensions": obs_dims, "num_actions": num_actions,
                                        "gate_fun": gate_fun, "conv_layers": conv_layers, "full_layers": full_layers,
-                                       "strides": strides}
+                                       "strides": strides, "max_pool": False}
             self.network = Model_nCPmFO(model_dictionary=self.network_parameters)
 
             """ Policies """
             target_epsilon = 0.1
-            initial_epsilon = 1
+            initial_epsilon = 0.1
             anneal_period = 1000000
             anneal = False
             self.target_policy = EpsilonGreedyPolicy(numActions=num_actions, epsilon=initial_epsilon, anneal=False)
@@ -53,8 +53,8 @@ class ExperimentAgent():
                                                         annealing_period=anneal_period, final_epsilon=target_epsilon)
 
             """ Neural Network """
-            alpha = 0.000001
-            percentile_to_train_index = 0   # 0 corresponds to the largest percentile
+            alpha = 0.001 #0.0001
+            percentile_to_train_index = 1 #0   # 0 corresponds to the largest percentile
             number_of_percentiles = 10
             adjust_alpha_using_percentiles = True
             self.fa_parameters = {"num_actions": num_actions, "batch_size": 1, "alpha": alpha,
@@ -67,7 +67,7 @@ class ExperimentAgent():
                                                           fa_dictionary=self.fa_parameters, tf_session=self.tf_sess)
 
             """ RL Agent """
-            n = 5
+            n = 10
             gamma = 0.99
             sigma = 0.5
             self.agent_parameters = {"n": n, "gamma": gamma, "beta": 1, "sigma": sigma, "return_per_episode": [],
@@ -174,6 +174,6 @@ if __name__ == "__main__":
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
 
-    experiment = Experiment(results_dir=results_directory, save_agent=True, restore_agent=True,
-                            max_number_of_frames=10000)
+    experiment = Experiment(results_dir=results_directory, save_agent=True, restore_agent=False,
+                            max_number_of_frames=2200000)
     experiment.run_experiment()
