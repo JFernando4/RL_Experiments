@@ -52,7 +52,6 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         self.percentile_estimator = self._fa_dictionary["percentile_estimator"]
         self.number_of_percentiles = self._fa_dictionary["number_of_percentiles"]
         self.train_loss_history = self._fa_dictionary["train_loss_history"]
-        self.training_count = self._fa_dictionary["training_count"]
         self.adjust_alpha_using_percentiles = self._fa_dictionary["adjust_alpha_using_percentiles"]
 
         " Neural Network Model "
@@ -124,7 +123,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
                 self.optimizer._learning_rate = self.alpha
 
             self.train_loss_history.append(train_loss)
-            self.training_count += 1
+            self._fa_dictionary["training_count"] += 1
 
     def update_alpha(self, new_alpha):
         self.alpha = new_alpha
@@ -140,7 +139,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         return td_error
 
     def get_training_count(self):
-        return self.training_count
+        return self._fa_dictionary["training_count"]
 
     def get_train_loss_history(self):
         return self.train_loss_history
