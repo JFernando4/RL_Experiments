@@ -135,15 +135,21 @@ class ExperimentAgent():
                    "train_loss_history": self.function_approximator.get_train_loss_history()}
         pickle.dump(results, open(os.path.join(dirn_name, "results.p"), mode="wb"))
 
+    def render(self):
+        self.env.set_render(True)
+
 
 class Experiment():
 
-    def __init__(self, results_dir=None, save_agent=False, restore_agent=False, max_number_of_frames=1000):
+    def __init__(self, results_dir=None, save_agent=False, restore_agent=False, max_number_of_frames=1000, render=False):
         self.agent = ExperimentAgent(restore=restore_agent, restore_data_dir=results_dir)
         self.results_dir = results_dir
         self.restore_agent = restore_agent
         self.save_agent = save_agent
         self.max_number_of_frames = max_number_of_frames
+        self.render = render
+        if self.render:
+            self.agent.render()
 
     def run_experiment(self):
         episode_number = 0
@@ -155,7 +161,8 @@ class Experiment():
             if len(return_per_episode) < 100:
                 print("The average return is:", np.average(return_per_episode))
             else:
-                print("The averge return is:", np.average(return_per_episode[-100:]))
+                print("The average return is:", np.average(return_per_episode[-100:]))
+            print("The return in the last episode was:", return_per_episode[-1])
             print("The average training loss is:", np.average(nn_loss))
             print("Number of updates:", nn_training_count)
             print("The current frame number is:", environment_info[-1])
@@ -174,6 +181,6 @@ if __name__ == "__main__":
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
 
-    experiment = Experiment(results_dir=results_directory, save_agent=True, restore_agent=False,
-                            max_number_of_frames=2200000)
+    experiment = Experiment(results_dir=results_directory, save_agent=True, restore_agent=True,
+                            max_number_of_frames=10000000, render=False)
     experiment.run_experiment()
