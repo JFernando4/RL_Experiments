@@ -1,12 +1,8 @@
 import numpy as np
 import tensorflow as tf
 
-from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.layer_training_priority import \
-    Layer_Training_Priority
-from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.buffer import Buffer
-from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.percentile_estimator import \
-    Percentile_Estimator
-from Experiments_Engine.Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
+from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities import Buffer, Percentile_Estimator
+from Experiments_Engine.Objects_Bases import FunctionApproximatorBase
 
 " Neural Network function approximator with the possibility of using several training steps and training priority "
 class NeuralNetwork_FA(FunctionApproximatorBase):

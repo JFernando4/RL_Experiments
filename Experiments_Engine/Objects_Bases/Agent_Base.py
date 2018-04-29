@@ -1,6 +1,6 @@
 import abc
-from Experiments_Engine.Objects_Bases.Environment_Base import EnvironmentBase
-from Experiments_Engine.Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
+from Experiments_Engine.Objects_Bases import EnvironmentBase
+from Experiments_Engine.Objects_Bases import FunctionApproximatorBase
 
 class AgentBase(object):
     __metaclass__ = abc.ABCMeta

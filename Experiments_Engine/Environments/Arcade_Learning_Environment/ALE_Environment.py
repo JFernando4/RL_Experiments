@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import time
 from skimage.transform import resize
 from ale_python_interface import ALEInterface
-from Experiments_Engine.Objects_Bases.Environment_Base import EnvironmentBase
+
+from Experiments_Engine.Objects_Bases import EnvironmentBase
 
 
 class ALE_Environment(EnvironmentBase):
@@ -129,7 +130,7 @@ class ALE_Environment(EnvironmentBase):
     def get_env_info(self):
         return self.frame_count
 
-    def get_bottom_frame_in_stack(self):
+    def get_state_for_er_buffer(self):
         return self.current_state[:,:, -self.frame_stack].reshape([84,84,1])
 
     " Setters "

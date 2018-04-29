@@ -1,1 +1,1 @@
-from .Epsilon_Greedy import *
+from .Epsilon_Greedy import EpsilonGreedyPolicy

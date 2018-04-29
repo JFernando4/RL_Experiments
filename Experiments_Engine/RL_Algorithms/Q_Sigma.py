@@ -1,12 +1,7 @@
-from Experiments_Engine.Objects_Bases.RL_Algorithm_Base import RL_ALgorithmBase
-from Experiments_Engine.Objects_Bases.Environment_Base import EnvironmentBase
-from Experiments_Engine.Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
-from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.experience_replay_buffer import \
-    Experience_Replay_Buffer
-
-from Experiments_Engine.Policies import EpsilonGreedyPolicy
 from numpy import inf, zeros
 import numpy as np
+
+from Experiments_Engine.Objects_Bases import RL_ALgorithmBase
 
 
 class QSigma(RL_ALgorithmBase):
@@ -149,9 +144,10 @@ class QSigma(RL_ALgorithmBase):
 
             # Storing in the experience replay buffer
             if self.use_er_buffer:
-                assert isinstance(self.er_buffer, Experience_Replay_Buffer), "You need to provide a buffer!"
-                self.er_buffer.store_observation(reward=0, action=A, terminate=False,
-                                                 state=self.env.get_bottom_frame_in_stack())
+                observation = {"reward": 0, "action":A, "state":self.env.get_state_for_er_buffer(), "terminate": False,
+                               "rl_return": np.nan, "uptodate":False, "bprobabilities": np.zeros(q_values.shape),
+                               "sigma":self.sigma}
+                self.er_buffer.store_observation(observation)
             T = inf
             t = 0
 
@@ -195,9 +191,12 @@ class QSigma(RL_ALgorithmBase):
 
                         # Storing in the experience replay buffer
                         if self.use_er_buffer:
-                            assert isinstance(self.er_buffer, Experience_Replay_Buffer), "You need to provide a buffer"
-                            self.er_buffer.store_observation(reward=R, action=A, terminate=terminate,
-                                                             state=self.env.get_bottom_frame_in_stack())
+                            observation = {"reward": R, "action": A, "state": self.env.get_state_for_er_buffer(),
+                                           "terminate": terminate,
+                                           "rl_return": np.nan, "uptodate": False,
+                                           "bprobabilities": self.bpolicy.probability_of_action(q_values, all_actions=True),
+                                           "sigma": self.sigma}
+                            self.er_buffer.store_observation(observation)
 
                 tau = t - self.n + 1
                 if (len(trajectory) == self.n) and (tau >= 0): # These two statements are equivalent

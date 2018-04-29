@@ -2,13 +2,10 @@ import unittest
 import numpy as np
 import tensorflow as tf
 
-from Experiments_Engine.Environments.Arcade_Learning_Environment.ALE_Environment import ALE_Environment
-from Experiments_Engine.Function_Approximators.Neural_Networks.NN_with_Experience_Replay import NeuralNetwork_wER_FA
-from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.models import Model_nCPmFO
-from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.experience_replay_buffer import Experience_Replay_Buffer
-from Experiments_Engine.RL_Algorithms.return_functions import QSigmaReturnFunction
-from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy
-from Experiments_Engine.RL_Algorithms.Q_Sigma import QSigma
+from Experiments_Engine.Environments import ALE_Environment
+from Experiments_Engine.Function_Approximators import NeuralNetwork_wER_FA, Model_nCPmFO, QSigmaExperienceReplayBuffer
+from Experiments_Engine.RL_Algorithms import QSigmaReturnFunction, QSigma
+from Experiments_Engine.Policies import EpsilonGreedyPolicy
 
 
 class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
@@ -63,15 +60,15 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
                                                    annealing_period=0, final_epsilon=0.1)
 
         """ Return Function """
-        return_function = QSigmaReturnFunction(n=self.n, sigma=self.sigma, gamma=self.gamma, tpolicy=self.target_policy,
-                                               bpolicy=self.behavior_policy)
+        return_function = QSigmaReturnFunction(n=self.n, gamma=self.gamma, tpolicy=self.target_policy)
 
         """ Experience Replay Buffer """
         buffer_size = 100000
         batch_size = 32
-        er_buffer = Experience_Replay_Buffer(buffer_size=buffer_size, batch_size=batch_size, n=self.n,
+        er_buffer = QSigmaExperienceReplayBuffer(buffer_size=buffer_size, batch_size=batch_size, n=self.n,
                                              observation_dimensions=obs_dims, observation_dtype=obs_dtype,
-                                             return_function=return_function, frame_stack=4)
+                                             return_function=return_function, frame_stack=4,
+                                                 num_actions=num_actions)
 
         """ Neural Network """
         alpha = 0.00025
@@ -92,7 +89,7 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
                                                           fa_dictionary=self.fa_parameters)
 
         """ RL Agent """
-        steps_before_training = 50000
+        steps_before_training = 50
         self.agent_parameters = {"n": self.n, "gamma": self.gamma, "beta": 1, "sigma": self.sigma,
                                  "return_per_episode": [], "timesteps_per_episode": [], "episode_number": 0,
                                  "use_er_buffer": True, "compute_return": False, "anneal_epsilon": True,
@@ -111,8 +108,8 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         print("The total number of parameters in the network is:", total_parameters)
 
     def test_train(self):
-        print("Training for 10 episodes...")
-        for i in range(10):
+        print("Training for 1 episodes...")
+        for i in range(1):
             print("Episode", str(i+1) + "...")
             self.agent.train(1)
             print("The average return is:", np.average(self.agent.get_return_per_episode()))

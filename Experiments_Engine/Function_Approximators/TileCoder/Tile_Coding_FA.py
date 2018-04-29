@@ -1,8 +1,9 @@
-from Experiments_Engine.Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
 from pylab import random, asarray
-from Experiments_Engine.Function_Approximators.TileCoder.Tilecoder3 import IHT, tiles
 from numpy import zeros
 import numpy as np
+
+from Experiments_Engine.Objects_Bases import FunctionApproximatorBase
+from Experiments_Engine.Function_Approximators.TileCoder import IHT, tiles
 
 class TileCoderFA(FunctionApproximatorBase):
 
