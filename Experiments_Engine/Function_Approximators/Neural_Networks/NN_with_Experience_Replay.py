@@ -1,9 +1,8 @@
 import numpy as np
 import tensorflow as tf
 
-from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.experience_replay_buffer import \
-    Experience_Replay_Buffer
-from Experiments_Engine.Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
+from Experiments_Engine.Function_Approximators.Neural_Networks.Experience_Replay_Buffer import Experience_Replay_Buffer
+from Experiments_Engine.Objects_Bases import FunctionApproximatorBase
 
 " Neural Network function approximator "
 class NeuralNetwork_wER_FA(FunctionApproximatorBase):
@@ -48,7 +47,7 @@ class NeuralNetwork_wER_FA(FunctionApproximatorBase):
 
         " Experience Replay Buffer and Return Function "
         self.er_buffer = er_buffer
-        assert isinstance(self.er_buffer, Experience_Replay_Buffer), "You need to provide a buffer!"
+        # assert isinstance(self.er_buffer, Experience_Replay_Buffer), "You need to provide a buffer!"
 
         " Neural Network Models "
         self.target_network = target_network

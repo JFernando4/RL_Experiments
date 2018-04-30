@@ -1,6 +1,6 @@
 import numpy as np
-from . import CircularBuffer
-from Experiments_Engine.RL_Algorithms.return_functions import QSigmaReturnFunction
+from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities import CircularBuffer
+from Experiments_Engine.RL_Algorithms import QSigmaReturnFunction
 from Experiments_Engine.Policies import EpsilonGreedyPolicy
 
 class Experience_Replay_Buffer:
@@ -29,7 +29,7 @@ class Experience_Replay_Buffer:
         self.action = CircularBuffer(self.buff_sz, shape=(), dtype=np.uint8)
         self.reward = CircularBuffer(self.buff_sz, shape=(), dtype=np.int32)
         self.terminate = CircularBuffer(self.buff_sz, shape=(), dtype=np.bool)
-        self.qsigma_return = CircularBuffer(self.buff_sz, shape=(), dtype=np.float32)
+        self.rl_return = CircularBuffer(self.buff_sz, shape=(), dtype=np.float32)
         self.uptodate = CircularBuffer(self.buff_sz, shape=(), dtype=np.bool)
 
         """ Policies """
@@ -49,7 +49,7 @@ class Experience_Replay_Buffer:
         self.action.append(action)
         self.reward.append(reward)
         self.terminate.append(terminate)
-        self.qsigma_return.append(np.nan)
+        self.rl_return.append(np.nan)
         self.uptodate.append(False)
 
         self.current_index += 1
@@ -74,8 +74,8 @@ class Experience_Replay_Buffer:
     def gather_data(self, daindex, update_function):
         state = self.stack_frames(daindex)
         action = self.action[daindex]
-        if (self.qsigma_return[daindex] is not np.nan) and (self.uptodate[daindex] is True):
-            qsigma_return = self.qsigma_return[daindex]
+        if (self.rl_return[daindex] is not np.nan) and (self.uptodate[daindex] is True):
+            qsigma_return = self.rl_return[daindex]
         else:
             trajectory = []
             for i in range(daindex + 1, daindex + self.n + 1):
@@ -86,8 +86,8 @@ class Experience_Replay_Buffer:
                 temp_terminate = self.terminate[i]
                 step_in_trajectory = [temp_reward, temp_action, q_values, temp_terminate]
                 trajectory.append(step_in_trajectory)
-            qsigma_return = self.return_function.recursive_return_function(trajectory, n=0)
-            self.qsigma_return.set_item(daindex, qsigma_return)
+            qsigma_return = self.return_function.recursive_return_function(trajectory, step=0)
+            self.rl_return.set_item(daindex, qsigma_return)
             self.uptodate.set_item(daindex, True)
         return [state, action, qsigma_return]
 

@@ -1,12 +1,10 @@
 import numpy as np
 import tensorflow as tf
-import pickle
-import os
 
 from Experiments_Engine.Environments.Arcade_Learning_Environment.ALE_Environment import ALE_Environment
 from Experiments_Engine.Function_Approximators.Neural_Networks.NN_with_Experience_Replay import NeuralNetwork_wER_FA
 from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.models import Model_nCPmFO
-from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.experience_replay_buffer import Experience_Replay_Buffer
+from Experiments_Engine.Function_Approximators.Neural_Networks.Experience_Replay_Buffer.experience_replay_buffer import Experience_Replay_Buffer
 from Experiments_Engine.RL_Algorithms.return_functions import QSigmaReturnFunction
 from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy
 from Experiments_Engine.RL_Algorithms.Q_Sigma import QSigma

@@ -1,5 +1,6 @@
-from Experiments_Engine.Objects_Bases.Function_Approximator_Base import FunctionApproximatorBase
 import numpy as np
+
+from Experiments_Engine.Objects_Bases import FunctionApproximatorBase
 
 
 class PlaceholderFA(FunctionApproximatorBase):
@@ -11,7 +12,7 @@ class PlaceholderFA(FunctionApproximatorBase):
         self.numActions = numActions
         super().__init__()
 
-    def update(self, state, action, value):
+    def update(self, state, action, nstep_return, correction):
         pass
 
     def get_value(self, state, action):

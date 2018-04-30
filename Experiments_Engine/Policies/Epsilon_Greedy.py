@@ -1,7 +1,8 @@
-from Experiments_Engine.Objects_Bases.Policy_Base import PolicyBase
 from numpy.random import uniform, randint
 from numpy import array, zeros
 import numpy as np
+
+from Experiments_Engine.Objects_Bases import PolicyBase
 
 
 class EpsilonGreedyPolicy(PolicyBase):

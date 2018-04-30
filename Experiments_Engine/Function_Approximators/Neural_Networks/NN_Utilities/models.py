@@ -2,7 +2,6 @@ import tensorflow as tf
 import numpy as np
 
 from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities import layers
-import Experiments_Engine.Error_Handling_Utilities.input_parameters_validation as input_parameters_validation
 from Experiments_Engine.Objects_Bases.NN_Model_Base import ModelBase
 
 
@@ -31,7 +30,7 @@ class Model_nCPmFO(ModelBase):
                                       "conv_layers": convolutional_layers,
                                       "full_layers": fully_connected_layers,
                                       "strides": strides,
-                                      "max_pool": True}
+                                      "max_pool": max_pool}
         else:
             self._model_dictionary = model_dictionary
 
@@ -131,12 +130,6 @@ class Model_nCPmFO(ModelBase):
     def get_variables_as_tensor(self):
         return self.train_vars[0]
 
-    def check_model_dictionary(self):
-        keys_to_check = ["model_name", "output_dims", "filter_dims", "observation_dimensions", "num_actions",
-                         "gate_fun", "conv_layers", "full_layers"]
-        input_parameters_validation.check_dictionary_keys(keys_to_check, self._model_dictionary)
-        " Finishing this later "
-        pass
 
 """
 Creates a model with m fully connected layers followed by one linear output layer
