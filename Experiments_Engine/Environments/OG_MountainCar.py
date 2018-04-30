@@ -24,8 +24,8 @@ class Mountain_Car(EnvironmentBase):
         " Inner state of the environment (no need to restore) "
         self._current_state = self.reset()
         self._actions = np.array([0, 1, 2], dtype=int)  # 0 = backward, 1 = coast, 2 = forward
-        self._high = np.array([0.5, 0.07], dtype=np.float64)
-        self._low = np.array([-1.2, -0.07], dtype=np.float64)
+        self._high = np.array([0.5, 0.07], dtype=np.float32)
+        self._low = np.array([-1.2, -0.07], dtype=np.float32)
         self._max_number_of_actions_per_episode = self._env_dictionary["max_number_of_actions"]         # To prevent episodes from going on forever
         self._current_number_of_actions_per_episode = 0
         self._action_dictionary = {0: -1,   # accelerate backwards
@@ -36,13 +36,14 @@ class Mountain_Car(EnvironmentBase):
         # random() returns a random float in the half open interval [0,1)
         position = -0.6 + random() * 0.2
         velocity = 0.0
-        self._current_state = np.array((position, velocity), dtype=np.float64)
+        self._current_state = np.array((position, velocity), dtype=np.float32)
         self._current_number_of_actions_per_episode = 0
         return self._current_state
 
     " Update environment "
     def update(self, A):
         # To prevent episodes from going on forever
+        self.update_frame_count()
         self._current_number_of_actions_per_episode += 1
         if self._current_number_of_actions_per_episode >= self._max_number_of_actions_per_episode:
             reward = -1
@@ -52,7 +53,6 @@ class Mountain_Car(EnvironmentBase):
         if A not in self._actions:
             raise ValueError("The action should be one of the following integers: {0, 1, 2}.")
         action = self._action_dictionary[A]
-        self.update_frame_count()
         reward = -1.0
         terminate = False
 
@@ -97,17 +97,18 @@ class Mountain_Car(EnvironmentBase):
     def get_environment_dictionary(self):
         return self._env_dictionary
 
-    def get_high(self):
-        return self._high
-
-    def get_low(self):
-        return self._low
-
     def get_frame_count(self):
         return self._frame_count
 
     def get_env_info(self):
         return self._frame_count
+
+    def get_observation_dtype(self):
+        return self._current_state.dtype
+
+    def get_state_for_er_buffer(self):
+        return self._current_state
+
 
     " Setters "
     def set_environment_dictionary(self, new_dictionary):

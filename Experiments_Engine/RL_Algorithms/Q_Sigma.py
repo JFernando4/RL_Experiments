@@ -161,11 +161,10 @@ class QSigma(RL_ALgorithmBase):
             while 1:
                 if t < T:
                     # Step in the environment
-                    new_S, R, terminate = self.env.update(A)
+                    S, R, terminate = self.env.update(A)
 
                     # Updating Q_values and State
-                    States[(t+1) % (self.n+1)] = new_S
-                    S = new_S
+                    States[(t+1) % (self.n+1)] = S
                     q_values = self.fa.get_next_states_values(S)
 
                     # Record Keeping
@@ -174,14 +173,18 @@ class QSigma(RL_ALgorithmBase):
 
                     if terminate:
                         T = t + 1
+                        bpropabilities = np.zeros(self.env.get_num_actions(), dtype=np.float32)
+                        A = 0
                     else:
                         if self._agent_dictionary["rand_steps_count"] > self.rand_steps_before_training:
                             A = self.bpolicy.choose_action(q_values)
+                            bpropabilities = self.bpolicy.probability_of_action(q_values, all_actions=True)
                             if self.anneal_epsilon:
                                 self.tpolicy.anneal_epsilon()
                                 self.bpolicy.anneal_epsilon()
                         else:
                             A = np.random.randint(len(q_values))
+                            bpropabilities = np.ones(self.env.get_num_actions(), dtype=np.float32) * (1/self.env.get_num_actions())
                             self._agent_dictionary["rand_steps_count"] += 1
 
                         Actions[(t + 1) % (self.n + 1)] = A
@@ -189,14 +192,15 @@ class QSigma(RL_ALgorithmBase):
                         # Storing Trajectory
                         trajectory.append([R, A, q_values, terminate])
 
-                        # Storing in the experience replay buffer
-                        if self.use_er_buffer:
-                            observation = {"reward": R, "action": A, "state": self.env.get_state_for_er_buffer(),
-                                           "terminate": terminate,
-                                           "rl_return": np.nan, "uptodate": False,
-                                           "bprobabilities": self.bpolicy.probability_of_action(q_values, all_actions=True),
-                                           "sigma": self.sigma}
-                            self.er_buffer.store_observation(observation)
+
+                    # Storing in the experience replay buffer
+                    if self.use_er_buffer:
+                        observation = {"reward": R, "action": A, "state": self.env.get_state_for_er_buffer(),
+                                       "terminate": terminate,
+                                       "rl_return": np.nan, "uptodate": False,
+                                       "bprobabilities": bpropabilities,
+                                       "sigma": self.sigma}
+                        self.er_buffer.store_observation(observation)
 
                 tau = t - self.n + 1
                 if (len(trajectory) == self.n) and (tau >= 0): # These two statements are equivalent

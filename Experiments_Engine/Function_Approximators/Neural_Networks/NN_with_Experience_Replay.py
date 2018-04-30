@@ -1,7 +1,6 @@
 import numpy as np
 import tensorflow as tf
 
-from Experiments_Engine.Function_Approximators.Neural_Networks.Experience_Replay_Buffer import Experience_Replay_Buffer
 from Experiments_Engine.Objects_Bases import FunctionApproximatorBase
 
 " Neural Network function approximator "
@@ -19,8 +18,7 @@ class NeuralNetwork_wER_FA(FunctionApproximatorBase):
     restore                 - whether variables are being restored from a previous session
     fa_dictionary           - fa dictionary from a previous session
     """
-    def __init__(self, optimizer, target_network, update_network,
-                 tnetwork_update_freq=10000, er_buffer=Experience_Replay_Buffer(),
+    def __init__(self, optimizer, target_network, update_network, er_buffer, tnetwork_update_freq=10000,
                  numActions=None, batch_size=32, alpha=0.00025, tf_session=None, obs_dim=None, restore=False,
                  fa_dictionary=None):
         super().__init__()
@@ -43,11 +41,9 @@ class NeuralNetwork_wER_FA(FunctionApproximatorBase):
         self.observation_dimensions = self._fa_dictionary["observation_dimensions"]
         self.train_loss_history = self._fa_dictionary["train_loss_history"]
         self.tnetwork_upd_freq = self._fa_dictionary["tnetwork_update_freq"]
-        self.number_of_updates = self._fa_dictionary["number_of_updates"]
 
         " Experience Replay Buffer and Return Function "
         self.er_buffer = er_buffer
-        # assert isinstance(self.er_buffer, Experience_Replay_Buffer), "You need to provide a buffer!"
 
         " Neural Network Models "
         self.target_network = target_network
@@ -91,10 +87,10 @@ class NeuralNetwork_wER_FA(FunctionApproximatorBase):
 
             train_loss, _ = self.sess.run((self.update_network.train_loss, self.train_step), feed_dict=feed_dictionary)
             self.train_loss_history.append(train_loss)
-            self.number_of_updates +=1
-            if self.number_of_updates >= self.tnetwork_upd_freq:
+            self._fa_dictionary["number_of_updates"] +=1
+            if self._fa_dictionary["number_of_updates"] >= self.tnetwork_upd_freq:
                 self.er_buffer.out_of_date_buffer()
-                self.number_of_updates = 0
+                self._fa_dictionary["number_of_updates"] = 0
                 self.update_target_network()
 
     def update_target_network(self):
@@ -115,3 +111,6 @@ class NeuralNetwork_wER_FA(FunctionApproximatorBase):
         self.alpha = new_alpha
         self.optimizer._learning_rate = self.alpha
         self._fa_dictionary["alpha"] = self.alpha
+
+    def get_train_loss_history(self):
+        return self._fa_dictionary["train_loss_history"]

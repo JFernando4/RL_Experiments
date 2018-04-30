@@ -67,17 +67,26 @@ class QSigmaExperienceReplayBuffer:
 
     def sample_from_buffer(self, update_function=None):
         assert update_function is not None, "You need to provide an update_function."
-        if not self.full_buffer:
-            assert self.batch_sz < (self.current_index - (self.n + self.frame_stack)), "The buffer is not big enough!"
-            daindices = np.random.choice(self.current_index - (self.n + self.frame_stack), size=self.batch_sz, replace=False)
-        else:
-            daindices = np.random.choice(self.buff_sz - (self.n + self.frame_stack), size=self.batch_sz, replace=False)
-
+        daindices = self.sample_indices()
         dabatch = []
         for daindex in daindices:
             data_point = self.gather_data(daindex, update_function)
             dabatch.append(data_point)
         return dabatch
+
+    def sample_indices(self):
+        dasample = []
+        # iterations = 0
+        while len(dasample) != self.batch_sz:
+            if not self.full_buffer:
+                daindx = np.random.randint(self.current_index - (self.n + self.frame_stack))
+            else:
+                daindx = np.random.randint(self.buff_sz - (self.n + self.frame_stack))
+            if (daindx not in dasample) and (not self.terminate[daindx]):
+                dasample.append(daindx)
+            # iterations +=1
+        # print("Number of iterations:", iterations)
+        return dasample
 
     def gather_data(self, daindex, update_function):
         state = self.stack_frames(daindex)
@@ -97,6 +106,9 @@ class QSigmaExperienceReplayBuffer:
                 step_in_trajectory = [temp_reward, temp_action, q_values, temp_terminate,
                                       temp_bprobabilities, temp_sigma]
                 trajectory.append(step_in_trajectory)
+                if temp_terminate:
+                    break
+            new_trajectory = list(trajectory)
             qsigma_return = self.return_function.recursive_return_function(trajectory, step=0)
             self.rl_return.set_item(daindex, qsigma_return)
             self.uptodate.set_item(daindex, True)

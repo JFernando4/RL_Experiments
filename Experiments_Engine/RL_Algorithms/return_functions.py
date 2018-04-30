@@ -30,7 +30,8 @@ class QSigmaReturnFunction:
                 return reward
             else:
                 tprobabilities = self._tpolicy.probability_of_action(q_values=qvalues, all_actions=True)
-                assert bprobabilities[action] != 0
+                if bprobabilities[action] == 0:
+                    assert bprobabilities[action] != 0
                 rho = tprobabilities[action] / bprobabilities[action]
                 average_action_value = self.expected_action_value(qvalues, tprobabilities)
                 return reward + \
