@@ -54,7 +54,7 @@ class ExperimentAgent():
 
             """ Neural Network """
             alpha = 0.001 #0.0001
-            percentile_to_train_index = 1 #0   # 0 corresponds to the largest percentile
+            percentile_to_train_index = 9 #0   # 0 corresponds to the largest percentile
             number_of_percentiles = 10
             adjust_alpha_using_percentiles = True
             self.fa_parameters = {"num_actions": num_actions, "batch_size": 1, "alpha": alpha,
@@ -67,7 +67,7 @@ class ExperimentAgent():
                                                           fa_dictionary=self.fa_parameters, tf_session=self.tf_sess)
 
             """ RL Agent """
-            n = 10
+            n = 5
             gamma = 0.99
             sigma = 0.5
             self.agent_parameters = {"n": n, "gamma": gamma, "beta": 1, "sigma": sigma, "return_per_episode": [],
@@ -156,6 +156,7 @@ class Experiment():
                 print("The average return is:", np.average(return_per_episode))
             else:
                 print("The averge return is:", np.average(return_per_episode[-100:]))
+            print("The return in the last episode was:", np.average(return_per_episode[-1]))
             print("The average training loss is:", np.average(nn_loss))
             print("Number of updates:", nn_training_count)
             print("The current frame number is:", environment_info[-1])
@@ -169,11 +170,11 @@ if __name__ == "__main__":
     """ Directories """
     working_directory = os.getcwd()
 
-    agent_name = "agent_1"
+    agent_name = "agent_2"
     results_directory = os.path.join(working_directory, "Results", agent_name)
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
 
     experiment = Experiment(results_dir=results_directory, save_agent=True, restore_agent=False,
-                            max_number_of_frames=2200000)
+                            max_number_of_frames=50000000)
     experiment.run_experiment()
