@@ -90,7 +90,8 @@ class ExperimentAgent():
             self.env = ALE_Environment(games_directory=self.games_directory, env_dictionary=self.env_parameters)
             self.network = Model_nCPmFO(model_dictionary=self.network_parameters)
             self.function_approximator = NeuralNetwork_FA(optimizer=self.optimizer, neural_network=self.network,
-                                                          fa_dictionary=self.fa_parameters, tf_session=self.tf_sess)
+                                                          fa_dictionary=self.fa_parameters, tf_session=self.tf_sess,
+                                                          restore=True)
             self.agent = QSigma(function_approximator=self.function_approximator, target_policy=self.target_policy,
                                 behavior_policy=self.behaviour_policy, environment=self.env,
                                 agent_dictionary=self.agent_parameters)
