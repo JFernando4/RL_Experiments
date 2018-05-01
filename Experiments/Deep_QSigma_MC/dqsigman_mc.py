@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 import os
 import pickle
+import argparse
 
 from Experiments_Engine.Environments import Mountain_Car                                # Environment
 from Experiments_Engine.Function_Approximators import QSigmaExperienceReplayBuffer      # Replay Buffer
@@ -13,13 +14,15 @@ MAX_TRAINING_FRAMES = 1000000
 
 class ExperimentAgent():
 
-    def __init__(self, restore=False, restore_data_dir=""):
+    def __init__(self, experiment_parameters, restore=False, restore_data_dir=""):
         self.tf_sess = tf.Session()
         self.optimizer = lambda lr: tf.train.RMSPropOptimizer(learning_rate=lr, decay=0.95, epsilon=0.01, momentum=0.95)
 
         if not restore:
             """ Agent's Parameters """
-            self.n = 1
+            self.n = experiment_parameters["n"]
+            self.sigma = experiment_parameters["sigma"]
+            self.beta = experiment_parameters["beta"]
             self.gamma = 0.99
 
             " Environment "
@@ -66,21 +69,22 @@ class ExperimentAgent():
                                                            reward_clipping=False)
 
             """ Neural Network """
-            alpha = 0.001
+            alpha = 0.00025
             self.fa_parameters = {"num_actions": num_actions,
                                    "batch_size": batch_size,
                                    "alpha": alpha,
                                    "observation_dimensions": obs_dims,
                                    "train_loss_history": [],
-                                   "tnetwork_update_freq": 200,     # 0.01 * Buffer Size
+                                   "tnetwork_update_freq": 1000,     # (0.01 * Buffer Size) 5
                                    "number_of_updates": 0}
 
             self.function_approximator = NeuralNetwork_wER_FA(optimizer=self.optimizer, target_network=self.tnetwork,
                                                               update_network=self.unetwork, er_buffer=self.qsigma_erp,
-                                                              fa_dictionary=self.fa_parameters)
+                                                              fa_dictionary=self.fa_parameters, tf_session=self.tf_sess)
 
             """ RL Agent """
-            self.agent_parameters = {"n": self.n, "gamma": self.gamma, "beta": 1, "sigma": 0.5, "return_per_episode": [],
+            self.agent_parameters = {"n": self.n, "gamma": self.gamma, "beta": self.beta, "sigma": self.sigma,
+                                     "return_per_episode": [],
                                      "timesteps_per_episode": [], "episode_number": 0, "use_er_buffer": True,
                                      "compute_return": False, "anneal_epsilon": True, "save_env_info": True,
                                      "env_info": [], "rand_steps_before_training": 1000,    # 0.05 * Buffer Size
@@ -117,7 +121,8 @@ class ExperimentAgent():
             self.fa_parameters = agent_history["fa_parameters"]
             self.function_approximator = NeuralNetwork_wER_FA(optimizer=self.optimizer, target_network=self.tnetwork,
                                                               update_network=self.unetwork, er_buffer=self.qsigma_erp,
-                                                              fa_dictionary=self.fa_parameters)
+                                                              fa_dictionary=self.fa_parameters, tf_session=self.tf_sess,
+                                                              restore=True)
 
             " RL Agent "
             self.agent_parameters = agent_history["agent_parameters"]
@@ -169,8 +174,10 @@ class ExperimentAgent():
 
 class Experiment():
 
-    def __init__(self, results_dir=None, save_agent=False, restore_agent=False, max_number_of_frames=1000):
-        self.agent = ExperimentAgent(restore=restore_agent, restore_data_dir=results_dir)
+    def __init__(self, experiment_parameters, results_dir=None, save_agent=False, restore_agent=False,
+                 max_number_of_frames=1000):
+        self.agent = ExperimentAgent(restore=restore_agent, restore_data_dir=results_dir,
+                                     experiment_parameters=experiment_parameters)
         self.results_dir = results_dir
         self.restore_agent = restore_agent
         self.save_agent = save_agent
@@ -179,21 +186,23 @@ class Experiment():
         if max_number_of_frames > MAX_TRAINING_FRAMES:
             raise ValueError
 
-    def run_experiment(self):
+    def run_experiment(self, verbose=True):
         episode_number = 0
         while self.agent.get_number_of_frames() < self.max_number_of_frames:
             episode_number += 1
-            print("\nTraining episode", str(len(self.agent.get_train_data()[0]) + 1) + "...")
+            if verbose:
+                print("\nTraining episode", str(len(self.agent.get_train_data()[0]) + 1) + "...")
             self.agent.train(1)
-            return_per_episode, nn_loss, environment_info = self.agent.get_train_data()
-            if len(return_per_episode) < 100:
-                print("The average return is:", np.average(return_per_episode))
-                print("The average training loss is:", np.average(nn_loss))
-            else:
-                print("The average return is:", np.average(return_per_episode[-100:]))
-                print("The average training loss is:", np.average(nn_loss[-100:]))
-            print("The return in the last episode was:", return_per_episode[-1])
-            print("The current frame number is:", environment_info[-1])
+            if verbose:
+                return_per_episode, nn_loss, environment_info = self.agent.get_train_data()
+                if len(return_per_episode) < 100:
+                    print("The average return is:", np.average(return_per_episode))
+                    print("The average training loss is:", np.average(nn_loss))
+                else:
+                    print("The average return is:", np.average(return_per_episode[-100:]))
+                    print("The average training loss is:", np.average(nn_loss[-100:]))
+                print("The return in the last episode was:", return_per_episode[-1])
+                print("The current frame number is:", environment_info[-1])
 
         if self.save_agent:
             self.agent.save_agent(self.results_dir)
@@ -201,14 +210,24 @@ class Experiment():
 
 
 if __name__ == "__main__":
+    """ Experiment Parameters """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-n', action='store', default=1)
+    parser.add_argument('-sigma', action='store', default=1)
+    parser.add_argument('-beta', action='store', default=0.95)
+    parser.add_argument('-v', action='store_true', default=True)
+    parser.add_argument('-frames', action='store', default=1000000)
+    parser.add_argument('-name', action='store', default='agent_3')
+    args = vars(parser.parse_args())
+
     """ Directories """
     working_directory = os.getcwd()
-
-    agent_name = "agent_1"
-    results_directory = os.path.join(working_directory, "Results", agent_name)
+    results_directory = os.path.join(working_directory, "Results", args['name'])
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
 
+    exp_params = {"n": args['n'], "sigma": args['sigma'], "beta": args['beta']}
+
     experiment = Experiment(results_dir=results_directory, save_agent=True, restore_agent=False,
-                            max_number_of_frames=1000000)
-    experiment.run_experiment()
+                            max_number_of_frames=args['frames'], experiment_parameters=exp_params)
+    experiment.run_experiment(verbose=args['v'])
