@@ -61,8 +61,7 @@ class ExperimentAgent():
                                               annealing_period=0, final_epsilon=0.1)
 
         """ Return Function """
-        return_function = QSigmaReturnFunction(n=self.n, sigma=self.sigma, gamma=self.gamma, tpolicy=self.target_policy,
-                                               bpolicy=self.behavior_policy)
+        return_function = QSigmaReturnFunction(n=self.n, gamma=self.gamma, tpolicy=self.target_policy,)
 
         """ Experience Replay Buffer """
         buffer_size = 100000

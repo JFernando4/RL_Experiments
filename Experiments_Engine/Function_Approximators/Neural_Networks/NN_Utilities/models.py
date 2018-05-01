@@ -135,8 +135,9 @@ class Model_nCPmFO(ModelBase):
 Creates a model with m fully connected layers followed by one linear output layer
 """
 class Model_mFO(ModelBase):
+
     def __init__(self, name=None, dim_out=None, observation_dimensions=None, num_actions=None, gate_fun=None,
-                 fully_connected_layers=None, SEED=None, model_dictionary=None, eta=1.0):
+                 fully_connected_layers=None, SEED=None, model_dictionary=None):
         super().__init__()
         if model_dictionary is None:
             self._model_dictionary = {"model_name": name,
@@ -144,13 +145,18 @@ class Model_mFO(ModelBase):
                                       "observation_dimensions": observation_dimensions,
                                       "num_actions": num_actions,
                                       "gate_fun": gate_fun,
-                                      "full_layers": fully_connected_layers,
-                                      "eta": eta}
+                                      "full_layers": fully_connected_layers}
         else:
             self._model_dictionary = model_dictionary
+        " Parameters "
+        self.name = self._model_dictionary["model_name"]
+        self.dim_out = self._model_dictionary["output_dims"]
+        self.obs_dims = self._model_dictionary["observation_dimensions"]
+        self.num_actions = self._model_dictionary["num_actions"]
+        self.gate_fun = self._model_dictionary["gate_fun"]
+        self.full_layers = self._model_dictionary["full_layers"]
         " Dimensions "
-        dim_in = [np.prod(self._model_dictionary["observation_dimensions"])] + dim_out[:-1]
-        actions = self._model_dictionary["num_actions"]
+        dim_in = [np.prod(self.obs_dims)] + self.dim_out[:-1]
         row_and_action_number = 2
         " Placehodler "
         self.x_frames = tf.placeholder(tf.float32, shape=(None, dim_in[0]))             # input frames
@@ -162,11 +168,11 @@ class Model_mFO(ModelBase):
 
         " Fully Connected Layers "
         current_y_hat = self.x_frames
-        for j in range(fully_connected_layers):
+        for j in range(self.full_layers):
             # layer n + m: fully connected
             W, b, z_hat, y_hat = layers.fully_connected(
-                name, "full_" + str(j + 1), current_y_hat, dim_in[j], dim_out[j],
-                tf.random_normal_initializer(stddev=1.0 / np.sqrt(dim_in[j]), seed=SEED), gate_fun)
+                self.name, "full_" + str(j + 1), current_y_hat, dim_in[j], self.dim_out[j],
+                tf.random_normal_initializer(stddev=1.0 / np.sqrt(dim_in[j]), seed=SEED), self.gate_fun)
 
             current_y_hat = y_hat
             self.train_vars.extend([W, b])
@@ -174,8 +180,8 @@ class Model_mFO(ModelBase):
         """ Output layer """
         # output layer: fully connected
         W, b, z_hat, self.y_hat = layers.fully_connected(
-            name, "output_layer", current_y_hat, dim_out[-1], actions,
-            tf.random_normal_initializer(stddev=1.0 / np.sqrt(dim_out[-1]), seed=SEED), linear_transfer)
+            self.name, "output_layer", current_y_hat, self.dim_out[-1], self.num_actions,
+            tf.random_normal_initializer(stddev=1.0 / np.sqrt(self.dim_out[-1]), seed=SEED), linear_transfer)
         self.train_vars.extend([W, b])
         self.train_vars = [self.train_vars]
 
@@ -187,6 +193,24 @@ class Model_mFO(ModelBase):
         self.td_error = tf.subtract(y, y_hat)
         # Loss
         self.train_loss = tf.reduce_sum(tf.pow(self.td_error, 2))
+
+    def replace_model_weights(self, new_vars, tf_session=tf.Session()):
+        if not isinstance(new_vars, list):
+            new_vars = [new_vars]
+        assert len(new_vars) == len(self.train_vars[0]), "The lists of variables need to have the same length!"
+
+        for i in range(len(self.train_vars[0])):
+            tf_session.run(tf.assign(self.train_vars[0][i], new_vars[i]))
+
+    def get_variables_as_list(self, tf_session=tf.Session()):
+        var_list = []
+        for i in range(len(self.train_vars[0])):
+            var_list.append(tf_session.run(self.train_vars[0][i]))
+        return var_list
+
+    def get_variables_as_tensor(self):
+        return self.train_vars[0]
+
 
 ########################################################################################################################
 ##########################                    Old Code                            ######################################
