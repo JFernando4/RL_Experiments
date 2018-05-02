@@ -47,8 +47,8 @@ def main():
         restore_graph(experiment_path, sess)
     else:
         " Agent variables "
-        tpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.1)
-        bpolicy = EpsilonGreedyPolicy(env.get_num_actions(), epsilon=0.1)
+        tpolicy = EpsilonGreedyPolicy(env.get_num_actions(), initial_epsilon=0.1)
+        bpolicy = EpsilonGreedyPolicy(env.get_num_actions(), initial_epsilon=0.1)
         gamma = 0.99
         n = 5
         beta = 1

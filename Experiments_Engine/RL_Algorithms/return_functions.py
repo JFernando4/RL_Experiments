@@ -6,12 +6,12 @@ from Experiments_Engine.Policies import EpsilonGreedyPolicy
 class QSigmaReturnFunction:
 
     def __init__(self, n=1, gamma=1, tpolicy=EpsilonGreedyPolicy(numActions=2)):
-        self._n = n
+        self.n = n
         self._tpolicy = tpolicy
         self._gamma = gamma
 
     def recursive_return_function(self, trajectory, step=0, base_value=None):
-        if step == self._n:
+        if step == self.n:
             assert base_value is not None, "The base value of the recursive function can't be None."
             return base_value
         else:

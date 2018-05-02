@@ -7,14 +7,16 @@ from Experiments_Engine.Objects_Bases import PolicyBase
 
 class EpsilonGreedyPolicy(PolicyBase):
 
-    def __init__(self, numActions=2, epsilon=0.1, anneal=False, final_epsilon=0.1, annealing_period=100000):
-        self.epsilon = epsilon
+    def __init__(self, numActions=2, initial_epsilon=0.1, anneal=False, final_epsilon=0.1, annealing_period=100000):
+        self.epsilon = initial_epsilon
         self.p_random = (self.epsilon / numActions)
         self.p_optimal = self.p_random + (1 - self.epsilon)
         self.numActions = numActions
         self.anneal = anneal
-        self.initial_epsilon = epsilon
-        self.final_epsilon = final_epsilon
+        self.initial_epsilon = initial_epsilon
+        self.final_epsilon = initial_epsilon
+        if anneal:
+            self.final_epsilon = final_epsilon
         self.annealing_period = annealing_period
         self.annealing_steps = 0
         super().__init__()

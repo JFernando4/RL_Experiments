@@ -23,6 +23,7 @@ class ExperimentAgent():
             self.n = experiment_parameters["n"]
             self.sigma = experiment_parameters["sigma"]
             self.beta = experiment_parameters["beta"]
+            self.target_epsilon = experiment_parameters['target_epsilon']
             self.gamma = 0.99
 
             " Environment "
@@ -46,13 +47,14 @@ class ExperimentAgent():
             self.unetwork = Model_mFO(model_dictionary=self.unetwork_parameters)
 
             """ Policies """
-            target_epsilon = 0.1
+            final_epsilon = 0.1
             initial_epsilon = 1
             anneal_period = 20000   # 0.02 * Max Frames
             anneal = True
-            self.target_policy = EpsilonGreedyPolicy(numActions=num_actions, epsilon=initial_epsilon, anneal=False)
-            self.behaviour_policy = EpsilonGreedyPolicy(numActions=num_actions, epsilon=target_epsilon, anneal=anneal,
-                                                        annealing_period=anneal_period, final_epsilon=target_epsilon)
+            self.target_policy = EpsilonGreedyPolicy(numActions=num_actions, anneal=False,
+                                                     initial_epsilon=self.target_epsilon)
+            self.behaviour_policy = EpsilonGreedyPolicy(numActions=num_actions, initial_epsilon=initial_epsilon, anneal=anneal,
+                                                        annealing_period=anneal_period, final_epsilon=final_epsilon)
 
             """ QSigma return function """
             self.rl_return_fun = QSigmaReturnFunction(n=self.n, gamma=self.gamma, tpolicy=self.target_policy)
@@ -63,8 +65,6 @@ class ExperimentAgent():
             self.qsigma_erp = QSigmaExperienceReplayBuffer(return_function=self.rl_return_fun,
                                                            buffer_size=buffer_size, batch_size=batch_size, frame_stack=1,
                                                            observation_dimensions=obs_dims, num_actions=num_actions,
-                                                           n=self.n, tpolicy=self.target_policy,
-                                                           bpolicy=self.behaviour_policy,
                                                            observation_dtype=self.env.get_observation_dtype(),
                                                            reward_clipping=False)
 
@@ -171,6 +171,43 @@ class ExperimentAgent():
                    "train_loss_history": self.function_approximator.get_train_loss_history()}
         pickle.dump(results, open(os.path.join(dirn_name, "results.p"), mode="wb"))
 
+    def save_parameters(self, dir_name):
+        txt_file_pathname = os.path.join(dir_name, "agent_parameters.txt")
+        params_txt = open(txt_file_pathname, "w")
+        params_txt.write("# Agent #\n")
+        params_txt.write("\tn = " + str(self.agent_parameters['n']) + "\n")
+        params_txt.write("\tgamma = " + str(self.agent_parameters['gamma']) + "\n")
+        params_txt.write("\tsigma = " + str(self.agent_parameters['sigma']) + "\n")
+        params_txt.write("\tbeta = " + str(self.agent_parameters['beta']) + "\n")
+        params_txt.write("\trandom steps before training = " +
+                         str(self.agent_parameters['rand_steps_before_training']) + "\n")
+        params_txt.write("\n")
+
+        assert isinstance(self.target_policy, EpsilonGreedyPolicy)
+        params_txt.write("# Target Policy #\n")
+        params_txt.write("\tinitial epsilon = " + str(self.target_policy.initial_epsilon) + "\n")
+        params_txt.write("\tfinal epsilon = " + str(self.target_policy.final_epsilon) + "\n")
+        params_txt.write("\n")
+
+        assert isinstance(self.behaviour_policy, EpsilonGreedyPolicy)
+        params_txt.write("# Behaviour Policy #\n")
+        params_txt.write("\tinitial epsilon = " + str(self.behaviour_policy.initial_epsilon) + "\n")
+        params_txt.write("\tfinal epsilon = " + str(self.behaviour_policy.final_epsilon) + "\n")
+        params_txt.write("\tannealing period = " + str(self.behaviour_policy.annealing_period) + "\n")
+        params_txt.write("\n")
+
+        assert isinstance(self.qsigma_erp, QSigmaExperienceReplayBuffer)
+        params_txt.write("# Function Approximator: Neural Network with Experience Replay #\n")
+        params_txt.write("\talpha = " + str(self.fa_parameters['alpha']) + "\n")
+        params_txt.write("\ttarget network update frequency = " + str(self.fa_parameters['tnetwork_update_freq']) + "\n")
+        params_txt.write("\tbatch size = " + str(self.fa_parameters['batch_size']) + "\n")
+        params_txt.write("\tbuffer size = " + str(self.qsigma_erp.buff_sz) + "\n")
+        params_txt.write("\tfully connected layers = " + str(self.tnetwork_parameters['full_layers']) + "\n")
+        params_txt.write("\toutput dimensions per layer = " + str(self.tnetwork_parameters['output_dims']) + "\n")
+        params_txt.write("\tgate function = " + str(self.tnetwork_parameters['gate_fun']) + "\n")
+        params_txt.write("\n")
+
+        params_txt.close()
 
 class Experiment():
 
@@ -182,6 +219,7 @@ class Experiment():
         self.restore_agent = restore_agent
         self.save_agent = save_agent
         self.max_number_of_frames = max_number_of_frames
+        self.agent.save_parameters(self.results_dir)
 
         if max_number_of_frames > MAX_TRAINING_FRAMES:
             raise ValueError
@@ -213,12 +251,13 @@ if __name__ == "__main__":
     """ Experiment Parameters """
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', action='store', default=1, type=np.uint8)
-    parser.add_argument('-sigma', action='store', default=0.5, type=np.float32)
-    parser.add_argument('-beta', action='store', default=1, type=np.float32)
+    parser.add_argument('-sigma', action='store', default=0.5, type=np.float64)
+    parser.add_argument('-beta', action='store', default=1, type=np.float64)
     parser.add_argument('-quiet', action='store_false', default=True)
     parser.add_argument('-frames', action='store', default=1000000, type=np.int32)
-    parser.add_argument('-name', action='store', default='sigma_0.5/agent_3', type=str)
+    parser.add_argument('-name', action='store', default='sigma_0.5/agent_1', type=str)
     parser.add_argument('-dump_agent', action='store_false', default=True)
+    parser.add_argument('-target_epsilon', action='store', default=0.1, type=np.float64)
     args = vars(parser.parse_args())
 
     """ Directories """
@@ -227,8 +266,8 @@ if __name__ == "__main__":
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
 
-    exp_params = {"n": args['n'], "sigma": args['sigma'], "beta": args['beta']}
+    exp_params = {"n": args['n'], "sigma": args['sigma'], "beta": args['beta'], 'target_epsilon': args['target_epsilon']}
 
     experiment = Experiment(results_dir=results_directory, save_agent=args['dump_agent'], restore_agent=False,
-                            max_number_of_frames=args['frames'], experiment_parameters=exp_params,)
+                            max_number_of_frames=args['frames'], experiment_parameters=exp_params)
     experiment.run_experiment(verbose=args['quiet'])

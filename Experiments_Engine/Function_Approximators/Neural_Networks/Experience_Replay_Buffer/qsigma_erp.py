@@ -7,12 +7,12 @@ from Experiments_Engine.Policies import EpsilonGreedyPolicy
 class QSigmaExperienceReplayBuffer:
 
     def __init__(self, return_function, buffer_size=10, batch_size=1, frame_stack=4, observation_dimensions=[2,2],
-                 num_actions=2, n=3, tpolicy=EpsilonGreedyPolicy(), bpolicy=EpsilonGreedyPolicy(),
-                 observation_dtype=np.uint8, reward_clipping=True):
+                 num_actions=2, observation_dtype=np.uint8, reward_clipping=True):
 
         """ Parameters for Return Function """
+        assert isinstance(return_function, QSigmaReturnFunction)
         self.return_function = return_function
-        self.n = n
+        self.n = return_function.n
 
         """ Parameters for the Buffer """
         self.frame_stack = frame_stack
@@ -33,10 +33,6 @@ class QSigmaExperienceReplayBuffer:
         self.uptodate = CircularBuffer(self.buff_sz, shape=(), dtype=np.bool)
         self.bprobabilities = CircularBuffer(self.buff_sz, shape=(num_actions,), dtype=np.float32)
         self.sigma = CircularBuffer(self.buff_sz, shape=(), dtype=np.float32)
-
-        """ Policies """
-        self.tpolicy = tpolicy
-        self.bpolicy = bpolicy
 
     def store_observation(self, observation):
         assert isinstance(observation, dict)

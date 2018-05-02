@@ -16,8 +16,8 @@ class ExperimentAgent:
         self.fa = TileCoderFA(numTilings=numTilings, numActions=self.env.get_num_actions(), alpha=alpha,
                               state_space_range=(self.env.get_high() - self.env.get_low()),
                               state_space_size=len(self.env.get_current_state()), tile_side_length=10)
-        self.tpolicy = EpsilonGreedyPolicy(epsilon=epsilon_tpolicy, numActions=self.env.get_num_actions())
-        self.bpolicy = EpsilonGreedyPolicy(epsilon=epsilon_bpolicy, numActions=self.env.get_num_actions())
+        self.tpolicy = EpsilonGreedyPolicy(initial_epsilon=epsilon_tpolicy, numActions=self.env.get_num_actions())
+        self.bpolicy = EpsilonGreedyPolicy(initial_epsilon=epsilon_bpolicy, numActions=self.env.get_num_actions())
 
         self.agent = QSigma(n=n, gamma=gamma, beta=beta, sigma=sigma, environment=self.env,
                             function_approximator=self.fa, target_policy=self.tpolicy, behavior_policy=self.bpolicy)

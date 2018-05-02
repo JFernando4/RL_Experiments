@@ -15,8 +15,8 @@ class ExperimentAgent:
 
     def __init__(self, alpha, beta, epsilon_bpolicy, epsilon_tpolicy, gamma, n, sigma, dim_out, fully_connected_layers):
         self.env = Mountain_Car()
-        self.tpolicy = EpsilonGreedyPolicy(epsilon=epsilon_tpolicy, numActions=self.env.get_num_actions())
-        self.bpolicy = EpsilonGreedyPolicy(epsilon=epsilon_bpolicy, numActions=self.env.get_num_actions())
+        self.tpolicy = EpsilonGreedyPolicy(initial_epsilon=epsilon_tpolicy, numActions=self.env.get_num_actions())
+        self.bpolicy = EpsilonGreedyPolicy(initial_epsilon=epsilon_bpolicy, numActions=self.env.get_num_actions())
 
         " Model Parameters "
         name = "experiment"

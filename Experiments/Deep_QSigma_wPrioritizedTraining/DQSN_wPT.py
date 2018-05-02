@@ -48,8 +48,8 @@ class ExperimentAgent():
             initial_epsilon = 0.1
             anneal_period = 1000000
             anneal = False
-            self.target_policy = EpsilonGreedyPolicy(numActions=num_actions, epsilon=initial_epsilon, anneal=False)
-            self.behaviour_policy = EpsilonGreedyPolicy(numActions=num_actions, epsilon=target_epsilon, anneal=anneal,
+            self.target_policy = EpsilonGreedyPolicy(numActions=num_actions, initial_epsilon=initial_epsilon, anneal=False)
+            self.behaviour_policy = EpsilonGreedyPolicy(numActions=num_actions, initial_epsilon=target_epsilon, anneal=anneal,
                                                         annealing_period=anneal_period, final_epsilon=target_epsilon)
 
             """ Neural Network """

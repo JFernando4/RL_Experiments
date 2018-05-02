@@ -13,12 +13,12 @@ class Test_MountainCar_Environment(unittest.TestCase):
     def setUp(self):
         self.env = Mountain_Car()
         num_actions = self.env.get_num_actions()
-        self.tpolicy = EpsilonGreedyPolicy(num_actions, epsilon=0.1)
+        self.tpolicy = EpsilonGreedyPolicy(num_actions, initial_epsilon=0.1)
 
         ### Test 1 Setup ###
         self.fa1 = TileCoderFA(numTilings=8, numActions=self.env.get_num_actions(), alpha=0.1,
                               state_space_size=self.env.get_observation_dimensions()[0], tile_side_length=10)
-        self.bpolicy = EpsilonGreedyPolicy(num_actions, epsilon=0.1)
+        self.bpolicy = EpsilonGreedyPolicy(num_actions, initial_epsilon=0.1)
         self.agent1 = QSigma(n=3, gamma=1, beta=1, sigma=0.5, environment=self.env, function_approximator=self.fa1,
                             target_policy=self.tpolicy, behavior_policy=self.bpolicy)
 
@@ -26,7 +26,7 @@ class Test_MountainCar_Environment(unittest.TestCase):
         self.initial_epsilon = 0.5
         self.final_epsilon = 0.1
         self.annealing_period = 10000
-        self.bpolicy2 = EpsilonGreedyPolicy(num_actions, epsilon=self.initial_epsilon, anneal=True,
+        self.bpolicy2 = EpsilonGreedyPolicy(num_actions, initial_epsilon=self.initial_epsilon, anneal=True,
                                             final_epsilon=self.final_epsilon, annealing_period=self.annealing_period)
         self.fa2 = TileCoderFA(numTilings=8, numActions=self.env.get_num_actions(), alpha=0.1,
                               state_space_size=self.env.get_observation_dimensions()[0], tile_side_length=10)
@@ -39,7 +39,7 @@ class Test_MountainCar_Environment(unittest.TestCase):
         self.final_epsilon2 = 0.1
         self.annealing_period2 = 5000
         self.steps_before_training = 5000
-        self.bpolicy3 = EpsilonGreedyPolicy(num_actions, epsilon=self.initial_epsilon2, anneal=True,
+        self.bpolicy3 = EpsilonGreedyPolicy(num_actions, initial_epsilon=self.initial_epsilon2, anneal=True,
                                             final_epsilon=self.final_epsilon2, annealing_period=self.annealing_period2)
         self.fa3 = TileCoderFA(numTilings=8, numActions=self.env.get_num_actions(), alpha=0.01,
                               state_space_size=self.env.get_observation_dimensions()[0], tile_side_length=10)

@@ -56,9 +56,9 @@ class ExperimentAgent():
 
         """ Policies """
         target_epsilon = 0.1
-        self.target_policy = EpsilonGreedyPolicy(numActions=num_actions, epsilon=target_epsilon, anneal=False)
-        self.behavior_policy = EpsilonGreedyPolicy(numActions=num_actions, epsilon=target_epsilon, anneal=False,
-                                              annealing_period=0, final_epsilon=0.1)
+        self.target_policy = EpsilonGreedyPolicy(numActions=num_actions, initial_epsilon=target_epsilon, anneal=False)
+        self.behavior_policy = EpsilonGreedyPolicy(numActions=num_actions, initial_epsilon=target_epsilon, anneal=False,
+                                                   annealing_period=0, final_epsilon=0.1)
 
         """ Return Function """
         return_function = QSigmaReturnFunction(n=self.n, gamma=self.gamma, tpolicy=self.target_policy,)
