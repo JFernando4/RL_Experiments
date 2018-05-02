@@ -169,7 +169,7 @@ class QSigma(RL_ALgorithmBase):
                         bpropabilities = np.zeros(self.env.get_num_actions(), dtype=np.float64)
                         A = np.uint8(0)
                     else:
-                        if self._agent_dictionary["rand_steps_count"] > self.rand_steps_before_training:
+                        if self._agent_dictionary["rand_steps_count"] >= self.rand_steps_before_training:
                             A = self.bpolicy.choose_action(q_values)
                             bpropabilities = self.bpolicy.probability_of_action(q_values, all_actions=True)
                             if self.anneal_epsilon:

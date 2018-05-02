@@ -37,7 +37,7 @@ class Test_MountainCar_Environment(unittest.TestCase):
         ### Test 3 Setup ###
         self.initial_epsilon2 = 1
         self.final_epsilon2 = 0.1
-        self.annealing_period2 = 500000
+        self.annealing_period2 = 5000
         self.steps_before_training = 5000
         self.bpolicy3 = EpsilonGreedyPolicy(num_actions, epsilon=self.initial_epsilon2, anneal=True,
                                             final_epsilon=self.final_epsilon2, annealing_period=self.annealing_period2)
