@@ -24,6 +24,9 @@ class ExperimentAgent():
             self.sigma = experiment_parameters["sigma"]
             self.beta = experiment_parameters["beta"]
             self.target_epsilon = experiment_parameters['target_epsilon']
+            self.truncate_rho = experiment_parameters['truncate_rho']
+            self.compute_bprobabilities = experiment_parameters['compute_bprobabilities']
+            self.anneal_epsilon = experiment_parameters['anneal_epsilon']
             self.gamma = 0.99
 
             " Environment "
@@ -48,16 +51,21 @@ class ExperimentAgent():
 
             """ Policies """
             final_epsilon = 0.1
-            initial_epsilon = 1
+            if self.anneal_epsilon:
+                initial_epsilon = 1
+            else:
+                initial_epsilon = 0.1
             anneal_period = 20000   # 0.02 * Max Frames
-            anneal = True
             self.target_policy = EpsilonGreedyPolicy(numActions=num_actions, anneal=False,
                                                      initial_epsilon=self.target_epsilon)
-            self.behaviour_policy = EpsilonGreedyPolicy(numActions=num_actions, initial_epsilon=initial_epsilon, anneal=anneal,
+            self.behaviour_policy = EpsilonGreedyPolicy(numActions=num_actions, initial_epsilon=initial_epsilon,
+                                                        anneal=self.anneal_epsilon,
                                                         annealing_period=anneal_period, final_epsilon=final_epsilon)
 
             """ QSigma return function """
-            self.rl_return_fun = QSigmaReturnFunction(n=self.n, gamma=self.gamma, tpolicy=self.target_policy)
+            self.rl_return_fun = QSigmaReturnFunction(n=self.n, gamma=self.gamma, tpolicy=self.target_policy,
+                                                      truncate_rho=self.truncate_rho, bpolicy=self.behaviour_policy,
+                                                      compute_bprobabilities=self.compute_bprobabilities)
 
             """ QSigma replay buffer """
             batch_size = 32
@@ -174,6 +182,7 @@ class ExperimentAgent():
     def save_parameters(self, dir_name):
         txt_file_pathname = os.path.join(dir_name, "agent_parameters.txt")
         params_txt = open(txt_file_pathname, "w")
+        assert isinstance(self.rl_return_fun, QSigmaReturnFunction)
         params_txt.write("# Agent #\n")
         params_txt.write("\tn = " + str(self.agent_parameters['n']) + "\n")
         params_txt.write("\tgamma = " + str(self.agent_parameters['gamma']) + "\n")
@@ -181,6 +190,9 @@ class ExperimentAgent():
         params_txt.write("\tbeta = " + str(self.agent_parameters['beta']) + "\n")
         params_txt.write("\trandom steps before training = " +
                          str(self.agent_parameters['rand_steps_before_training']) + "\n")
+        params_txt.write("\ttruncate rho = " + str(self.rl_return_fun.truncate_rho) + "\n")
+        params_txt.write("\tcompute behaviour policy's probabilities = " +
+                         str(self.rl_return_fun.compute_bprobabilities) + "\n")
         params_txt.write("\n")
 
         assert isinstance(self.target_policy, EpsilonGreedyPolicy)
@@ -192,6 +204,7 @@ class ExperimentAgent():
         assert isinstance(self.behaviour_policy, EpsilonGreedyPolicy)
         params_txt.write("# Behaviour Policy #\n")
         params_txt.write("\tinitial epsilon = " + str(self.behaviour_policy.initial_epsilon) + "\n")
+        params_txt.write("\tanneal epsilon = " + str(self.behaviour_policy.anneal) + "\n")
         params_txt.write("\tfinal epsilon = " + str(self.behaviour_policy.final_epsilon) + "\n")
         params_txt.write("\tannealing period = " + str(self.behaviour_policy.annealing_period) + "\n")
         params_txt.write("\n")
@@ -253,11 +266,14 @@ if __name__ == "__main__":
     parser.add_argument('-n', action='store', default=1, type=np.uint8)
     parser.add_argument('-sigma', action='store', default=0.5, type=np.float64)
     parser.add_argument('-beta', action='store', default=1, type=np.float64)
-    parser.add_argument('-quiet', action='store_false', default=True)
-    parser.add_argument('-frames', action='store', default=1000000, type=np.int32)
-    parser.add_argument('-name', action='store', default='sigma_0.5/agent_1', type=str)
-    parser.add_argument('-dump_agent', action='store_false', default=True)
     parser.add_argument('-target_epsilon', action='store', default=0.1, type=np.float64)
+    parser.add_argument('-truncate_rho', action='store_true', default=False)
+    parser.add_argument('-compute_bprobabilities', action='store_true', default=False)
+    parser.add_argument('-anneal_epsilon', action='store_true', default=False)
+    parser.add_argument('-quiet', action='store_false', default=True)
+    parser.add_argument('-dump_agent', action='store_false', default=True)
+    parser.add_argument('-frames', action='store', default=1000000, type=np.int32)
+    parser.add_argument('-name', action='store', default='agent_1', type=str)
     args = vars(parser.parse_args())
 
     """ Directories """
@@ -266,8 +282,7 @@ if __name__ == "__main__":
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
 
-    exp_params = {"n": args['n'], "sigma": args['sigma'], "beta": args['beta'], 'target_epsilon': args['target_epsilon']}
-
+    exp_params = args
     experiment = Experiment(results_dir=results_directory, save_agent=args['dump_agent'], restore_agent=False,
                             max_number_of_frames=args['frames'], experiment_parameters=exp_params)
     experiment.run_experiment(verbose=args['quiet'])

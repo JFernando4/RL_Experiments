@@ -5,10 +5,14 @@ from Experiments_Engine.Policies import EpsilonGreedyPolicy
 
 class QSigmaReturnFunction:
 
-    def __init__(self, n=1, gamma=1, tpolicy=EpsilonGreedyPolicy(numActions=2)):
+    def __init__(self, n=1, gamma=1, tpolicy=EpsilonGreedyPolicy(numActions=2), bpolicy=None, truncate_rho=False,
+                 compute_bprobabilities=False):
         self.n = n
-        self._tpolicy = tpolicy
-        self._gamma = gamma
+        self.tpolicy = tpolicy
+        self.bpolicy = bpolicy
+        self.compute_bprobabilities = compute_bprobabilities
+        self.gamma = gamma
+        self.truncate_rho = truncate_rho
 
     def recursive_return_function(self, trajectory, step=0, base_value=None):
         if step == self.n:
@@ -19,12 +23,16 @@ class QSigmaReturnFunction:
             if termination:
                 return reward
             else:
-                tprobabilities = self._tpolicy.probability_of_action(q_values=qvalues, all_actions=True)
-                if bprobabilities[action] == 0:
-                    assert bprobabilities[action] != 0
+                tprobabilities = self.tpolicy.probability_of_action(q_values=qvalues, all_actions=True)
+                if self.compute_bprobabilities:
+                    assert isinstance(self.bpolicy, EpsilonGreedyPolicy)
+                    bprobabilities = self.bpolicy.probability_of_action(q_values=qvalues, all_actions=True)
+                assert bprobabilities[action] != 0
                 rho = tprobabilities[action] / bprobabilities[action]
+                if self.truncate_rho:
+                    rho = min(rho, 1)
                 average_action_value = np.sum(np.multiply(tprobabilities, qvalues))
                 return reward + \
-                       self._gamma * (rho * sigma + (1-sigma) * tprobabilities[action]) \
+                       self.gamma * (rho * sigma + (1-sigma) * tprobabilities[action]) \
                        * self.recursive_return_function(trajectory=trajectory, step=step + 1, base_value=qvalues[action]) + \
-                       self._gamma * (1-sigma) * (average_action_value - tprobabilities[action] * qvalues[action])
+                       self.gamma * (1-sigma) * (average_action_value - tprobabilities[action] * qvalues[action])
