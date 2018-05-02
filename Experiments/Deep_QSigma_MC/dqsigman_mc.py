@@ -215,10 +215,10 @@ if __name__ == "__main__":
     parser.add_argument('-n', action='store', default=1, type=np.uint8)
     parser.add_argument('-sigma', action='store', default=0.5, type=np.float32)
     parser.add_argument('-beta', action='store', default=1, type=np.float32)
-    parser.add_argument('-v', action='store_true', default=True)
+    parser.add_argument('-quiet', action='store_false', default=True)
     parser.add_argument('-frames', action='store', default=1000000, type=np.int32)
     parser.add_argument('-name', action='store', default='sigma_0.5/agent_3', type=str)
-    parser.add_argument('-save_agent', action='store_true', default=False)
+    parser.add_argument('-dump_agent', action='store_False', default=True)
     args = vars(parser.parse_args())
 
     """ Directories """
