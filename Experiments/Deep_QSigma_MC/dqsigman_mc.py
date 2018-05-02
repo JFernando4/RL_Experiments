@@ -213,11 +213,12 @@ if __name__ == "__main__":
     """ Experiment Parameters """
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', action='store', default=1, type=np.uint8)
-    parser.add_argument('-sigma', action='store', default=1, type=np.float32)
-    parser.add_argument('-beta', action='store', default=0.95, type=np.float32)
+    parser.add_argument('-sigma', action='store', default=0.5, type=np.float32)
+    parser.add_argument('-beta', action='store', default=1, type=np.float32)
     parser.add_argument('-v', action='store_true', default=True)
     parser.add_argument('-frames', action='store', default=1000000, type=np.int32)
-    parser.add_argument('-name', action='store', default='agent_3', type=str)
+    parser.add_argument('-name', action='store', default='sigma_0.5/agent_3', type=str)
+    parser.add_argument('-save_agent', action='store_true', default=False)
     args = vars(parser.parse_args())
 
     """ Directories """
@@ -228,6 +229,6 @@ if __name__ == "__main__":
 
     exp_params = {"n": args['n'], "sigma": args['sigma'], "beta": args['beta']}
 
-    experiment = Experiment(results_dir=results_directory, save_agent=True, restore_agent=False,
-                            max_number_of_frames=args['frames'], experiment_parameters=exp_params)
+    experiment = Experiment(results_dir=results_directory, save_agent=args['save_agent'], restore_agent=False,
+                            max_number_of_frames=args['frames'], experiment_parameters=exp_params,)
     experiment.run_experiment(verbose=args['v'])
