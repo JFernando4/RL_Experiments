@@ -212,12 +212,12 @@ class Experiment():
 if __name__ == "__main__":
     """ Experiment Parameters """
     parser = argparse.ArgumentParser()
-    parser.add_argument('-n', action='store', default=1)
-    parser.add_argument('-sigma', action='store', default=1)
-    parser.add_argument('-beta', action='store', default=0.95)
+    parser.add_argument('-n', action='store', default=1, type=np.uint8)
+    parser.add_argument('-sigma', action='store', default=1, type=np.float32)
+    parser.add_argument('-beta', action='store', default=0.95, type=np.float32)
     parser.add_argument('-v', action='store_true', default=True)
-    parser.add_argument('-frames', action='store', default=1000000)
-    parser.add_argument('-name', action='store', default='agent_3')
+    parser.add_argument('-frames', action='store', default=1000000, type=np.int32)
+    parser.add_argument('-name', action='store', default='agent_3', type=str)
     args = vars(parser.parse_args())
 
     """ Directories """
