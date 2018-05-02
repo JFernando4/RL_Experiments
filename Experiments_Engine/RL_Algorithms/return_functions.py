@@ -10,16 +10,6 @@ class QSigmaReturnFunction:
         self._tpolicy = tpolicy
         self._gamma = gamma
 
-    @staticmethod
-    def expected_action_value(q_values, p_values):
-        if not isinstance(q_values, np.ndarray):
-            q_values = np.array(q_values)
-        if not isinstance(p_values, np.ndarray):
-            p_values = np.array(q_values)
-
-        expected = np.sum(q_values * p_values)
-        return expected
-
     def recursive_return_function(self, trajectory, step=0, base_value=None):
         if step == self._n:
             assert base_value is not None, "The base value of the recursive function can't be None."
@@ -33,7 +23,7 @@ class QSigmaReturnFunction:
                 if bprobabilities[action] == 0:
                     assert bprobabilities[action] != 0
                 rho = tprobabilities[action] / bprobabilities[action]
-                average_action_value = self.expected_action_value(qvalues, tprobabilities)
+                average_action_value = np.sum(np.multiply(tprobabilities, qvalues))
                 return reward + \
                        self._gamma * (rho * sigma + (1-sigma) * tprobabilities[action]) \
                        * self.recursive_return_function(trajectory=trajectory, step=step + 1, base_value=qvalues[action]) + \

@@ -42,7 +42,6 @@ class QSigma(RL_ALgorithmBase):
         self.rand_steps_before_training = self._agent_dictionary["rand_steps_before_training"]
             # History
         self.return_per_episode = self._agent_dictionary["return_per_episode"]
-        self.episode_number = self._agent_dictionary["episode_number"]
 
         " Parameters that can't be restored "
             # Behaviour and Target Policies
@@ -62,20 +61,18 @@ class QSigma(RL_ALgorithmBase):
         else:
             reward, action, qvalues, termination = trajectory.pop(0)
             if termination:
-                base_rho = 1
-                return reward, base_rho
+                return reward
             else:
                 tprobabilities = self.tpolicy.probability_of_action(q_values=qvalues, all_actions=True)
                 bprobabilities = self.bpolicy.probability_of_action(q_values=qvalues, all_actions=True)
-                if bprobabilities[action] == 0:
-                    rho = 1
-                else:
-                    rho = tprobabilities[action] / bprobabilities[action]
+                assert bprobabilities[action] != 0
+                rho = tprobabilities[action] / bprobabilities[action]
                 average_action_value = self.expected_action_value(qvalues, tprobabilities)
                 return reward + \
                        self.gamma * (rho * self.sigma + (1-self.sigma) * tprobabilities[action]) \
                        * self.recursive_return_function(trajectory=trajectory, n=n+1, base_value=qvalues[action]) +\
                        self.gamma * (1-self.sigma) * (average_action_value - tprobabilities[action] * qvalues[action])
+
 
     @staticmethod
     def expected_action_value(q_values, p_values):
@@ -101,10 +98,6 @@ class QSigma(RL_ALgorithmBase):
         self.env.set_render()
         self.env.reset()
 
-    def increase_episode_number(self):
-        self.episode_number += 1
-        self._agent_dictionary["episode_number"] = self.episode_number
-
     def adjust_sigma(self):
         self.sigma *= self.beta
         self._agent_dictionary['sigma'] = self.sigma
@@ -128,12 +121,12 @@ class QSigma(RL_ALgorithmBase):
             # Record Keeping
             episode_reward_sum = 0
             episode_timesteps = 1
-            self.increase_episode_number()
+            self._agent_dictionary['episode_number'] += 1
 
             # Current State, Action, and Q_values
             S = self.env.get_current_state()
             q_values = self.fa.get_next_states_values(S)
-            if self._agent_dictionary["rand_steps_count"] > self.rand_steps_before_training:
+            if self._agent_dictionary["rand_steps_count"] >= self.rand_steps_before_training:
                 A = self.bpolicy.choose_action(q_values)
                 if self.anneal_epsilon:
                     self.tpolicy.anneal_epsilon()
@@ -173,8 +166,8 @@ class QSigma(RL_ALgorithmBase):
 
                     if terminate:
                         T = t + 1
-                        bpropabilities = np.zeros(self.env.get_num_actions(), dtype=np.float32)
-                        A = 0
+                        bpropabilities = np.zeros(self.env.get_num_actions(), dtype=np.float64)
+                        A = np.uint8(0)
                     else:
                         if self._agent_dictionary["rand_steps_count"] > self.rand_steps_before_training:
                             A = self.bpolicy.choose_action(q_values)
@@ -184,35 +177,34 @@ class QSigma(RL_ALgorithmBase):
                                 self.bpolicy.anneal_epsilon()
                         else:
                             A = np.random.randint(len(q_values))
-                            bpropabilities = np.ones(self.env.get_num_actions(), dtype=np.float32) * (1/self.env.get_num_actions())
+                            bpropabilities = np.ones(self.env.get_num_actions(), dtype=np.float64) * (1/self.env.get_num_actions())
                             self._agent_dictionary["rand_steps_count"] += 1
 
                         Actions[(t + 1) % (self.n + 1)] = A
 
-                        # Storing Trajectory
-                        trajectory.append([R, A, q_values, terminate])
+                    # Storing Trajectory
+                    trajectory.append([R, A, q_values, terminate])
 
 
                     # Storing in the experience replay buffer
                     if self.use_er_buffer:
                         observation = {"reward": R, "action": A, "state": self.env.get_state_for_er_buffer(),
-                                       "terminate": terminate,
-                                       "rl_return": np.nan, "uptodate": False,
-                                       "bprobabilities": bpropabilities,
-                                       "sigma": self.sigma}
+                                       "terminate": terminate, "rl_return": np.nan, "uptodate": False,
+                                       "bprobabilities": bpropabilities, "sigma": self.sigma}
                         self.er_buffer.store_observation(observation)
 
                 tau = t - self.n + 1
-                if (len(trajectory) == self.n) and (tau >= 0): # These two statements are equivalent
-                    temp_copy_of_trajectory = list(trajectory)
-                    if self.compute_return:
-                        G = self.recursive_return_function(temp_copy_of_trajectory)
-                    else:
-                        G = 0
-                    if self._agent_dictionary["rand_steps_count"] >= self.rand_steps_before_training:
-                        self.fa.update(States[tau % (self.n+1)], Actions[tau % (self.n+1)], nstep_return=G,
-                                   correction=1)
-                    trajectory.pop(0)
+                if tau >= 0:
+                    if len(trajectory) >= 1:
+                        temp_copy_of_trajectory = list(trajectory)
+                        if self.compute_return:
+                            G = self.recursive_return_function(temp_copy_of_trajectory)
+                        else:
+                            G = 0
+                        if self._agent_dictionary["rand_steps_count"] >= self.rand_steps_before_training:
+                            self.fa.update(States[tau % (self.n+1)], Actions[tau % (self.n+1)], nstep_return=G,
+                                       correction=1)
+                        trajectory.pop(0)
 
                 t += 1
                 if tau == T-1: break

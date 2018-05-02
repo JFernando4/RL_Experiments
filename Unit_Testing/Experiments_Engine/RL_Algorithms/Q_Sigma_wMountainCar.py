@@ -32,7 +32,7 @@ class Test_MountainCar_Environment(unittest.TestCase):
                               state_space_size=self.env.get_observation_dimensions()[0], tile_side_length=10)
         self.agent2 = QSigma(n=3, gamma=1, beta=1, sigma=0.5, environment=self.env, function_approximator=self.fa2,
                             target_policy=self.tpolicy, behavior_policy=self.bpolicy2, anneal_epsilon=True)
-        self.qsigma_rf = QSigmaReturnFunction(n=3, sigma=0.5, gamma=1, tpolicy=self.tpolicy, bpolicy=self.bpolicy2)
+        self.qsigma_rf = QSigmaReturnFunction(n=3, gamma=1, tpolicy=self.tpolicy)
 
         ### Test 3 Setup ###
         self.initial_epsilon2 = 1
@@ -45,7 +45,7 @@ class Test_MountainCar_Environment(unittest.TestCase):
                               state_space_size=self.env.get_observation_dimensions()[0], tile_side_length=10)
         self.agent3 = QSigma(n=3, gamma=1, beta=1, sigma=0.5, environment=self.env, function_approximator=self.fa3,
                              target_policy=self.tpolicy, behavior_policy=self.bpolicy3, anneal_epsilon=True,
-                             steps_before_training=self.steps_before_training)
+                             rand_steps_before_training=self.steps_before_training)
 
     def test_train(self):
         print("\n############ Training with Recursive Function ##############")
@@ -68,7 +68,6 @@ class Test_MountainCar_Environment(unittest.TestCase):
         print("The initial epsilon is:", self.initial_epsilon)
         print("The final epsilon is:", self.final_epsilon)
         print("The annealing period is:", self.annealing_period)
-        print("The epsilon of the behavior policy in QSigmaReturnFunction is:", self.qsigma_rf._bpolicy.epsilon)
         print("Training for 1 episodes...")
         self.agent2.train(1)
         print("The current epsilon is:", self.bpolicy2.epsilon)
@@ -82,7 +81,6 @@ class Test_MountainCar_Environment(unittest.TestCase):
         print("The current epsilon is:", self.bpolicy2.epsilon)
         print("The epsilon of the target policy is:", self.tpolicy.epsilon)
 
-        print("The epsilon of the behavior policy in QSigmaReturnFunction is:", self.qsigma_rf._bpolicy.epsilon)
 
     def test_steps_before_training(self):
         print("\n############ Testing Steps Before Training ###############")
@@ -91,24 +89,24 @@ class Test_MountainCar_Environment(unittest.TestCase):
         print("The annealing period is:", self.annealing_period2)
         print("The number of steps before training is:", self.steps_before_training)
         print("The current number of steps before training is:",
-              self.agent3.get_agent_dictionary()["current_steps_before_training"])
+              self.agent3.get_agent_dictionary()["rand_steps_count"])
         print("Training for 1 episodes...")
         self.agent3.train(1)
         print("The current epsilon is:", self.bpolicy3.epsilon)
         print("The epsilon of the target policy is:", self.tpolicy.epsilon)
-        print("The current number of steps before training is:", self.agent3.get_agent_dictionary()["current_steps_before_training"])
+        print("The current number of steps before training is:", self.agent3.get_agent_dictionary()["rand_steps_count"])
         print("Training for 10 more episodes...")
         self.agent3.train(10)
         print("The current epsilon is:", self.bpolicy3.epsilon)
         print("The epsilon of the target policy is:", self.tpolicy.epsilon)
         print("The current number of steps before training is:",
-              self.agent3.get_agent_dictionary()["current_steps_before_training"])
+              self.agent3.get_agent_dictionary()["rand_steps_count"])
         print("Training for 100 more episodes...")
         self.agent3.train(100)
         print("The current epsilon is:", self.bpolicy3.epsilon)
         print("The epsilon of the target policy is:", self.tpolicy.epsilon)
         print("The current number of steps before training is:",
-              self.agent3.get_agent_dictionary()["current_steps_before_training"])
+              self.agent3.get_agent_dictionary()["rand_steps_count"])
 
 
 if __name__ == "__main__":
