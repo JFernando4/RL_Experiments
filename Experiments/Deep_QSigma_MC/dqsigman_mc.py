@@ -229,6 +229,6 @@ if __name__ == "__main__":
 
     exp_params = {"n": args['n'], "sigma": args['sigma'], "beta": args['beta']}
 
-    experiment = Experiment(results_dir=results_directory, save_agent=args['save_agent'], restore_agent=False,
+    experiment = Experiment(results_dir=results_directory, save_agent=args['dump_agent'], restore_agent=False,
                             max_number_of_frames=args['frames'], experiment_parameters=exp_params,)
-    experiment.run_experiment(verbose=args['v'])
+    experiment.run_experiment(verbose=args['quiet'])
