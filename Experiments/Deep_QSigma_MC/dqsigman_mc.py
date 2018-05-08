@@ -222,6 +222,7 @@ class ExperimentAgent():
 
         params_txt.close()
 
+
 class Experiment():
 
     def __init__(self, experiment_parameters, results_dir=None, save_agent=False, restore_agent=False,

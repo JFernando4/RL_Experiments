@@ -27,7 +27,8 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         self.env_parameters = {"frame_skip": 4, "repeat_action_probability": 0.25, "max_num_frames": 18000,
                                "color_averaging": True, "frame_stack": self.frame_stack,
                                "rom_file": self.rom_name, "frame_count": 0, "reward_clipping": False}
-        self.env = ALE_Environment(games_directory=self.games_directory, env_dictionary=self.env_parameters)
+        self.env = ALE_Environment(games_directory=self.games_directory, env_dictionary=self.env_parameters,
+                                   display_screen=True)
         obs_dims = [84, 84, 1]
         stacked_obs_dims = self.env.get_observation_dimensions()
         obs_dtype = self.env.get_observation_dtype()
@@ -65,7 +66,7 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         """ Experience Replay Buffer """
         buffer_size = 100000
         batch_size = 32
-        er_buffer = QSigmaExperienceReplayBuffer(buffer_size=buffer_size, batch_size=batch_size, n=self.n,
+        er_buffer = QSigmaExperienceReplayBuffer(buffer_size=buffer_size, batch_size=batch_size,
                                              observation_dimensions=obs_dims, observation_dtype=obs_dtype,
                                              return_function=return_function, frame_stack=4,
                                                  num_actions=num_actions)

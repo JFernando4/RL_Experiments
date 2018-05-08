@@ -1,8 +1,6 @@
 import numpy as np
 from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities import CircularBuffer
 from Experiments_Engine.RL_Algorithms.return_functions import QSigmaReturnFunction
-from Experiments_Engine.Policies import EpsilonGreedyPolicy
-
 
 class QSigmaExperienceReplayBuffer:
 
@@ -72,7 +70,6 @@ class QSigmaExperienceReplayBuffer:
 
     def sample_indices(self):
         dasample = []
-        # iterations = 0
         while len(dasample) != self.batch_sz:
             if not self.full_buffer:
                 daindx = np.random.randint(self.current_index - (self.n + self.frame_stack))
@@ -80,8 +77,6 @@ class QSigmaExperienceReplayBuffer:
                 daindx = np.random.randint(self.buff_sz - (self.n + self.frame_stack))
             if (daindx not in dasample) and (not self.terminate[daindx]):
                 dasample.append(daindx)
-            # iterations +=1
-        # print("Number of iterations:", iterations)
         return dasample
 
     def gather_data(self, daindex, update_function):
