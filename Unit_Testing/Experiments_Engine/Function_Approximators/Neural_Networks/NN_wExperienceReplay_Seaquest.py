@@ -6,7 +6,7 @@ from Experiments_Engine.Environments import ALE_Environment
 from Experiments_Engine.Function_Approximators import NeuralNetwork_wER_FA, Model_nCPmFO, QSigmaExperienceReplayBuffer
 from Experiments_Engine.RL_Algorithms import QSigmaReturnFunction, QSigma
 from Experiments_Engine.Policies import EpsilonGreedyPolicy
-
+from Experiments_Engine.config import Config
 
 class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
 
@@ -23,16 +23,36 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         " Environment Parameters "
         self.frame_stack = 4
 
-        " Environment "
-        self.env_parameters = {"frame_skip": 4, "repeat_action_probability": 0.25, "max_num_frames": 18000,
-                               "color_averaging": True, "frame_stack": self.frame_stack,
-                               "rom_file": self.rom_name, "frame_count": 0, "reward_clipping": False}
-        self.env = ALE_Environment(games_directory=self.games_directory, env_dictionary=self.env_parameters,
-                                   display_screen=True)
-        obs_dims = [84, 84, 1]
+        config = Config()
+        " Environment Parameters "
+        config.display_screen = True
+        config.frame_skip = 4
+        config.agent_render = True
+        config.repeat_action_probability = 0.25
+        config.frame_stack = 4                      # Used for the er buffer as well
+        self.env = ALE_Environment(config=config, games_directory=self.games_directory, rom_filename=self.rom_name)
+
         stacked_obs_dims = self.env.get_observation_dimensions()
-        obs_dtype = self.env.get_observation_dtype()
         num_actions = self.env.get_num_actions()
+
+        " Replay Buffer Parameters "
+        """ Parameters:
+                Name:               Type:           Default:            Description: (Omitted when self-explanatory)
+                buff_sz             int             10                  buffer size
+                batch_sz            int             1  
+                frame_stack         int             4                   number of frames to stack, see Mnih et. al. (2015)
+                obs_dims            list            [2,2]               dimensions of the observations to be stored in the buffer
+                num_actions         int             2                   number of actions available to the agent
+                obs_dtype           np.type         np.uint8            the data type of the observations
+                reward_clipping     bool            False               clipping the reward , see Mnih et. al. (2015)
+        """
+        config.buff_sz = 100000
+        config.batch_sz = 32
+        config.env_state_dims = self.env.frame_dims
+        config.num_actions = self.env.get_num_actions()
+        config.reward_clipping = True
+
+
 
         " Models "
         dim_out = [32, 64, 64, 512]
@@ -64,16 +84,12 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         return_function = QSigmaReturnFunction(n=self.n, gamma=self.gamma, tpolicy=self.target_policy)
 
         """ Experience Replay Buffer """
-        buffer_size = 100000
-        batch_size = 32
-        er_buffer = QSigmaExperienceReplayBuffer(buffer_size=buffer_size, batch_size=batch_size,
-                                             observation_dimensions=obs_dims, observation_dtype=obs_dtype,
-                                             return_function=return_function, frame_stack=4,
-                                                 num_actions=num_actions)
+        er_buffer = QSigmaExperienceReplayBuffer(config, return_function=return_function)
 
         """ Neural Network """
         alpha = 0.00025
         tnetwork_update_freq = 10000
+        batch_size = 32
 
         self.fa_parameters = {"num_actions": num_actions,
                               "batch_size": batch_size,

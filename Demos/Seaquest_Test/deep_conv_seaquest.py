@@ -11,6 +11,7 @@ from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities impo
 from Experiments_Engine.Function_Approximators.Neural_Networks.Neural_Network import NeuralNetwork_FA      # Function Approximator
 from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy                                 # Policies
 from Experiments_Engine.RL_Algorithms.Q_Sigma import QSigma                                                # RL ALgorithm
+from Experiments_Engine.config import Config
 
 def main():
 
@@ -25,7 +26,8 @@ def main():
     agent_history = NN_Agent_History(experiment_path, restore)
 
     " Environment "
-    env = ALE_Environment(rom_file=rom_name, games_directory=games_directory)
+    config = Config()
+    env = ALE_Environment(config, rom_filename=rom_name, games_directory=games_directory)
     observation_dimensions = env.get_observation_dimensions()
     num_actions = env.get_num_actions()
 
@@ -42,7 +44,7 @@ def main():
 
         env.set_environment_dictionary(env_dictionary)
         model = models.Model_nCPmFO(model_dictionary=model_dictionary)
-        fa = NeuralNetwork_FA(model=model, optimizer=optimizer, fa_dictionary=fa_dictionary, tf_session=sess)
+        fa = NeuralNetwork_FA(neural_network=model, optimizer=optimizer, fa_dictionary=fa_dictionary, tf_session=sess)
         agent = QSigma(environment=env, function_approximator=fa, agent_dictionary=agent_dictionary)
         restore_graph(experiment_path, sess)
     else:
@@ -65,19 +67,17 @@ def main():
         " FA variables "
         batch_size = 1
         alpha = 0.000001
-        training_steps = 1
-
+        strides = [4, 2, 1]
         model = models.Model_nCPmFO(name=name, dim_out=dim_out, observation_dimensions=observation_dimensions,
                                     num_actions=num_actions, gate_fun=gate_fun, convolutional_layers=conv_layers,
-                                    filter_dims=filter_dims, fully_connected_layers=fully_connected_layers)
-        fa = NeuralNetwork_FA(model=model, optimizer=optimizer, numActions=num_actions,
+                                    filter_dims=filter_dims, fully_connected_layers=fully_connected_layers,
+                                    strides=strides)
+        fa = NeuralNetwork_FA(neural_network=model, optimizer=optimizer, numActions=num_actions,
                               batch_size=batch_size, alpha=alpha, tf_session=sess,
-                              observation_dimensions=observation_dimensions, training_steps=training_steps,
-                              layer_training_print_freq=100000, number_of_percentiles=0)
+                              observation_dimensions=observation_dimensions, number_of_percentiles=0)
         agent = QSigma(n=n, gamma=gamma, beta=beta, sigma=sigma, environment=env, function_approximator=fa,
                        target_policy=tpolicy, behavior_policy=bpolicy)
 
-    agent.fa.model.print_number_of_parameters(agent.fa.model.train_vars[0])
     while env.frame_count < 50000:
         training_loop(rl_agent=agent, iterations=1, episodes_per_iteration=1, render=True, agent_render=False,
                       final_epsilon=0.1, bpolicy_frames_before_target=100, decrease_epsilon=True)

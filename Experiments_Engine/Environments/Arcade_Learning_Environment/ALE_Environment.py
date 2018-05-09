@@ -1,112 +1,100 @@
-import os
 import numpy as np
 import matplotlib.pyplot as plt
-import time
-from skimage.transform import resize
 from ale_python_interface import ALEInterface
+# from scipy.misc import imresize   # Seems to be deprecating.
+import cv2
 
+from Experiments_Engine.config import Config
 from Experiments_Engine.Objects_Bases import EnvironmentBase
+from Experiments_Engine.Util.utils import check_attribute_else_default
 
 
 class ALE_Environment(EnvironmentBase):
-    def __init__(self, display_screen=False, agent_render=False, frame_skip=4, repeat_action_probability=0.25,
-                 max_num_frames=18000, color_averaging=True, frame_stack=4, games_directory=None, rom_file=None,
-                 reward_clippling=False, env_dictionary=None):
+
+    def __init__(self, config, games_directory=None, rom_filename=None):
         super().__init__()
 
-        " Games directory path "
-        if games_directory is None:
-            working_directory = os.getcwd()
-            self.games_directory = working_directory + "/Environments/Arcade_Learning_Environment/Supported_Roms/"
-        else:
-            self.games_directory = games_directory
+        """ Parameters:
+        Name:                       Type            Default:        Description(omitted when self-explanatory):
+        display_screen              Boolean         False           Display game screen
+        agent_render                Boolean         False           Display current frame the way the agent sees it
+        frame_skip                  int             4               See ALE Documentation
+        repeat_action_probability   float           0.25            in [0,1], see ALE Documentation
+        max_num_frames              int             18000           Max number of frames per episode
+        color_averaging             Bool            True            See ALE Documentation
+        frame_stack                 int             4               Stack of frames for agent, see Mnih et. al. (2015)
+        """
 
-
-        " Environment dictionary "
-        if env_dictionary is None:
-            self._env_dictionary = {"frame_skip": frame_skip,
-                                    "repeat_action_probability": repeat_action_probability,
-                                    "max_num_frames": max_num_frames,
-                                    "color_averaging": color_averaging,
-                                    "frame_stack": frame_stack,
-                                    "rom_file": rom_file,
-                                    "frame_count": 0,
-                                    "reward_clipping":reward_clippling}
-        else:
-            self._env_dictionary = env_dictionary
+        assert isinstance(config, Config)
+        self.display_screen = check_attribute_else_default(config, 'display_screen', False)
+        self.agent_render = check_attribute_else_default(config, 'agent_render', False)
+        frame_skip = check_attribute_else_default(config, 'frame_skip', 4)
+        repeat_action_probability = check_attribute_else_default(config, 'repeat_action_probability', 0.25)
+        max_num_frames = check_attribute_else_default(config, 'max_num_frames', 18000)
+        color_averaging = check_attribute_else_default(config, 'color_averaging', True)
+        self.frame_stack = check_attribute_else_default(config, 'frame_stack', 4)
 
         " Environment variables"
         self.env = ALEInterface()
-        self.env.setInt(b'frame_skip', self._env_dictionary["frame_skip"])
+        self.env.setInt(b'frame_skip', frame_skip)
         self.env.setInt(b'random_seed', 0)
-        self.env.setFloat(b'repeat_action_probability', self._env_dictionary["repeat_action_probability"])
-        self.env.setInt(b"max_num_frames", self._env_dictionary["max_num_frames"])
-        self.env.setBool(b"color_averaging", self._env_dictionary["color_averaging"])
-        self.frame_stack = self._env_dictionary["frame_stack"]
-        self.rom_file = str.encode(self.games_directory + self._env_dictionary["rom_file"])
-        self.frame_count = self._env_dictionary["frame_count"]
-        self.reward_clipping = self._env_dictionary["reward_clipping"]
-        if self.rom_file is None: raise ValueError("No rom file provided.")
-
-        " Rendering Variables "
-        self.env.setBool(b'display_screen', display_screen)
-        self.agent_render = agent_render
-
+        self.env.setFloat(b'repeat_action_probability', repeat_action_probability)
+        self.env.setInt(b"max_num_frames", max_num_frames)
+        self.env.setBool(b"color_averaging", color_averaging)
+        self.env.setBool(b'display_screen', self.display_screen)
+        self.rom_file = str.encode(games_directory + rom_filename)
+        self.frame_count = 0
         " Loading ROM "
         self.env.loadROM(self.rom_file)
 
+        """ Fixed Parameters:
+        Frame Format: "NCHW" (batch_size, channels, height, width). Decided to adopt this format because
+        it's the fastest to process in tensorflow. 
+        Frame Height and Width: 84, the default value in the literature.
+        """
         " Inner state of the environment "
-        self.current_state = self.reset()
+        self.height = 84
+        self.width = 84
+        self.current_state = np.zeros([self.frame_stack, self.height, self.width], dtype=np.uint8)
+        self.reset()
         self.observations_dimensions = self.current_state.shape
+        self.frame_dims = self.current_state[0].shape
         self.actions = self.env.getLegalActionSet()
-        self.agent_state_display()
 
-    " Update or reset the current state of the environment "
     def reset(self):
         self.env.reset_game()
+        self.frame_count = 1
         current_frame = self.fix_state(self.env.getScreenGrayscale())
-        frame_stack = current_frame
-        for i in range(self.frame_stack-1):
-            frame_stack = np.concatenate((frame_stack, current_frame), axis=-1)
-        self.current_state = frame_stack
-        return self.current_state
+        for _ in range(self.frame_stack):
+            self.add_frame(current_frame)
+        self.agent_state_display()    # For debugging purposes
+
+    def add_frame(self, frame):
+        self.current_state[:-1] = self.current_state[1:]
+        self.current_state[-1] = frame
 
     def update(self, action):
         reward = self.env.act(action)
-        if self.reward_clipping:
-            if reward >= 1:
-                reward = 1
-            elif reward <= -1:
-                reward = -1
-        self.agent_state_display()
         new_frame = self.fix_state(self.env.getScreenGrayscale())
-        current_state = np.delete(self.current_state, 0, axis=-1)
-        current_state = np.concatenate((current_state, new_frame), axis=-1)
-        self.current_state = current_state
+        self.add_frame(new_frame)
         terminal = self.env.game_over()
-        self.update_frame_count()
+        self.frame_count += 1
+        self.agent_state_display()    # For debugging purposes only
         return self.current_state, reward, terminal
 
-    @staticmethod
-    def fix_state(state):
-        # off_top = 6
-        # bottom = 188
-        # off_left = 6
-        # new_state = state[:][off_top:bottom][:]
-        # new_state = np.delete(new_state, range(0, off_left + 1), 1)  # Eliminates 60 columns from the left
-        new_state = state
-        new_state = resize(new_state, (84, 84, 1), mode="constant").astype(np.uint8)
+    def fix_state(self, state):
+        state = state.reshape([210, 160])
+        new_state = cv2.resize(state, (self.height, self.width))
+        # imresize gives FutureWarning. It might deprecate in future releases
+        # new_state = imresize(state, (self.height, self.width), mode="L")
+        new_state = np.array(new_state, dtype=np.uint8)
         return new_state
 
     def agent_state_display(self):
         if self.agent_render:
-            state = self.current_state[:,:,self.frame_stack-1]
+            state = self.current_state[-1]
             plt.imshow(state)
             plt.pause(0.05)
-
-    def update_frame_count(self):
-        self.frame_count += 1
-        self._env_dictionary["frame_count"] = self.frame_count
 
     " Getters "
     def get_num_actions(self):
@@ -131,25 +119,9 @@ class ALE_Environment(EnvironmentBase):
         return self.frame_count
 
     def get_state_for_er_buffer(self):
-        return self.current_state[:,:, -self.frame_stack].reshape([84,84,1])
+        return self.current_state[-1]
 
     " Setters "
     def set_render(self, display_screen=False):
         self.env.setBool(b'display_screen', display_screen)
-        self.env.loadROM(self.rom_file)
-
-    def set_environment_dictionary(self, new_dictionary):
-        " Resetting Dictionary "
-        self._env_dictionary = new_dictionary
-        self.env = ALEInterface()
-        " Reinitializing Variables "
-        self.env.setInt(b'frame_skip', self._env_dictionary["frame_skip"])
-        self.env.setFloat(b'repeat_action_probability', self._env_dictionary["repeat_action_probability"])
-        self.env.setInt(b"max_num_frames", self._env_dictionary["max_num_frames"])
-        self.env.setBool(b"color_averaging", self._env_dictionary["color_averaging"])
-        self.frame_stack = self._env_dictionary["frame_stack"]
-        self.rom_file = str.encode(self.games_directory + self._env_dictionary["rom_file"])
-        self.frame_count = self._env_dictionary["frame_count"]
-
-        " Loading ROM "
         self.env.loadROM(self.rom_file)

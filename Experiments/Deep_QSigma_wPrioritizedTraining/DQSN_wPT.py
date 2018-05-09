@@ -9,6 +9,7 @@ from Experiments_Engine import Model_nCPmFO                     # NN Models
 from Experiments_Engine import QSigma                           # RL Agent
 from Experiments_Engine import EpsilonGreedyPolicy              # Policy
 from Experiments_Engine import Percentile_Estimator
+from Experiments_Engine.config import Config
 
 class ExperimentAgent():
 
@@ -22,10 +23,16 @@ class ExperimentAgent():
 
         if not restore:
             " Environment "
-            self.env_parameters = {"frame_skip": 5, "repeat_action_probability": 0.25, "max_num_frames": 18000,
-                                   "color_averaging": True, "frame_stack": 4,
-                                   "rom_file": self.rom_name, "frame_count": 0, "reward_clipping": False}
-            self.env = ALE_Environment(games_directory=self.games_directory, env_dictionary=self.env_parameters)
+            config = Config()
+            config.display_screen = True
+            config.agent_render = False
+            config.frame_skip = 5
+            config.repeat_action_probability = 0.25
+            config.max_num_frames = 18000
+            config.color_averaging = True
+            config.frame_stack = 4
+
+            self.env = ALE_Environment(config, games_directory=self.games_directory, rom_filename=self.rom_name)
             obs_dims = self.env.get_observation_dimensions()
             num_actions = self.env.get_num_actions()
 
@@ -53,7 +60,7 @@ class ExperimentAgent():
                                                         annealing_period=anneal_period, final_epsilon=target_epsilon)
 
             """ Neural Network """
-            alpha = 0.001 #0.0001
+            alpha = 0.0001 #0.0001
             percentile_to_train_index = 9 #0   # 0 corresponds to the largest percentile
             number_of_percentiles = 10
             adjust_alpha_using_percentiles = True
