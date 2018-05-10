@@ -57,7 +57,7 @@ class ExperimentAgent():
             " Neural Network Parameters "
             self.config.alpha = 0.0000001
             self.config.batch_sz = 1
-            self.config.train_percentile_index = 0
+            self.config.train_percentile_index = 9
             self.config.num_percentiles = 10
             self.config.adjust_alpha = True
 
@@ -157,11 +157,11 @@ if __name__ == "__main__":
     """ Directories """
     working_directory = os.getcwd()
 
-    agent_name = "agent_1"
+    agent_name = "agent_2"
     results_directory = os.path.join(working_directory, "Results", agent_name)
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
 
     experiment = Experiment(results_dir=results_directory, save_agent=True, restore_agent=False,
-                            max_number_of_frames=100000)
+                            max_number_of_frames=1000000)
     experiment.run_experiment()

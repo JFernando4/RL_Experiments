@@ -18,72 +18,83 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         self.summary = {}
         config.save_summary = True
 
-        " Agent's Parameters "
-        self.n = 3
-        self.gamma = 0.99
-
-        " Environment Parameters "
+        """ Environment Parameters """
         config.display_screen = False
         config.frame_skip = 4
         config.agent_render = False
         config.repeat_action_probability = 0.25
-        config.frame_stack = 4                      # Used for the er buffer as well
-        self.env = ALE_Environment(config=config, games_directory=self.games_directory, rom_filename=self.rom_name,
-                                   summary=self.summary)
+        config.frame_stack = 4
 
-        config.num_actions = self.env.get_num_actions()
-        stacked_obs_dims = self.env.get_observation_dimensions()
-        num_actions = self.env.get_num_actions()
+        config.num_actions = 18     # Number of actions in the ALE
+        config.obs_dims = [config.frame_stack, 84, 84]  # [stack_size, height, width]
 
-        " Models "
-        dim_out = [32, 64, 64, 512]
-        gate_fun = tf.nn.relu
-        conv_layers = 3
-        filter_dims = [8, 4, 3]
-        full_layers = 1
-        strides = [4, 2, 1]
+        " Models Parameters "
+        config.dim_out = [32, 64, 64, 512]
+        config.filter_dims = [8, 4, 3]
+        config.strides = [4, 2, 1]
+        config.gate_fun = tf.nn.relu
+        config.conv_layers = 3
+        config.full_layers = 1
+        config.max_pool = False
+        config.frames_format = "NHWC"   # NCHW doesn't work with gpu
 
-        self.target_network_parameters = {"model_name": "target", "output_dims": dim_out, "filter_dims": filter_dims,
-                                          "observation_dimensions": stacked_obs_dims, "num_actions": num_actions,
-                                          "gate_fun": gate_fun,
-                                          "conv_layers": conv_layers, "full_layers": full_layers, "strides": strides}
-        self.update_network_parameters = {"model_name": "update", "output_dims": dim_out, "filter_dims": filter_dims,
-                                          "observation_dimensions": stacked_obs_dims, "num_actions": num_actions,
-                                          "gate_fun": gate_fun,
-                                          "conv_layers": conv_layers, "full_layers": full_layers, "strides": strides}
-
-        self.target_network = Model_nCPmFO(model_dictionary=self.target_network_parameters)
-        self.update_network = Model_nCPmFO(model_dictionary=self.update_network_parameters)
-
-        """ Target Policy """
+        " Policies Parameters "
+        " Target Policy "
         config.target_policy = Config()
         config.target_policy.initial_epsilon = 0.1
         config.target_policy.anneal_epsilon = False
-        self.target_policy = EpsilonGreedyPolicy(config, behaviour_policy=False)
-
-        """ Behaviour Policy """
+        " Behaviour Policy "
         config.behaviour_policy = Config()
         config.behaviour_policy.initial_epsilon = 0.2
         config.behaviour_policy.anneal_epsilon = True
         config.behaviour_policy.final_epsilon = 0.1
         config.behaviour_policy.annealing_period = 100
+
+        " Experience Replay Buffer Parameters "
+        config.buff_sz = 100000
+        config.batch_sz = 32
+        config.env_state_dims = self.env.frame_dims
+        config.reward_clipping = True
+
+        " QSigma Agent Parameters "
+        config.n = 3
+        config.gamma = self.gamma
+        config.beta = 1.0
+        config.sigma = 0.5
+        config.use_er_buffer = True
+        config.initial_rand_steps = 50
+        config.rand_steps_count = 0
+
+        " Agent's Parameters "
+        self.n = 3
+        self.gamma = 0.99
+
+        " Environment "
+        self.env = ALE_Environment(config=config, games_directory=self.games_directory, rom_filename=self.rom_name,
+                                   summary=self.summary)
+
+        stacked_obs_dims = self.env.get_observation_dimensions()
+        num_actions = self.env.get_num_actions()
+
+        self.target_network = Model_nCPmFO(config=config, name="target")
+        self.update_network = Model_nCPmFO(config=config, name="update")
+
+        """ Target Policy """
+        self.target_policy = EpsilonGreedyPolicy(config, behaviour_policy=False)
+
+        """ Behaviour Policy """
         self.behavior_policy = EpsilonGreedyPolicy(config, behaviour_policy=True)
 
         """ Return Function """
         return_function = QSigmaReturnFunction(n=self.n, gamma=self.gamma, tpolicy=self.target_policy)
 
         """ Experience Replay Buffer """
-        config.buff_sz = 100000
-        config.batch_sz = 32
-        config.env_state_dims = self.env.frame_dims
-        config.reward_clipping = True
         er_buffer = QSigmaExperienceReplayBuffer(config, return_function=return_function)
 
         """ Neural Network """
         alpha = 0.00025
         tnetwork_update_freq = 10000
         batch_size = 32
-
         self.fa_parameters = {"num_actions": num_actions,
                               "batch_size": batch_size,
                               "alpha": alpha,
@@ -99,14 +110,6 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
                                                           fa_dictionary=self.fa_parameters)
 
         """ RL Agent """
-        config.n = self.n
-        config.gamma = self.gamma
-        config.beta = 1.0
-        config.sigma = 0.5
-        config.use_er_buffer = True
-        config.initial_rand_steps = 50
-        config.rand_steps_count = 0
-        config.save_summary = True
         self.agent = QSigma(environment=self.env, function_approximator=self.function_approximator,
                             target_policy=self.target_policy, behavior_policy=self.behavior_policy,
                             er_buffer=er_buffer, config=config, summary=self.summary)
