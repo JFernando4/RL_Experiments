@@ -2,56 +2,59 @@ from numpy import inf, zeros
 import numpy as np
 
 from Experiments_Engine.Objects_Bases import RL_ALgorithmBase
+from Experiments_Engine.Util import check_attribute_else_default, check_dict_else_default
+from Experiments_Engine.config import Config
 
 
 class QSigma(RL_ALgorithmBase):
 
-    def __init__(self, environment, function_approximator, target_policy, behavior_policy, n=3, gamma=1, beta=1,
-                 sigma=1, agent_dictionary=None, rand_steps_before_training=0, use_er_buffer=False,
-                 er_buffer=None, compute_return=True, anneal_epsilon=False, save_env_info=True):
+    def __init__(self, environment, function_approximator, target_policy, behavior_policy, config=None, er_buffer=None,
+                 summary=None):
         super().__init__()
+        """
+        Summary Name: return_per_episode
+        """
 
-        """ Dictionary for Saving and Restoring """
-        if agent_dictionary is None:
-            self._agent_dictionary = {"n": n,
-                                      "gamma": gamma,
-                                      "beta": beta,
-                                      "sigma": sigma,
-                                      "return_per_episode": [],
-                                      "timesteps_per_episode": [],
-                                      "episode_number": 0,
-                                      "use_er_buffer": use_er_buffer,
-                                      "compute_return": compute_return,
-                                      "anneal_epsilon": anneal_epsilon,
-                                      "save_env_info": save_env_info,
-                                      "env_info": [],
-                                      "rand_steps_before_training": rand_steps_before_training,
-                                      "rand_steps_count": 0}
-        else:
-            self._agent_dictionary = agent_dictionary
+        self.config = config or Config()
+        assert isinstance(config, Config)
+        """ 
+        Parameters in config:
+        Name:                   Type:           Default:            Description: (Omitted when self-explanatory)
+        n                       int             1                   the n of the n-step method
+        gamma                   float           1.0                 the discount factor
+        beta                    float           1.0                 the decay factor of sigma
+        sigma                   float           0.5                 see De Asis et.al. in AAAI 2018 proceedings
+        use_er_buffer           bool            False               indicates whether to use experience replay buffer
+        initial_rand_steps      int             0                   number of random steps before training starts
+        rand_steps_count        int             0                   number of random steps taken so far
+        save_summary            bool            False               Save the summary of the agent (return per episode)
+        """
+        self.n = check_attribute_else_default(self.config, 'n', 1)
+        self.gamma = check_attribute_else_default(self.config, 'gamma', 1.0)
+        self.beta = check_attribute_else_default(self.config, 'beta', 1.0)
+        self.sigma = check_attribute_else_default(self.config, 'sigma', 0.5)
+        self.use_er_buffer = check_attribute_else_default(self.config, 'use_er_buffer', False)
+        self.initial_rand_steps = check_attribute_else_default(self.config, 'initial_rand_steps', 0)
+        check_attribute_else_default(self.config, 'rand_steps_count', 0)
+        self.save_summary = check_attribute_else_default(self.config, 'save_summary', False)
 
-        """ Parameters that can be restored """
-        self.n = self._agent_dictionary["n"]
-        self.gamma = self._agent_dictionary["gamma"]
-        self.beta = self._agent_dictionary["beta"]
-        self.sigma = self._agent_dictionary["sigma"]
-        self.use_er_buffer = self._agent_dictionary["use_er_buffer"]
-        self.compute_return = self._agent_dictionary["compute_return"]
-        self.anneal_epsilon = self._agent_dictionary["anneal_epsilon"]
-        self.save_env_info = self._agent_dictionary["save_env_info"]
-        self.rand_steps_before_training = self._agent_dictionary["rand_steps_before_training"]
-            # History
-        self.return_per_episode = self._agent_dictionary["return_per_episode"]
+        if self.save_summary:
+            assert isinstance(summary, dict)
+            self.summary = summary
+            check_dict_else_default(self.summary, 'return_per_episode', [])
 
-        " Parameters that can't be restored "
-            # Behaviour and Target Policies
+        " Other Parameters "
+        # Behaviour and Target Policies
         self.bpolicy = behavior_policy
         self.tpolicy = target_policy
-            # Experience Replay Buffer
+
+        # Experience Replay Buffer: used for storing and retrieving observations. Mainly for Deep RL
         self.er_buffer = er_buffer
-            # Function Approximator
+
+        # Function Approximator: used to approximate the Q-Values
         self.fa = function_approximator
-            # Environment
+
+        # Environment that the agent is interacting with
         self.env = environment
 
     def recursive_return_function(self, trajectory, n=0, base_value=None):
@@ -67,12 +70,12 @@ class QSigma(RL_ALgorithmBase):
                 bprobabilities = self.bpolicy.probability_of_action(q_values=qvalues, all_actions=True)
                 assert bprobabilities[action] != 0
                 rho = tprobabilities[action] / bprobabilities[action]
+                assert isinstance(tprobabilities, np.ndarray) and isinstance(qvalues, np.ndarray)
                 average_action_value = self.expected_action_value(qvalues, tprobabilities)
                 return reward + \
                        self.gamma * (rho * self.sigma + (1-self.sigma) * tprobabilities[action]) \
                        * self.recursive_return_function(trajectory=trajectory, n=n+1, base_value=qvalues[action]) +\
                        self.gamma * (1-self.sigma) * (average_action_value - tprobabilities[action] * qvalues[action])
-
 
     @staticmethod
     def expected_action_value(q_values, p_values):
@@ -99,17 +102,8 @@ class QSigma(RL_ALgorithmBase):
         self.env.reset()
 
     def adjust_sigma(self):
-        self.sigma *= self.beta
-        self._agent_dictionary['sigma'] = self.sigma
-
-    def get_agent_dictionary(self):
-        return self._agent_dictionary
-
-    def get_return_per_episode(self):
-        return self._agent_dictionary['return_per_episode']
-
-    def get_env_info(self):
-        return self._agent_dictionary["env_info"]
+        self.config.sigma *= self.beta
+        self.sigma = self.config.sigma
 
     def train(self, num_episodes):
         if num_episodes == 0: return
@@ -120,20 +114,18 @@ class QSigma(RL_ALgorithmBase):
         for episode in range(num_episodes):
             # Record Keeping
             episode_reward_sum = 0
-            episode_timesteps = 1
-            self._agent_dictionary['episode_number'] += 1
+            # self._agent_dictionary['episode_number'] += 1
 
             # Current State, Action, and Q_values
             S = self.env.get_current_state()
             q_values = self.fa.get_next_states_values(S)
-            if self._agent_dictionary["rand_steps_count"] >= self.rand_steps_before_training:
+            if self.config.rand_steps_count >= self.initial_rand_steps:
                 A = self.bpolicy.choose_action(q_values)
-                if self.anneal_epsilon:
-                    self.tpolicy.anneal_epsilon()
-                    self.bpolicy.anneal_epsilon()
+                self.tpolicy.anneal()
+                self.bpolicy.anneal()
             else:
                 A = np.random.randint(len(q_values))
-                self._agent_dictionary["rand_steps_count"] += 1
+                self.config.rand_steps_count += 1
 
             # Storing in the experience replay buffer
             if self.use_er_buffer:
@@ -161,7 +153,6 @@ class QSigma(RL_ALgorithmBase):
                     q_values = self.fa.get_next_states_values(S)
 
                     # Record Keeping
-                    episode_timesteps += 1
                     episode_reward_sum += R
 
                     if terminate:
@@ -169,22 +160,20 @@ class QSigma(RL_ALgorithmBase):
                         bpropabilities = np.zeros(self.env.get_num_actions(), dtype=np.float64)
                         A = np.uint8(0)
                     else:
-                        if self._agent_dictionary["rand_steps_count"] >= self.rand_steps_before_training:
+                        if self.config.rand_steps_count >= self.initial_rand_steps:
                             A = self.bpolicy.choose_action(q_values)
                             bpropabilities = self.bpolicy.probability_of_action(q_values, all_actions=True)
-                            if self.anneal_epsilon:
-                                self.tpolicy.anneal_epsilon()
-                                self.bpolicy.anneal_epsilon()
+                            self.tpolicy.anneal()
+                            self.bpolicy.anneal()
                         else:
                             A = np.random.randint(len(q_values))
                             bpropabilities = np.ones(self.env.get_num_actions(), dtype=np.float64) * (1/self.env.get_num_actions())
-                            self._agent_dictionary["rand_steps_count"] += 1
+                            self.config.rand_steps_count += 1
 
                         Actions[(t + 1) % (self.n + 1)] = A
 
                     # Storing Trajectory
                     trajectory.append([R, A, q_values, terminate])
-
 
                     # Storing in the experience replay buffer
                     if self.use_er_buffer:
@@ -197,11 +186,11 @@ class QSigma(RL_ALgorithmBase):
                 if tau >= 0:
                     if len(trajectory) >= 1:
                         temp_copy_of_trajectory = list(trajectory)
-                        if self.compute_return:
+                        if not self.use_er_buffer:
                             G = self.recursive_return_function(temp_copy_of_trajectory)
-                        else:
+                        else:   # No need to compute the return if we're using experience replay
                             G = 0
-                        if self._agent_dictionary["rand_steps_count"] >= self.rand_steps_before_training:
+                        if self.config.rand_steps_count >= self.initial_rand_steps:
                             self.fa.update(States[tau % (self.n+1)], Actions[tau % (self.n+1)], nstep_return=G,
                                        correction=1)
                         trajectory.pop(0)
@@ -209,9 +198,7 @@ class QSigma(RL_ALgorithmBase):
                 t += 1
                 if tau == T-1: break
 
-            self._agent_dictionary["return_per_episode"].append(episode_reward_sum)
-            self._agent_dictionary["timesteps_per_episode"].append(episode_timesteps)
-            if self._agent_dictionary["save_env_info"]:
-                self._agent_dictionary["env_info"].append(self.env.get_env_info())
+            if self.save_summary:
+                self.summary['return_per_episode'].append(episode_reward_sum)
             self.adjust_sigma()
             self.env.reset()

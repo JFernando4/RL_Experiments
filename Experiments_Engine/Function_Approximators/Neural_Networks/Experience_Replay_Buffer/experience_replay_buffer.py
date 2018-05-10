@@ -5,9 +5,9 @@ from Experiments_Engine.Policies import EpsilonGreedyPolicy
 
 class Experience_Replay_Buffer:
 
-    def __init__(self, buffer_size=10, batch_size=1, frame_stack=4, observation_dimensions=[2,2],
-                 n=3, tpolicy=EpsilonGreedyPolicy(), bpolicy=EpsilonGreedyPolicy(), observation_dtype=np.uint8,
-                 reward_clipping=True, return_function=QSigmaReturnFunction()):
+    def __init__(self, return_function, tpolicy, bpolicy, buffer_size=10, batch_size=1, frame_stack=4, observation_dimensions=[2,2],
+                 n=3, observation_dtype=np.uint8,
+                 reward_clipping=True):
 
         """ Parameters for Return Function """
         self.return_function = return_function

@@ -21,127 +21,106 @@ class ExperimentAgent():
         self.games_directory = homepath + "PycharmProjects/RL_Experiments/Experiments_Engine/Environments/Arcade_Learning_Environment/Supported_Roms/"
         self.rom_name = "seaquest.bin"
 
-        if not restore:
-            " Environment "
-            config = Config()
-            config.display_screen = True
-            config.agent_render = False
-            config.frame_skip = 5
-            config.repeat_action_probability = 0.25
-            config.max_num_frames = 18000
-            config.color_averaging = True
-            config.frame_stack = 4
-
-            self.env = ALE_Environment(config, games_directory=self.games_directory, rom_filename=self.rom_name)
-            obs_dims = self.env.get_observation_dimensions()
-            num_actions = self.env.get_num_actions()
-
-            " Models "
-            dim_out = [32, 64, 64, 512]
-            gate_fun = tf.nn.relu
-            conv_layers = 3
-            filter_dims = [8, 4, 3]
-            full_layers = 1
-            strides = [4, 2, 1]
-
-            self.network_parameters = {"model_name": "network", "output_dims": dim_out, "filter_dims": filter_dims,
-                                       "observation_dimensions": obs_dims, "num_actions": num_actions,
-                                       "gate_fun": gate_fun, "conv_layers": conv_layers, "full_layers": full_layers,
-                                       "strides": strides, "max_pool": False}
-            self.network = Model_nCPmFO(model_dictionary=self.network_parameters)
-
-            """ Policies """
-            target_epsilon = 0.1
-            initial_epsilon = 0.1
-            anneal_period = 1000000
-            anneal = False
-            self.target_policy = EpsilonGreedyPolicy(numActions=num_actions, initial_epsilon=initial_epsilon, anneal=False)
-            self.behaviour_policy = EpsilonGreedyPolicy(numActions=num_actions, initial_epsilon=target_epsilon, anneal=anneal,
-                                                        annealing_period=anneal_period, final_epsilon=target_epsilon)
-
-            """ Neural Network """
-            alpha = 0.0001 #0.0001
-            percentile_to_train_index = 9 #0   # 0 corresponds to the largest percentile
-            number_of_percentiles = 10
-            adjust_alpha_using_percentiles = True
-            self.fa_parameters = {"num_actions": num_actions, "batch_size": 1, "alpha": alpha,
-                                  "observation_dimensions": obs_dims, "percentile_to_train_index": percentile_to_train_index,
-                                  "percentile_estimator": Percentile_Estimator(number_of_percentiles=number_of_percentiles),
-                                  "number_of_percentiles": number_of_percentiles, "train_loss_history": [],
-                                  "training_count": 0, "adjust_alpha_using_percentiles": adjust_alpha_using_percentiles}
-
-            self.function_approximator = NeuralNetwork_FA(optimizer=self.optimizer, neural_network=self.network,
-                                                          fa_dictionary=self.fa_parameters, tf_session=self.tf_sess)
-
-            """ RL Agent """
-            n = 5
-            gamma = 0.99
-            sigma = 0.5
-            self.agent_parameters = {"n": n, "gamma": gamma, "beta": 1, "sigma": sigma, "return_per_episode": [],
-                                     "timesteps_per_episode": [], "episode_number": 0, "use_er_buffer": False,
-                                     "compute_return": True, "anneal_epsilon": False, "save_env_info": True, "env_info": [],
-                                     "rand_steps_before_training": 0, "rand_steps_count": 0}
-            self.agent = QSigma(function_approximator=self.function_approximator, target_policy=self.target_policy,
-                                behavior_policy=self.behaviour_policy, environment=self.env,
-                                agent_dictionary=self.agent_parameters)
-
+        if restore:
+            with open(os.path.join(restore_data_dir, 'experiment_config.p'), mode='rb') as experiment_config_file:
+                self.config = pickle.load(experiment_config_file)
+            with open(os.path.join(restore_data_dir, "summary.p"), mode='rb') as summary_file:
+                self.summary = pickle.load(summary_file)
         else:
-            agent_history = pickle.load(open(os.path.join(restore_data_dir, "agent_history.p"), mode="rb"))
-            self.env_parameters = agent_history["env_parameters"]
-            self.network_parameters = agent_history["network_parameters"]
-            self.target_policy = agent_history["target_policy"]
-            self.behaviour_policy = agent_history["behaviour_policy"]
-            self.fa_parameters = agent_history["fa_parameters"]
-            self.agent_parameters = agent_history["agent_parameters"]
+            """ Experiment Configuration """
+            self.config = Config()
+            self.summary = {}
+            self.config.save_summary = True
 
-            self.env = ALE_Environment(games_directory=self.games_directory, env_dictionary=self.env_parameters)
-            self.network = Model_nCPmFO(model_dictionary=self.network_parameters)
-            self.function_approximator = NeuralNetwork_FA(optimizer=self.optimizer, neural_network=self.network,
-                                                          fa_dictionary=self.fa_parameters, tf_session=self.tf_sess,
-                                                          restore=True)
-            self.agent = QSigma(function_approximator=self.function_approximator, target_policy=self.target_policy,
-                                behavior_policy=self.behaviour_policy, environment=self.env,
-                                agent_dictionary=self.agent_parameters)
+            " Environment Parameters  "
+            self.config.display_screen = False
+            self.config.agent_render = False
+            self.config.frame_skip = 5
+            self.config.repeat_action_probability = 0.25
+            self.config.max_num_frames = 18000
+            self.config.color_averaging = True
+            self.config.frame_stack = 4
 
+            self.config.num_actions = 18  # Number of legal actions in the ALE
+            self.config.obs_dims = [self.config.frame_stack, 84, 84]  # Dimensions of the observations [stack_size, height, width]
+
+            " Model Parameters "
+            self.config.dim_out = [32, 64, 64, 512]
+            self.config.filter_dims = [8, 4, 3]
+            self.config.strides = [8, 4, 3]
+            self.config.gate_fun = tf.nn.relu
+            self.config.conv_layers = 3
+            self.config.full_layers = 1
+            self.config.max_pool = False
+            self.config.frames_format = 'NHWC'
+
+            " Neural Network Parameters "
+            self.config.alpha = 0.0000001
+            self.config.batch_sz = 1
+            self.config.train_percentile_index = 0
+            self.config.num_percentiles = 10
+            self.config.adjust_alpha = True
+
+            " Policies Parameters "
+            " Target "
+            self.config.target_policy = Config()
+            self.config.target_policy.initial_epsilon = 0.1
+            self.config.target_policy.anneal_epsilon = False
+            " Behaviour Policy "
+            self.config.behaviour_policy = self.config.target_policy
+
+            " QSigma Agent "
+            self.config.n = 5
+            self.config.gamma = 0.99
+            self.config.beta = 1.0
+            self.config.sigma = 0.5
+
+        self.env = ALE_Environment(config=self.config, games_directory=self.games_directory, rom_filename=self.rom_name,
+                                   summary=self.summary)
+
+        " Models "
+        self.network = Model_nCPmFO(config=self.config, name="single")
+
+        """ Policies """
+        self.target_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=False)
+        self.behaviour_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=True)
+
+        """ Neural Network """
+        self.function_approximator = NeuralNetwork_FA(optimizer=self.optimizer, neural_network=self.network,
+                                                      config=self.config, tf_session=self.tf_sess, summary=self.summary,
+                                                      restore=restore)
+
+        """ RL Agent """
+        self.agent = QSigma(function_approximator=self.function_approximator, target_policy=self.target_policy,
+                            behavior_policy=self.behaviour_policy, environment=self.env, config=self.config,
+                            summary=self.summary)
+
+        if restore:
             saver = tf.train.Saver()
             sourcepath = os.path.join(restore_data_dir, "agent_graph.ckpt")
             saver.restore(self.tf_sess, sourcepath)
             print("Model restored from file: %s" % sourcepath)
 
-    def train(self, number_of_episodes):
-        self.agent.train(num_episodes=number_of_episodes)
+    def train(self):
+        self.agent.train(1)
+        self.function_approximator.store_in_summary()
 
     def get_number_of_frames(self):
-        return self.env.get_frame_count()
+        return np.sum(self.summary['frames_per_episode'])
 
     def get_train_data(self):
-        return_per_episode = self.agent.get_return_per_episode()
-        nn_loss = self.function_approximator.get_train_loss_history()
-        nn_training_count = self.function_approximator.get_training_count()
-        env_info = self.agent.get_env_info()
-        return return_per_episode, nn_loss, nn_training_count, env_info
+        return self.summary
 
     def save_agent(self, dir_name):
-        agent_history = {
-            "env_parameters": self.env.get_environment_dictionary(),
-            "network_parameters": self.network.get_model_dictionary(),
-            "target_policy": self.target_policy,
-            "behaviour_policy": self.behaviour_policy,
-            "fa_parameters": self.function_approximator.get_fa_dictionary(),
-            "agent_parameters": self.agent.get_agent_dictionary()
-        }
-
-        pickle.dump(agent_history, open(os.path.join(dir_name, "agent_history.p"), mode="wb"))
+        with open(os.path.join(dir_name, 'experiment_config.p'), mode='wb') as experiment_config_file:
+            pickle.dump(self.config, experiment_config_file)
         saver = tf.train.Saver()
         save_path = saver.save(self.tf_sess, os.path.join(dir_name, "agent_graph.ckpt"))
-        print("Model Saved in file: %s" % save_path)
+        print("Model saved in file: %s" % save_path)
 
-    def save_results(self, dirn_name):
-        results = {"return_per_episode": self.agent.get_return_per_episode(),
-                   "env_info": self.agent.get_env_info(),
-                   "training_count": self.function_approximator.get_training_count(),
-                   "train_loss_history": self.function_approximator.get_train_loss_history()}
-        pickle.dump(results, open(os.path.join(dirn_name, "results.p"), mode="wb"))
+    def save_results(self, dir_name):
+        with open(os.path.join(dir_name, "summary.p"), mode='wb') as summary_file:
+            pickle.dump(self.summary, summary_file)
 
 
 class Experiment():
@@ -155,19 +134,19 @@ class Experiment():
 
     def run_experiment(self):
         episode_number = 0
+        train_data = self.agent.get_train_data()
         while self.agent.get_number_of_frames() < self.max_number_of_frames:
             episode_number += 1
-            print("\nTraining episode", str(len(self.agent.get_train_data()[0]) + 1) + "...")
-            self.agent.train(1)
-            return_per_episode, nn_loss, nn_training_count, environment_info = self.agent.get_train_data()
-            if len(return_per_episode) < 100:
-                print("The average return is:", np.average(return_per_episode))
+            print("\nTraining episode", str(len(train_data['return_per_episode']) + 1) + "...")
+            self.agent.train()
+            if episode_number < 100:
+                print("The average return is:", np.average(train_data['return_per_episode']))
             else:
-                print("The averge return is:", np.average(return_per_episode[-100:]))
-            print("The return in the last episode was:", np.average(return_per_episode[-1]))
-            print("The average training loss is:", np.average(nn_loss))
-            print("Number of updates:", nn_training_count)
-            print("The current frame number is:", environment_info[-1])
+                print("The average return is:", np.average(train_data['return_per_episode'][-100:]))
+            print("The return in the last episode was:", train_data['return_per_episode'][-1])
+            print("The average training loss is:", np.average(train_data['cumulative_loss']))
+            print("Number of updates:", np.sum(train_data['training_steps']))
+            print("The current frame number is:", self.agent.get_number_of_frames())
 
         if self.save_agent:
             self.agent.save_agent(self.results_dir)
@@ -178,11 +157,11 @@ if __name__ == "__main__":
     """ Directories """
     working_directory = os.getcwd()
 
-    agent_name = "agent_2"
+    agent_name = "agent_1"
     results_directory = os.path.join(working_directory, "Results", agent_name)
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
 
     experiment = Experiment(results_dir=results_directory, save_agent=True, restore_agent=False,
-                            max_number_of_frames=50000000)
+                            max_number_of_frames=100000)
     experiment.run_experiment()

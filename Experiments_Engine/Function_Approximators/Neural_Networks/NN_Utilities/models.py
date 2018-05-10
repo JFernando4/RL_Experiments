@@ -3,6 +3,8 @@ import numpy as np
 
 from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities import layers
 from Experiments_Engine.Objects_Bases.NN_Model_Base import ModelBase
+from Experiments_Engine.config import Config
+from Experiments_Engine.Util import check_attribute_else_default
 
 
 def linear_transfer(x):
@@ -14,47 +16,45 @@ one linear output layer
 """
 class Model_nCPmFO(ModelBase):
 
-    def __init__(self, name=None, dim_out=None, filter_dims=None, observation_dimensions=None, num_actions=None,
-                 gate_fun=None, convolutional_layers=None, fully_connected_layers=None, SEED=None,
-                 model_dictionary=None, strides=None, max_pool=True):
+    def __init__(self, config=None, name="default", SEED=None):
         super().__init__()
 
-        " Model Dictionary for Saving and Restoring "
-        if model_dictionary is None:
-            self._model_dictionary = {"model_name": name,
-                                      "output_dims": dim_out,
-                                      "filter_dims": filter_dims,
-                                      "observation_dimensions": observation_dimensions,
-                                      "num_actions": num_actions,
-                                      "gate_fun": gate_fun,
-                                      "conv_layers": convolutional_layers,
-                                      "full_layers": fully_connected_layers,
-                                      "strides": strides,
-                                      "max_pool": max_pool}
-        else:
-            self._model_dictionary = model_dictionary
+        assert isinstance(config, Config)
+        """ 
+        Parameters in config:
+        Name:                   Type:           Default:            Description: (Omitted when self-explanatory)
+        dim_out                 list            [10,10,10]          the output dimensions of each layer, i.e. neurons
+        filter_dims             list            [2,2]               the dimensions of each filter
+        strides                 list            [4, 2]              strides use by each convolutional layer
+        obs_dims                list            [4,84,84]           the dimensions of the observations seen by the agent
+        num_actions             int             2                   the number of actions available to the agent
+        gate_fun                tf gate fun     tf.nn.relu          the gate function used across the whole network
+        conv_layers             int             2                   number of convolutional layers
+        full_layers             int             1                   number of fully connected layers
+        max_pool                bool            True                indicates whether to max pool between each conv layer
+        frames_format           str             "NCHW"              Specifies the format of the frames fed to the network
+        """
+        self.dim_out = check_attribute_else_default(config, 'dim_out', [10,10,10])
+        self.filter_dims = check_attribute_else_default(config, 'filter_dims', [2,2])
+        self.strides = check_attribute_else_default(config, 'strides', [4,2])
+        channels, height, width = check_attribute_else_default(config, 'obs_dims', [4, 84, 84])
+        num_actions = check_attribute_else_default(config, 'num_actions', 2)
+        self.gate_fun = check_attribute_else_default(config, 'gate_fun', tf.nn.relu)
+        self.convolutional_layers = check_attribute_else_default(config, 'conv_layers', 2)
+        self.fully_connected_layers = check_attribute_else_default(config, 'full_layers', 1)
+        self.max_pool = check_attribute_else_default(config, 'max_pool', True)
+        self.frames_format = check_attribute_else_default(config, 'frames_format', 'NCHW')
 
-        self.check_model_dictionary()
-
-        " Dimensions "
-        height, width, channels = self._model_dictionary["observation_dimensions"]
-        actions = self._model_dictionary["num_actions"]
+        """
+        Other Parameters:
+        name - name of the network. Should be a string.
+        """
+        self.name = name
         row_and_action_number = 2
-        self.name = self._model_dictionary["model_name"]
-        self.convolutional_layers = self._model_dictionary["conv_layers"]
-        self.fully_connected_layers = self._model_dictionary["full_layers"]
-        self.dim_out = self._model_dictionary["output_dims"]
-        self.filter_dims = self._model_dictionary["filter_dims"]
-        self.gate_fun = self._model_dictionary["gate_fun"]
-        self.strides = self._model_dictionary["strides"]
         total_layers = self.convolutional_layers + self.fully_connected_layers
-        if "max_pool" in self._model_dictionary.keys():
-            self.max_pool = self._model_dictionary["max_pool"]
-        else:
-            self.max_pool = True
 
         " Placehodler "
-        self.x_frames = tf.placeholder(tf.float32, shape=(None, height, width, channels))   # input frames
+        self.x_frames = tf.placeholder(tf.float32, shape=(None, channels, height, width))   # input frames
         self.x_actions = tf.placeholder(tf.int32, shape=(None, row_and_action_number))      # input actions
         self.y = tf.placeholder(tf.float32, shape=None)                                     # target
         self.isampling = tf.placeholder(tf.float32, shape=None)                             # importance sampling term
@@ -65,16 +65,19 @@ class Model_nCPmFO(ModelBase):
         """ Convolutional layers """
         dim_in_conv = [channels] + self.dim_out[:self.convolutional_layers - 1]
         current_s_hat = self.x_frames
+        if self.frames_format == "NHWC":
+            current_s_hat = tf.transpose(current_s_hat, [0,2,3,1])
         for i in range(self.convolutional_layers):
             # layer n: convolutional
             W, b, z_hat, r_hat = layers.convolution_2d(
                 self.name, "conv_"+str(i+1), current_s_hat, self.filter_dims[i], dim_in_conv[i], self.dim_out[i],
                 tf.random_normal_initializer(stddev=1.0 / np.sqrt(self.filter_dims[i]**2 * dim_in_conv[i] + 1),
-                                             seed=SEED), self.gate_fun, stride=self.strides[i])
+                                             seed=SEED), self.gate_fun, stride=self.strides[i],
+                format=self.frames_format)
             # layer n + 1/2: pool
             if self.max_pool:
                 s_hat = tf.nn.max_pool(
-                    r_hat, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
+                    r_hat, ksize=[1, 1, 2, 2], strides=[1, 1, 2, 2], padding="SAME")
             else:
                 s_hat = r_hat
 
@@ -99,7 +102,7 @@ class Model_nCPmFO(ModelBase):
         """ Output layer """
         # output layer: fully connected
         W, b, z_hat, self.y_hat = layers.fully_connected(
-            self.name, "output_layer", current_y_hat, self.dim_out[-1], actions,
+            self.name, "output_layer", current_y_hat, self.dim_out[-1], num_actions,
             tf.random_normal_initializer(stddev=1.0 / np.sqrt(self.dim_out[-1]), seed=SEED), linear_transfer)
         self.train_vars.extend([W, b])
         self.train_vars = [self.train_vars]
@@ -136,25 +139,31 @@ Creates a model with m fully connected layers followed by one linear output laye
 """
 class Model_mFO(ModelBase):
 
-    def __init__(self, name=None, dim_out=None, observation_dimensions=None, num_actions=None, gate_fun=None,
-                 fully_connected_layers=None, SEED=None, model_dictionary=None):
+    def __init__(self, config=None, name="default", SEED=None):
         super().__init__()
-        if model_dictionary is None:
-            self._model_dictionary = {"model_name": name,
-                                      "output_dims": dim_out,
-                                      "observation_dimensions": observation_dimensions,
-                                      "num_actions": num_actions,
-                                      "gate_fun": gate_fun,
-                                      "full_layers": fully_connected_layers}
-        else:
-            self._model_dictionary = model_dictionary
-        " Parameters "
-        self.name = self._model_dictionary["model_name"]
-        self.dim_out = self._model_dictionary["output_dims"]
-        self.obs_dims = self._model_dictionary["observation_dimensions"]
-        self.num_actions = self._model_dictionary["num_actions"]
-        self.gate_fun = self._model_dictionary["gate_fun"]
-        self.full_layers = self._model_dictionary["full_layers"]
+
+        assert isinstance(config, Config)
+        """ 
+        Parameters in config:
+        Name:                   Type:           Default:            Description: (Omitted when self-explanatory)
+        dim_out                 list            [10,10,10]          the output dimensions of each layer, i.e. neurons
+        obs_dims                list            [2]                 the dimensions of the observations seen by the agent
+        num_actions             int             3                   the number of actions available to the agent
+        gate_fun                tf gate fun     tf.nn.relu          the gate function used across the whole network
+        full_layers             int             3                   number of fully connected layers
+        """
+        self.dim_out = check_attribute_else_default(config, 'dim_out', [10,10,10])
+        self.obs_dims = check_attribute_else_default(config, 'obs_dims', [2])
+        self.num_actions = check_attribute_else_default(config, 'num_actions', 3)
+        self.gate_fun = check_attribute_else_default(config, 'gate_fun', tf.nn.relu)
+        self.full_layers = check_attribute_else_default(config, 'full_layers', 3)
+
+        """
+        Other Parameters:
+        name - name of the network. Should be a string.
+        """
+        self.name = name
+
         " Dimensions "
         dim_in = [np.prod(self.obs_dims)] + self.dim_out[:-1]
         row_and_action_number = 2
@@ -215,7 +224,6 @@ class Model_mFO(ModelBase):
 ########################################################################################################################
 ##########################                    Old Code                            ######################################
 ########################################################################################################################
-
 """
 Creates a model with n convolutinal layers followed by a pooling step and m fully connected layers for positive
 and negative returns followed by one linear output layer that combines both networks together

@@ -5,7 +5,7 @@ from Experiments_Engine.Policies import EpsilonGreedyPolicy
 
 class QSigmaReturnFunction:
 
-    def __init__(self, n=1, gamma=1, tpolicy=EpsilonGreedyPolicy(numActions=2), bpolicy=None, truncate_rho=False,
+    def __init__(self, tpolicy, n=1, gamma=1, bpolicy=None, truncate_rho=False,
                  compute_bprobabilities=False):
         self.n = n
         self.tpolicy = tpolicy

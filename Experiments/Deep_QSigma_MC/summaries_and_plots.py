@@ -157,17 +157,17 @@ if __name__ == "__main__":
     experiment_path = os.getcwd()
     results_path = os.path.join(experiment_path, "Results")
 
-    evaluation_frames = [60000, 120000, 250000, 500000, 1000000]
-    average_window = 10
-    results_summary_data(results_path, evaluation_frames, average_window, ci_error=0.05, max_agents=5,
-                         name="preliminary")
+    # evaluation_frames = [60000, 120000, 250000, 500000, 1000000]
+    # average_window = 10
+    # results_summary_data(results_path, evaluation_frames, average_window, ci_error=0.05, max_agents=5,
+    #                      name="preliminary")
 
     evaluation_frames = [60000, 120000, 250000, 500000, 1000000]
     omit_list = ["DecayingSigma_wTruncatedRho", "QSigma0.5_wTruncatedRho", "Sarsa_wTruncatedRho",
                  "DecayingSigma", "Sarsa", "QSigma0.5"]
     average_window = 10
     results_summary_data(results_path, evaluation_frames, average_window, ci_error=0.05, omit_list=omit_list,
-                         max_agents=20, name="20runs")
+                         max_agents=50, name="50runs")
 
     # aggregate_method_data(results_path, reread_data=True)
     # experiment_data = load_aggregated_data(results_path, omit_list)

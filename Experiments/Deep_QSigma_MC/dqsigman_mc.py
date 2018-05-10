@@ -9,6 +9,7 @@ from Experiments_Engine.Function_Approximators import QSigmaExperienceReplayBuff
 from Experiments_Engine.Function_Approximators import NeuralNetwork_wER_FA, Model_mFO   # Function Approximator and Model
 from Experiments_Engine.RL_Algorithms import QSigma, QSigmaReturnFunction               # RL Agent
 from Experiments_Engine.Policies import EpsilonGreedyPolicy                             # Policy
+from Experiments_Engine.config import Config                                            # Experiment configurations
 
 MAX_TRAINING_FRAMES = 1000000
 
@@ -17,7 +18,9 @@ class ExperimentAgent():
     def __init__(self, experiment_parameters, restore=False, restore_data_dir=""):
         self.tf_sess = tf.Session()
         self.optimizer = lambda lr: tf.train.RMSPropOptimizer(learning_rate=lr, decay=0.95, epsilon=0.01, momentum=0.95)
-
+        self.config = Config()
+        self.config.save_summary = True
+        self.summary = {}
         if not restore:
             """ Agent's Parameters """
             self.n = experiment_parameters["n"]
@@ -50,17 +53,23 @@ class ExperimentAgent():
             self.unetwork = Model_mFO(model_dictionary=self.unetwork_parameters)
 
             """ Policies """
-            final_epsilon = 0.1
+            self.config.num_actions = self.env.get_num_actions()
+            self.config.target_policy = Config()
+            self.config.target_policy.initial_epsilon = self.target_epsilon
+            self.config.target_policy.anneal_epsilon = False
+            self.config.behaviour_policy = Config()
+
             if self.anneal_epsilon:
-                initial_epsilon = 1
+                self.config.behaviour_policy.initial_epsilon = 1
+                self.config.behaviour_policy.final_epsilon = 0.1
+                self.config.behaviour_policy.anneal_epsilon = True
+                self.config.behaviour_policy.annealing_period = 20000   # 0.02 * MAX_TRAINING_FRAMES
             else:
-                initial_epsilon = 0.1
-            anneal_period = 20000   # 0.02 * Max Frames
-            self.target_policy = EpsilonGreedyPolicy(numActions=num_actions, anneal=False,
-                                                     initial_epsilon=self.target_epsilon)
-            self.behaviour_policy = EpsilonGreedyPolicy(numActions=num_actions, initial_epsilon=initial_epsilon,
-                                                        anneal=self.anneal_epsilon,
-                                                        annealing_period=anneal_period, final_epsilon=final_epsilon)
+                self.config.behaviour_policy.initial_epsilon = 0.1
+                self.config.behaviour_policy.anneal_epsilon = False
+
+            self.target_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=False)
+            self.behaviour_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=True)
 
             """ QSigma return function """
             self.rl_return_fun = QSigmaReturnFunction(n=self.n, gamma=self.gamma, tpolicy=self.target_policy,
@@ -69,12 +78,12 @@ class ExperimentAgent():
 
             """ QSigma replay buffer """
             batch_size = 32
-            buffer_size = 20000     # 0.02 * Max Frames
-            self.qsigma_erp = QSigmaExperienceReplayBuffer(return_function=self.rl_return_fun,
-                                                           buffer_size=buffer_size, batch_size=batch_size, frame_stack=1,
-                                                           observation_dimensions=obs_dims, num_actions=num_actions,
-                                                           observation_dtype=self.env.get_observation_dtype(),
-                                                           reward_clipping=False)
+            self.config.buff_sz = 20000     # 0.02 * MAX_TRAINING_FRAMES
+            self.config.batch_sz = 32
+            self.config.frame_stack = 1
+            self.config.env_state_dims = self.env.get_observation_dimensions()
+            self.config.obs_dtype = self.env.get_observation_dtype()
+            self.qsigma_erp = QSigmaExperienceReplayBuffer(config=self.config, return_function=self.rl_return_fun)
 
             """ Neural Network """
             alpha = 0.00025
@@ -91,57 +100,27 @@ class ExperimentAgent():
                                                               fa_dictionary=self.fa_parameters, tf_session=self.tf_sess)
 
             """ RL Agent """
-            self.agent_parameters = {"n": self.n, "gamma": self.gamma, "beta": self.beta, "sigma": self.sigma,
-                                     "return_per_episode": [],
-                                     "timesteps_per_episode": [], "episode_number": 0, "use_er_buffer": True,
-                                     "compute_return": False, "anneal_epsilon": True, "save_env_info": True,
-                                     "env_info": [], "rand_steps_before_training": 1000,    # 0.05 * Buffer Size
-                                     "rand_steps_count": 0}
+            """ 
+            Parameters in config:
+            Name:                   Type:           Default:            Description: (Omitted when self-explanatory)
+            n                       int             1                   the n of the n-step method
+            gamma                   float           1.0                 the discount factor
+            beta                    float           1.0                 the decay factor of sigma
+            sigma                   float           0.5                 see De Asis et.al. in AAAI 2018 proceedings
+            use_er_buffer           bool            False               indicates whether to use experience replay buffer
+            initial_rand_steps      int             0                   number of random steps before training starts
+            rand_steps_count        int             0                   number of random steps taken so far
+            save_summary            bool            False               Save the summary of the agent (return per episode)
+            """
+            self.config.n = experiment_parameters['n']
+            self.config.gamma = 0.99
+            self.config.beta = experiment_parameters['beta']
+            self.config.sigma = experiment_parameters['sigma']
+            self.config.use_er_buffer = True
+            self.config.initial_rand_steps = 1000   # 0.05 * buffer_size
             self.agent = QSigma(function_approximator=self.function_approximator, target_policy=self.target_policy,
                                 behavior_policy=self.behaviour_policy, environment=self.env,
-                                agent_dictionary=self.agent_parameters, er_buffer=self.qsigma_erp)
-
-        else:
-            agent_history = pickle.load(open(os.path.join(restore_data_dir, "agent_history.p"), mode="rb"))
-
-            " Environment "
-            self.env_parameters = agent_history["env_parameters"]
-            self.env = Mountain_Car(env_dictionary=self.env_parameters)
-
-            " Target and Update Network Models "
-            self.tnetwork_parameters = agent_history["tnetwork_parameters"]
-            self.tnetwork = Model_mFO(model_dictionary=self.tnetwork_parameters)
-
-            self.unetwork_parameters = agent_history["unetwork_parameters"]
-            self.unetwork = Model_mFO(model_dictionary=self.unetwork_parameters)
-
-            " Target and Behaviour Policies "
-            self.target_policy = agent_history["target_policy"]
-            self.behaviour_policy = agent_history["behaviour_policy"]
-
-            " QSigma Return Function "
-            self.rl_return_fun = agent_history["rl_return_fun"]
-
-            " Experience Replay Buffer "
-            self.qsigma_erp = agent_history["qsigma_erp"]
-
-            " Neural Network Function Approximator "
-            self.fa_parameters = agent_history["fa_parameters"]
-            self.function_approximator = NeuralNetwork_wER_FA(optimizer=self.optimizer, target_network=self.tnetwork,
-                                                              update_network=self.unetwork, er_buffer=self.qsigma_erp,
-                                                              fa_dictionary=self.fa_parameters, tf_session=self.tf_sess,
-                                                              restore=True)
-
-            " RL Agent "
-            self.agent_parameters = agent_history["agent_parameters"]
-            self.agent = QSigma(function_approximator=self.function_approximator, target_policy=self.target_policy,
-                                behavior_policy=self.behaviour_policy, environment=self.env,
-                                agent_dictionary=self.agent_parameters, er_buffer=self.qsigma_erp)
-
-            saver = tf.train.Saver()
-            sourcepath = os.path.join(restore_data_dir, "agent_graph.ckpt")
-            saver.restore(self.tf_sess, sourcepath)
-            print("Model restored from file: %s" % sourcepath)
+                                er_buffer=self.qsigma_erp, config=self.config, summary=self.summary)
 
     def train(self, number_of_episodes):
         self.agent.train(num_episodes=number_of_episodes)
@@ -152,75 +131,58 @@ class ExperimentAgent():
     def get_train_data(self):
         return_per_episode = self.agent.get_return_per_episode()
         nn_loss = self.function_approximator.get_train_loss_history()
-        env_info = self.agent.get_env_info()
-        return return_per_episode, nn_loss, env_info
+        return return_per_episode, nn_loss
 
     def save_agent(self, dir_name):
-        agent_history = {
-            "env_parameters": self.env.get_environment_dictionary(),
-            "tnetwork_parameters": self.tnetwork.get_model_dictionary(),
-            "unetwork_parameters": self.unetwork.get_model_dictionary(),
-            "target_policy": self.target_policy,
-            "behaviour_policy": self.behaviour_policy,
-            "rl_return_fun": self.rl_return_fun,
-            "qsigma_erp": self.qsigma_erp,
-            "fa_parameters": self.function_approximator.get_fa_dictionary(),
-            "agent_parameters": self.agent.get_agent_dictionary()
-        }
-
-        pickle.dump(agent_history, open(os.path.join(dir_name, "agent_history.p"), mode="wb"))
-        saver = tf.train.Saver()
-        save_path = saver.save(self.tf_sess, os.path.join(dir_name, "agent_graph.ckpt"))
-        print("Model Saved in file: %s" % save_path)
+        pass
 
     def save_results(self, dirn_name):
-        results = {"return_per_episode": self.agent.get_return_per_episode(),
-                   "env_info": self.agent.get_env_info(),
-                   "train_loss_history": self.function_approximator.get_train_loss_history()}
-        pickle.dump(results, open(os.path.join(dirn_name, "results.p"), mode="wb"))
+        return
+        # pickle.dump(results, open(os.path.join(dirn_name, "results.p"), mode="wb"))
 
     def save_parameters(self, dir_name):
-        txt_file_pathname = os.path.join(dir_name, "agent_parameters.txt")
-        params_txt = open(txt_file_pathname, "w")
-        assert isinstance(self.rl_return_fun, QSigmaReturnFunction)
-        params_txt.write("# Agent #\n")
-        params_txt.write("\tn = " + str(self.agent_parameters['n']) + "\n")
-        params_txt.write("\tgamma = " + str(self.agent_parameters['gamma']) + "\n")
-        params_txt.write("\tsigma = " + str(self.agent_parameters['sigma']) + "\n")
-        params_txt.write("\tbeta = " + str(self.agent_parameters['beta']) + "\n")
-        params_txt.write("\trandom steps before training = " +
-                         str(self.agent_parameters['rand_steps_before_training']) + "\n")
-        params_txt.write("\ttruncate rho = " + str(self.rl_return_fun.truncate_rho) + "\n")
-        params_txt.write("\tcompute behaviour policy's probabilities = " +
-                         str(self.rl_return_fun.compute_bprobabilities) + "\n")
-        params_txt.write("\n")
-
-        assert isinstance(self.target_policy, EpsilonGreedyPolicy)
-        params_txt.write("# Target Policy #\n")
-        params_txt.write("\tinitial epsilon = " + str(self.target_policy.initial_epsilon) + "\n")
-        params_txt.write("\tfinal epsilon = " + str(self.target_policy.final_epsilon) + "\n")
-        params_txt.write("\n")
-
-        assert isinstance(self.behaviour_policy, EpsilonGreedyPolicy)
-        params_txt.write("# Behaviour Policy #\n")
-        params_txt.write("\tinitial epsilon = " + str(self.behaviour_policy.initial_epsilon) + "\n")
-        params_txt.write("\tanneal epsilon = " + str(self.behaviour_policy.anneal) + "\n")
-        params_txt.write("\tfinal epsilon = " + str(self.behaviour_policy.final_epsilon) + "\n")
-        params_txt.write("\tannealing period = " + str(self.behaviour_policy.annealing_period) + "\n")
-        params_txt.write("\n")
-
-        assert isinstance(self.qsigma_erp, QSigmaExperienceReplayBuffer)
-        params_txt.write("# Function Approximator: Neural Network with Experience Replay #\n")
-        params_txt.write("\talpha = " + str(self.fa_parameters['alpha']) + "\n")
-        params_txt.write("\ttarget network update frequency = " + str(self.fa_parameters['tnetwork_update_freq']) + "\n")
-        params_txt.write("\tbatch size = " + str(self.fa_parameters['batch_size']) + "\n")
-        params_txt.write("\tbuffer size = " + str(self.qsigma_erp.buff_sz) + "\n")
-        params_txt.write("\tfully connected layers = " + str(self.tnetwork_parameters['full_layers']) + "\n")
-        params_txt.write("\toutput dimensions per layer = " + str(self.tnetwork_parameters['output_dims']) + "\n")
-        params_txt.write("\tgate function = " + str(self.tnetwork_parameters['gate_fun']) + "\n")
-        params_txt.write("\n")
-
-        params_txt.close()
+        return
+        # txt_file_pathname = os.path.join(dir_name, "agent_parameters.txt")
+        # params_txt = open(txt_file_pathname, "w")
+        # assert isinstance(self.rl_return_fun, QSigmaReturnFunction)
+        # params_txt.write("# Agent #\n")
+        # params_txt.write("\tn = " + str(self.agent_parameters['n']) + "\n")
+        # params_txt.write("\tgamma = " + str(self.agent_parameters['gamma']) + "\n")
+        # params_txt.write("\tsigma = " + str(self.agent_parameters['sigma']) + "\n")
+        # params_txt.write("\tbeta = " + str(self.agent_parameters['beta']) + "\n")
+        # params_txt.write("\trandom steps before training = " +
+        #                  str(self.agent_parameters['rand_steps_before_training']) + "\n")
+        # params_txt.write("\ttruncate rho = " + str(self.rl_return_fun.truncate_rho) + "\n")
+        # params_txt.write("\tcompute behaviour policy's probabilities = " +
+        #                  str(self.rl_return_fun.compute_bprobabilities) + "\n")
+        # params_txt.write("\n")
+        #
+        # assert isinstance(self.target_policy, EpsilonGreedyPolicy)
+        # params_txt.write("# Target Policy #\n")
+        # params_txt.write("\tinitial epsilon = " + str(self.target_policy.initial_epsilon) + "\n")
+        # params_txt.write("\tfinal epsilon = " + str(self.target_policy.final_epsilon) + "\n")
+        # params_txt.write("\n")
+        #
+        # assert isinstance(self.behaviour_policy, EpsilonGreedyPolicy)
+        # params_txt.write("# Behaviour Policy #\n")
+        # params_txt.write("\tinitial epsilon = " + str(self.behaviour_policy.initial_epsilon) + "\n")
+        # params_txt.write("\tanneal epsilon = " + str(self.behaviour_policy.anneal) + "\n")
+        # params_txt.write("\tfinal epsilon = " + str(self.behaviour_policy.final_epsilon) + "\n")
+        # params_txt.write("\tannealing period = " + str(self.behaviour_policy.annealing_period) + "\n")
+        # params_txt.write("\n")
+        #
+        # assert isinstance(self.qsigma_erp, QSigmaExperienceReplayBuffer)
+        # params_txt.write("# Function Approximator: Neural Network with Experience Replay #\n")
+        # params_txt.write("\talpha = " + str(self.fa_parameters['alpha']) + "\n")
+        # params_txt.write("\ttarget network update frequency = " + str(self.fa_parameters['tnetwork_update_freq']) + "\n")
+        # params_txt.write("\tbatch size = " + str(self.fa_parameters['batch_size']) + "\n")
+        # params_txt.write("\tbuffer size = " + str(self.qsigma_erp.buff_sz) + "\n")
+        # params_txt.write("\tfully connected layers = " + str(self.tnetwork_parameters['full_layers']) + "\n")
+        # params_txt.write("\toutput dimensions per layer = " + str(self.tnetwork_parameters['output_dims']) + "\n")
+        # params_txt.write("\tgate function = " + str(self.tnetwork_parameters['gate_fun']) + "\n")
+        # params_txt.write("\n")
+        #
+        # params_txt.close()
 
 
 class Experiment():
@@ -246,7 +208,7 @@ class Experiment():
                 print("\nTraining episode", str(len(self.agent.get_train_data()[0]) + 1) + "...")
             self.agent.train(1)
             if verbose:
-                return_per_episode, nn_loss, environment_info = self.agent.get_train_data()
+                return_per_episode, nn_loss = self.agent.get_train_data()
                 if len(return_per_episode) < 100:
                     print("The average return is:", np.average(return_per_episode))
                     print("The average training loss is:", np.average(nn_loss))
@@ -254,7 +216,6 @@ class Experiment():
                     print("The average return is:", np.average(return_per_episode[-100:]))
                     print("The average training loss is:", np.average(nn_loss[-100:]))
                 print("The return in the last episode was:", return_per_episode[-1])
-                print("The current frame number is:", environment_info[-1])
 
         if self.save_agent:
             self.agent.save_agent(self.results_dir)

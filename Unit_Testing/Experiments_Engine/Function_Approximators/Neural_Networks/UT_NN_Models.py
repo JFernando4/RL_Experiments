@@ -4,6 +4,7 @@ import tensorflow as tf
 
 import Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.models as nn_models
 from Experiments_Engine.Environments.Arcade_Learning_Environment.ALE_Environment import ALE_Environment
+from Experiments_Engine.config import Config
 
 class Test_Model_nCPmFO(unittest.TestCase):
 
@@ -12,7 +13,8 @@ class Test_Model_nCPmFO(unittest.TestCase):
         games_directory = homepath + \
                           "PycharmProjects/RL_Experiments/Experiments_Engine/Environments/Arcade_Learning_Environment/Supported_Roms/"
         rom_name = "seaquest.bin"
-        self._env = ALE_Environment(rom_file=rom_name, games_directory=games_directory)
+        config = Config()
+        self._env = ALE_Environment(config, rom_filename=rom_name, games_directory=games_directory)
 
         self._model_dictionary1 = {"model_name": "nCPmFO_Test1",
                                    "output_dims": [8, 4, 10],
@@ -21,6 +23,7 @@ class Test_Model_nCPmFO(unittest.TestCase):
                                    "num_actions": 2,
                                    "gate_fun": tf.nn.relu,
                                    "conv_layers": 2,
+                                   "strides": [4,2,1],
                                    "full_layers": 1}
 
         self._model_dictionary2 = {"model_name": "nCPmFO_Test2",
@@ -29,6 +32,7 @@ class Test_Model_nCPmFO(unittest.TestCase):
                                    "observation_dimensions": [21, 21, 1],
                                    "num_actions": 2,
                                    "gate_fun": tf.nn.relu,
+                                   "strides": [4, 2, 1],
                                    "conv_layers": 2,
                                    "full_layers": 1}
 
