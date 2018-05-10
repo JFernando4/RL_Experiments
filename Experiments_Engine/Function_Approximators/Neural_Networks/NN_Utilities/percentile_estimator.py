@@ -9,6 +9,7 @@ class Percentile_Estimator:
         self._percentiles = np.zeros(self._number_of_percentiles)
         self._record = np.zeros(self._number_of_percentiles)
         self._record_count = 0
+        self._record_empty = True
 
     def add_to_record(self, td_error):
         if self._record_count == self._number_of_percentiles:
@@ -34,7 +35,11 @@ class Percentile_Estimator:
         self._record = np.zeros(self._number_of_percentiles)
 
     def update_percentiles(self):
-        self._percentiles += self._lr * (self._record - self._percentiles)
+        if not self._record_empty:
+            self._percentiles += self._lr * (self._record - self._percentiles)
+        else:
+            self._percentiles += self._record
+            self._record_empty = False
         # print("The percentiles are:", self._percentiles)
 
     def get_percentile(self, index):

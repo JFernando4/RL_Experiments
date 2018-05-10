@@ -84,7 +84,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
                             value,
                             correction)
             self.buffer.add_to_buffer(buffer_entry)
-            self.train()
+            self.train(abs_td_error)
             # print(abs_td_error)
 
     def get_value(self, state, action):
@@ -97,7 +97,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         y_hat = self.sess.run(self.network.y_hat, feed_dict=feed_dictionary)
         return y_hat[0]
 
-    def train(self):
+    def train(self, abs_td_error):
         if not self.buffer.buffer_full:
             return
         else:
@@ -112,18 +112,13 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
                 if self.num_percentiles != 0:
                     top_percentile = self.percentile_estimator.get_percentile(0)
                     low_percentile = self.percentile_estimator.get_percentile(self.num_percentiles-1)
-                    self.optimizer._learning_rate = self.alpha * (1 - (low_percentile+0.001) / (top_percentile+0.001))
+                    self.optimizer._learning_rate = self.alpha * (1 - (low_percentile+0.001) / (abs_td_error + 0.001))  #(top_percentile+0.001))
             train_loss, _ = self.sess.run((self.network.train_loss, self.train_step), feed_dict=feed_dictionary)
             if self.adjust_alpha:
                 self.optimizer._learning_rate = self.alpha
             if self.save_summary:
                 self.cumulative_loss += train_loss
                 self.training_steps += 1
-
-    def update_alpha(self, new_alpha):
-        self.alpha = new_alpha
-        self.optimizer._learning_rate = self.alpha
-        self._fa_dictionary["alpha"] = self.alpha
 
     def get_td_error(self, frames, actions, labels, isampling):
         feed_dictionary = {self.network.x_frames: frames,

@@ -36,7 +36,7 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         config.conv_layers = 3
         config.full_layers = 1
         config.max_pool = False
-        config.frames_format = "NHWC"   # NCHW doesn't work with gpu
+        config.frames_format = "NHWC"   # NCHW doesn't work with cpu in tensorflow
 
         " Policies Parameters "
         " Target Policy "
@@ -53,17 +53,21 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         " Experience Replay Buffer Parameters "
         config.buff_sz = 100000
         config.batch_sz = 32
-        config.env_state_dims = self.env.frame_dims
+        config.env_state_dims = (84, 84)    # Dimensions of a frame
         config.reward_clipping = True
 
         " QSigma Agent Parameters "
         config.n = 3
-        config.gamma = self.gamma
+        config.gamma = 0.99
         config.beta = 1.0
         config.sigma = 0.5
         config.use_er_buffer = True
         config.initial_rand_steps = 50
         config.rand_steps_count = 0
+
+        " Neural Network "
+        config.alpha = 0.00025
+        config.tnetwork_update_freq = 10000
 
         " Agent's Parameters "
         self.n = 3
@@ -86,7 +90,7 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         self.behavior_policy = EpsilonGreedyPolicy(config, behaviour_policy=True)
 
         """ Return Function """
-        return_function = QSigmaReturnFunction(n=self.n, gamma=self.gamma, tpolicy=self.target_policy)
+        return_function = QSigmaReturnFunction(config=config, tpolicy=self.target_policy)
 
         """ Experience Replay Buffer """
         er_buffer = QSigmaExperienceReplayBuffer(config, return_function=return_function)
@@ -95,19 +99,11 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         alpha = 0.00025
         tnetwork_update_freq = 10000
         batch_size = 32
-        self.fa_parameters = {"num_actions": num_actions,
-                              "batch_size": batch_size,
-                              "alpha": alpha,
-                              "observation_dimensions": stacked_obs_dims,
-                              "train_loss_history": [],
-                              "tnetwork_update_freq": tnetwork_update_freq,
-                              "number_of_updates": 0}
         optimizer = lambda lr: tf.train.RMSPropOptimizer(learning_rate=lr, decay=0.95, epsilon=0.01, momentum=0.95)
         tf_sess = tf.Session()
         self.function_approximator = NeuralNetwork_wER_FA(optimizer=optimizer, target_network=self.target_network,
                                                           update_network=self.update_network, er_buffer=er_buffer,
-                                                          tf_session=tf_sess,
-                                                          fa_dictionary=self.fa_parameters)
+                                                          tf_session=tf_sess, config=config, summary=self.summary)
 
         """ RL Agent """
         self.agent = QSigma(environment=self.env, function_approximator=self.function_approximator,

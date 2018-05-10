@@ -1,18 +1,40 @@
 import numpy as np
 
 from Experiments_Engine.Policies import EpsilonGreedyPolicy
+from Experiments_Engine.config import Config
+from Experiments_Engine.Util import check_attribute_else_default
 
 
 class QSigmaReturnFunction:
 
-    def __init__(self, tpolicy, n=1, gamma=1, bpolicy=None, truncate_rho=False,
-                 compute_bprobabilities=False):
-        self.n = n
+    def __init__(self, tpolicy, config=None, bpolicy=None):
+
+        assert isinstance(config, Config)
+        """ 
+        Parameters in config:
+        Name:                   Type:           Default:            Description: (Omitted when self-explanatory)
+        n                       int             1                   the n of the n-step method
+        gamma                   float           1.0                 the discount factor
+        compute_bprobabilities  bool            False               whether to recompute bprobabilities or used
+                                                                    the ones stored in the trajectory. This is the 
+                                                                    difference between on-policy and off-policy updates.
+        truncate_rho            bool            False               whether to truncate the importance sampling ratio
+                                                                    at 1    
+        """
+        self.n = check_attribute_else_default(config, 'n', 1)
+        self.gamma = check_attribute_else_default(config, 'gamma', 1.0)
+        self.compute_bprobabilities = check_attribute_else_default(config, 'compute_bprobabilities', False)
+        self.truncate_rho = check_attribute_else_default(config, 'truncate_rho', False)
+
+        """
+        Other Parameters:
+        tpolicy - The target policy
+        bpolicy - Behaviour policy. Only required if compute_bprobabilities is True.
+        """
         self.tpolicy = tpolicy
         self.bpolicy = bpolicy
-        self.compute_bprobabilities = compute_bprobabilities
-        self.gamma = gamma
-        self.truncate_rho = truncate_rho
+        if self.compute_bprobabilities:
+            assert self.bpolicy is not None
 
     def recursive_return_function(self, trajectory, step=0, base_value=None):
         if step == self.n:
@@ -25,7 +47,6 @@ class QSigmaReturnFunction:
             else:
                 tprobabilities = self.tpolicy.probability_of_action(q_values=qvalues, all_actions=True)
                 if self.compute_bprobabilities:
-                    assert isinstance(self.bpolicy, EpsilonGreedyPolicy)
                     bprobabilities = self.bpolicy.probability_of_action(q_values=qvalues, all_actions=True)
                 assert bprobabilities[action] != 0
                 rho = tprobabilities[action] / bprobabilities[action]

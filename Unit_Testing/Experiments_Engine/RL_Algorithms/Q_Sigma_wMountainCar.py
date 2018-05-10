@@ -12,8 +12,8 @@ from Experiments_Engine.config import Config
 class Test_MountainCar_Environment(unittest.TestCase):
 
     def setUp(self):
-        self.env = Mountain_Car()
         config = Config()
+        self.env = Mountain_Car(config)
 
         " Target Policy Parameters "
         config.num_actions = self.env.get_num_actions()
@@ -58,7 +58,6 @@ class Test_MountainCar_Environment(unittest.TestCase):
                               state_space_size=self.env.get_observation_dimensions()[0], tile_side_length=10)
         self.agent2 = QSigma(config=config2, environment=self.env, function_approximator=self.fa2,
                             target_policy=self.tpolicy, behavior_policy=self.bpolicy2)
-        self.qsigma_rf = QSigmaReturnFunction(n=3, gamma=1, tpolicy=self.tpolicy)
 
         ### Test 3 Setup ###
         config.behaviour_policy = Config()

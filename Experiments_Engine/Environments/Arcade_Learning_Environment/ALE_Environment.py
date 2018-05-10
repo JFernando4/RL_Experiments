@@ -10,19 +10,18 @@ from Experiments_Engine.Util.utils import check_attribute_else_default, check_di
 
 
 class ALE_Environment(EnvironmentBase):
+    """
+    Environment Specifications:
+    Number of Actions = 18
+    Frame Dimensions = 84 x 84
+    Frame Data Type = np.uint8
+    Reward = Game Score
+
+    Summary Name: frames_per_episode
+    """
 
     def __init__(self, config, games_directory=None, rom_filename=None, summary=None):
         super().__init__()
-
-        """
-        Environment Specifications:
-        Number of Actions = 18
-        Frame Dimensions = 84 x 84
-        Frame Data Type = np.uint8
-        Reward = Game Score
-        Summary Name: frames_per_episode
-        """
-
         """ Parameters:
         Name:                       Type            Default:        Description(omitted when self-explanatory):
         display_screen              bool            False           Display game screen

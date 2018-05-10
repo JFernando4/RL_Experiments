@@ -8,7 +8,6 @@ from Experiments_Engine import NeuralNetwork_FA                 # Function Appro
 from Experiments_Engine import Model_nCPmFO                     # NN Models
 from Experiments_Engine import QSigma                           # RL Agent
 from Experiments_Engine import EpsilonGreedyPolicy              # Policy
-from Experiments_Engine import Percentile_Estimator
 from Experiments_Engine.config import Config
 
 class ExperimentAgent():
@@ -55,9 +54,9 @@ class ExperimentAgent():
             self.config.frames_format = 'NHWC'
 
             " Neural Network Parameters "
-            self.config.alpha = 0.0000001
+            self.config.alpha = 0.000000025
             self.config.batch_sz = 1
-            self.config.train_percentile_index = 9
+            self.config.train_percentile_index = 0
             self.config.num_percentiles = 10
             self.config.adjust_alpha = True
 
@@ -70,7 +69,7 @@ class ExperimentAgent():
             self.config.behaviour_policy = self.config.target_policy
 
             " QSigma Agent "
-            self.config.n = 5
+            self.config.n = 3
             self.config.gamma = 0.99
             self.config.beta = 1.0
             self.config.sigma = 0.5
@@ -122,6 +121,22 @@ class ExperimentAgent():
         with open(os.path.join(dir_name, "summary.p"), mode='wb') as summary_file:
             pickle.dump(self.summary, summary_file)
 
+    def save_experiment_parameters(self, results_dir):
+        txt_file_pathname = os.path.join(results_dir, "agent_parameters.txt")
+        params_txt = open(txt_file_pathname, "w")
+        params_txt.write("\n#########\tAgent\t#########\n")
+        params_txt.write("n = " + str(self.config.n) + "\n")
+        params_txt.write("sigma = " + str(self.config.sigma) + "\n")
+        params_txt.write("gamma = " + str(self.config.gamma) + "\n")
+        params_txt.write("beta = " + str(self.config.beta) + "\n")
+        params_txt.write("\n#########\tNetwork\t#########\n")
+        params_txt.write("alpha = " + str(self.config.alpha) + "\n")
+        params_txt.write("batch_sz = " + str(self.config.batch_sz) + "\n")
+        params_txt.write("train percentile index = " + str(self.config.train_percentile_index) + "\n")
+        params_txt.write("number of percentiles = " + str(self.config.num_percentiles) + "\n")
+        params_txt.write("adjust alpha = " + str(self.config.adjust_alpha) + "\n")
+        params_txt.close()
+
 
 class Experiment():
 
@@ -131,6 +146,8 @@ class Experiment():
         self.restore_agent = restore_agent
         self.save_agent = save_agent
         self.max_number_of_frames = max_number_of_frames
+        if save_agent:
+            self.agent.save_experiment_parameters(results_dir)
 
     def run_experiment(self):
         episode_number = 0
@@ -157,11 +174,11 @@ if __name__ == "__main__":
     """ Directories """
     working_directory = os.getcwd()
 
-    agent_name = "agent_2"
+    agent_name = "agents_1"
     results_directory = os.path.join(working_directory, "Results", agent_name)
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
 
     experiment = Experiment(results_dir=results_directory, save_agent=True, restore_agent=False,
-                            max_number_of_frames=1000000)
+                            max_number_of_frames=10000000)
     experiment.run_experiment()

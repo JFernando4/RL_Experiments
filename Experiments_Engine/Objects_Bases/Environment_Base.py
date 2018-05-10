@@ -7,7 +7,6 @@ class EnvironmentBase(object):
     @abc.abstractmethod
     def __init__(self):
         """ Initializes the environment """
-        self._env_dictionary = {}
         return
 
     @abc.abstractmethod
@@ -39,21 +38,6 @@ class EnvironmentBase(object):
         return
 
     @abc.abstractmethod
-    def get_environment_dictionary(self):
-        """ Returns the hyperparameters of the envronment """
-        return self._env_dictionary
-
-    @abc.abstractmethod
-    def set_environment_dictionary(self, new_dictionary):
-        """ Sets the environment dictionary to new_dictionary """
-        self._env_dictionary = new_dictionary
-
-    @abc.abstractmethod
     def set_render(self, *args):
         """ Set render to true if the environment has the option to render """
-        return
-
-    @abc.abstractmethod
-    def get_env_info(self):
-        " Returns the current information about the environment that is relevant for summaries "
         return
