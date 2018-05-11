@@ -17,7 +17,8 @@ class ExperimentAgent():
 
     def __init__(self, experiment_parameters, restore=False, restore_data_dir=""):
         self.tf_sess = tf.Session()
-        self.optimizer = lambda lr: tf.train.RMSPropOptimizer(learning_rate=lr, decay=0.95, epsilon=0.01, momentum=0.95)
+        self.optimizer = lambda lr: tf.train.RMSPropOptimizer(learning_rate=lr, decay=0.95, epsilon=0.01, momentum=0.95,
+                                                              centered=True)
 
         """ Agent's Parameters """
         self.n = experiment_parameters["n"]

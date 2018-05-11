@@ -32,8 +32,8 @@ class ExperimentAgent():
             self.config.save_summary = True
 
             " Environment Parameters  "
-            self.config.display_screen = False
-            self.config.agent_render = False
+            self.config.display_screen = True
+            self.config.agent_render = True
             self.config.frame_skip = 5
             self.config.repeat_action_probability = 0.25
             self.config.max_num_frames = 18000

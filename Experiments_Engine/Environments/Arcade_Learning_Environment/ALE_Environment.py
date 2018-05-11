@@ -1,8 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from ale_python_interface import ALEInterface
-# from scipy.misc import imresize   # Seems to be deprecating.
-import cv2
+from skimage.transform import resize
 
 from Experiments_Engine.config import Config
 from Experiments_Engine.Objects_Bases import EnvironmentBase
@@ -31,6 +30,7 @@ class ALE_Environment(EnvironmentBase):
         max_num_frames              int             18000           Max number of frames per episode
         color_averaging             bool            True            See ALE Documentation
         frame_stack                 int             4               Stack of frames for agent, see Mnih et. al. (2015)
+        max_pool                    bool            True
         save_summary                bool            False           Save the summary of the environment
         """
 
@@ -83,7 +83,7 @@ class ALE_Environment(EnvironmentBase):
         current_frame = self.fix_state(self.env.getScreenGrayscale())
         for _ in range(self.frame_stack):
             self.add_frame(current_frame)
-        # self.agent_ssteps_per_episodetate_display()    # For debugging purposes
+        self.agent_state_display()    # For debugging purposes
 
     def add_frame(self, frame):
         self.current_state[:-1] = self.current_state[1:]
@@ -95,14 +95,12 @@ class ALE_Environment(EnvironmentBase):
         self.add_frame(new_frame)
         terminal = self.env.game_over()
         self.frame_count += 1
-        # self.agent_state_display()    # For debugging purposes only
+        self.agent_state_display()    # For debugging purposes only
         return self.current_state, reward, terminal
 
     def fix_state(self, state):
         state = state.reshape([210, 160])
-        new_state = cv2.resize(state, (self.height, self.width))
-        # imresize gives FutureWarning. It might deprecate in future releases
-        # new_state = imresize(state, (self.height, self.width), mode="L")
+        new_state = resize(state, (self.height, self.width), mode='constant', preserve_range=True)
         new_state = np.array(new_state, dtype=np.uint8)
         return new_state
 
