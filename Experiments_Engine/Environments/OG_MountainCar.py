@@ -68,9 +68,6 @@ class Mountain_Car(EnvironmentBase):
 
         if self.step_count >= self.max_actions:
             terminate = True
-            if self.save_summary:
-                self.summary['steps_per_episode'].append(self.step_count)
-            self.step_count = 0
 
         current_position = self.current_state[0]
         current_velocity = self.current_state[1]
@@ -88,6 +85,11 @@ class Mountain_Car(EnvironmentBase):
         elif position > 0.5:
             position = 0.5
             terminate = True
+
+        if terminate:
+            if self.save_summary:
+                self.summary['steps_per_episode'].append(self.step_count)
+            self.step_count = 0
 
         self.current_state = np.array((position, velocity), dtype=np.float64)
 

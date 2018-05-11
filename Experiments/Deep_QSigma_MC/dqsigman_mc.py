@@ -224,6 +224,7 @@ class Experiment():
                     print("The average return is:", np.average(return_per_episode[-100:]))
                     print("The average training loss is:", np.average(nn_loss[-100:]))
                 print("The return in the last episode was:", return_per_episode[-1])
+                print("The total number of steps is:", self.agent.get_number_of_frames())
 
         if self.save_agent:
             self.agent.save_agent(self.results_dir)

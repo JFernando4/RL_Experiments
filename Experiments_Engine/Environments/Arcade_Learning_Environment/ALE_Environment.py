@@ -83,7 +83,7 @@ class ALE_Environment(EnvironmentBase):
         current_frame = self.fix_state(self.env.getScreenGrayscale())
         for _ in range(self.frame_stack):
             self.add_frame(current_frame)
-        # self.agent_state_display()    # For debugging purposes
+        # self.agent_ssteps_per_episodetate_display()    # For debugging purposes
 
     def add_frame(self, frame):
         self.current_state[:-1] = self.current_state[1:]
