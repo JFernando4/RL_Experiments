@@ -147,8 +147,11 @@ class ExperimentAgent():
     def save_results(self, dir_name):
         env_info = np.cumsum(self.summary['steps_per_episode'])
         return_per_episode = self.summary['return_per_episode']
-        results = {'return_per_episode': return_per_episode, 'env_info': env_info}
-        pickle.dump(results, open(os.path.join(dir_name, "results.p"), mode="wb"))
+        total_loss_per_episode = self.summary['cumulative_loss']
+        results = {'return_per_episode': return_per_episode, 'env_info': env_info,
+                   'total_loss_per_episode': total_loss_per_episode}
+        with open(os.path.join(dir_name, 'results.p'), mode="wb") as results_file:
+            pickle.dump(results, results_file)
 
     def save_parameters(self, dir_name):
         txt_file_pathname = os.path.join(dir_name, "agent_parameters.txt")
