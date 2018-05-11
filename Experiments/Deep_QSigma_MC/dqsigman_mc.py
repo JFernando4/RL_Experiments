@@ -244,7 +244,7 @@ if __name__ == "__main__":
     parser.add_argument('-anneal_epsilon', action='store_true', default=False)
     parser.add_argument('-quiet', action='store_false', default=True)
     parser.add_argument('-dump_agent', action='store_false', default=True)
-    parser.add_argument('-frames', action='store', default=1000000, type=np.int32)
+    parser.add_argument('-frames', action='store', default=500000, type=np.int32)
     parser.add_argument('-name', action='store', default='agent_1', type=str)
     args = vars(parser.parse_args())
 
