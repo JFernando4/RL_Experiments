@@ -194,7 +194,7 @@ class ExperimentAgent():
         params_txt.close()
 
 
-class Experiment():
+class Experiment:
 
     def __init__(self, experiment_parameters, results_dir=None, save_agent=False, restore_agent=False,
                  max_number_of_frames=1000):
