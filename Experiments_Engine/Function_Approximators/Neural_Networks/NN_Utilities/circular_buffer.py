@@ -42,6 +42,11 @@ class CircularBuffer:
         elif isinstance(idx, np.ndarray):
             if (idx < 0).any() or (idx >= self.length).any():
                 raise KeyError()
+        elif isinstance(idx, slice):
+            if (idx.start < 0) or (idx.start >= self.length) or (idx.stop < 0) or (idx.stop > self.length):
+                raise KeyError
+            else:
+                return self.data.take(np.arange(self.start + idx.start, self.start + idx.stop), axis=0, mode='wrap')
         return self.data.take(self.start + idx, mode='wrap', axis=0)
 
     def __array__(self):
@@ -62,3 +67,6 @@ class CircularBuffer:
             if idx < 0 or idx >= self.length:
                 raise KeyError()
         self.data.itemset(idx, item)
+
+    def take(self, idx):
+        return np.take(self.data, self.start + idx, mode='wrap', axis=0)

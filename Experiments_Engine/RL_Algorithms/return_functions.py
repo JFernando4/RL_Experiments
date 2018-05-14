@@ -57,3 +57,32 @@ class QSigmaReturnFunction:
                        self.gamma * (rho * sigma + (1-sigma) * tprobabilities[action]) \
                        * self.recursive_return_function(trajectory=trajectory, step=step + 1, base_value=qvalues[action]) + \
                        self.gamma * (1-sigma) * (average_action_value - tprobabilities[action] * qvalues[action])
+
+
+    def recursive_return_function2(self, rewards, actions, qvalues, terminations, bprobabilities, sigmas, step=0,
+                                   base_value=None):
+        if step == self.n:
+            assert base_value is not None
+            return base_value
+        else:
+            r = rewards[step]
+            T = terminations[step]
+            if T:
+                return r
+            else:
+                a = actions[step]
+                qv = qvalues[step]
+                bprob = bprobabilities[step]
+                sig = sigmas[step]
+                tprob = self.tpolicy.probability_of_action(q_values=qvalues, all_actions=True)
+                if self.compute_bprobabilities:
+                    bprob = self.bpolicy.probability_of_action(q_values=qvalues, all_actions=True)
+                assert bprob[a] > 0
+                rho = tprob[a] / bprob[a]
+                if self.truncate_rho:
+                    rho = min(rho, 1)
+                average_action_value = np.sum(np.multiply(tprob, qv))
+                return r + self.gamma * (rho * sig + (1-sig) * tprob[a]) \
+                       * self.recursive_return_function2(rewards, actions, qvalues, terminations, bprobabilities,
+                                                         sigmas, step=step+1, base_value=qv[a]) + \
+                       self.gamma (1-sig) * (average_action_value - tprob[a] * qvalues[a])

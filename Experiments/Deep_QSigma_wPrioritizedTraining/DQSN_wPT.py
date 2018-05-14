@@ -10,7 +10,8 @@ from Experiments_Engine import QSigma                           # RL Agent
 from Experiments_Engine import EpsilonGreedyPolicy              # Policy
 from Experiments_Engine.config import Config
 
-class ExperimentAgent():
+
+class ExperimentAgent:
 
     def __init__(self, restore=False, restore_data_dir=""):
         self.tf_sess = tf.Session()
@@ -32,12 +33,12 @@ class ExperimentAgent():
             self.config.save_summary = True
 
             " Environment Parameters  "
-            self.config.display_screen = True
-            self.config.agent_render = True
+            self.config.display_screen = False
+            self.config.agent_render = False
             self.config.frame_skip = 5
             self.config.repeat_action_probability = 0.25
             self.config.max_num_frames = 18000
-            self.config.color_averaging = True
+            self.config.color_averaging = False
             self.config.frame_stack = 4
 
             self.config.num_actions = 18  # Number of legal actions in the ALE
@@ -52,13 +53,14 @@ class ExperimentAgent():
             self.config.full_layers = 1
             self.config.max_pool = False
             self.config.frames_format = 'NHWC'
+            self.config.norm_factor = 255.0
 
             " Neural Network Parameters "
-            self.config.alpha = 0.000000025
+            self.config.alpha = 0.00000001
             self.config.batch_sz = 1
             self.config.train_percentile_index = 0
             self.config.num_percentiles = 10
-            self.config.adjust_alpha = True
+            self.config.adjust_alpha = False
 
             " Policies Parameters "
             " Target "
