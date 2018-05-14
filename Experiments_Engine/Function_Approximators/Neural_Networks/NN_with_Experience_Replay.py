@@ -64,23 +64,24 @@ class NeuralNetwork_wER_FA(FunctionApproximatorBase):
 
     def update(self, state, action, nstep_return):
         if self.er_buffer.ready_to_sample():
-            batch = self.er_buffer.sample_from_buffer(update_function=self.get_next_states_values)
-            sample_frames = []
-            sample_actions = []
-            sample_returns = []
-            for data_point in batch:
-                state, action, rl_return = data_point
-                sample_frames.append(state)
-                sample_actions.append(action)
-                sample_returns.append(rl_return)
-            sample_frames = np.array(sample_frames, dtype=self.er_buffer.get_obs_dtype())
-            sample_actions = np.column_stack((np.arange(len(sample_actions)), sample_actions))
-            sample_returns = np.array(sample_returns)
-            sample_isampling = np.ones(shape=sample_returns.shape)
-            feed_dictionary = {self.update_network.x_frames: sample_frames,
+            # batch = self.er_buffer.sample_from_buffer(update_function=self.get_next_states_values)
+            # sample_frames = []
+            # sample_actions = []
+            # sample_returns = []
+            # for data_point in batch:
+            #     state, action, rl_return = data_point
+            #     sample_frames.append(state)
+            #     sample_actions.append(action)
+            #     sample_returns.append(rl_return)
+            # sample_frames = np.array(sample_frames, dtype=self.er_buffer.get_obs_dtype())
+            # sample_actions = np.column_stack((np.arange(len(sample_actions)), sample_actions))
+            # sample_returns = np.array(sample_returns)
+
+            sample_frames, sample_actions, sample_returns = self.er_buffer.get_data(update_function=self.get_next_states_values)
+            sample_actions = np.column_stack([np.arange(len(sample_actions)), sample_actions])
+            feed_dictionary = {self.update_network.x_frames: np.squeeze(sample_frames),
                                self.update_network.x_actions: sample_actions,
-                               self.update_network.y: sample_returns,
-                               self.update_network.isampling: sample_isampling}
+                               self.update_network.y: sample_returns}
 
             train_loss, _ = self.sess.run((self.update_network.train_loss, self.train_step), feed_dict=feed_dictionary)
             self.training_steps += 1

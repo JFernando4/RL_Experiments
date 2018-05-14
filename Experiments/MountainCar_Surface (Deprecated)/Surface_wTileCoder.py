@@ -20,7 +20,7 @@ class ExperimentAgent:
         self.bpolicy = EpsilonGreedyPolicy(initial_epsilon=epsilon_bpolicy, numActions=self.env.get_num_actions())
 
         self.agent = QSigma(n=n, gamma=gamma, beta=beta, sigma=sigma, environment=self.env,
-                            function_approximator=self.fa, target_policy=self.tpolicy, behavior_policy=self.bpolicy)
+                            function_approximator=self.fa, target_policy=self.tpolicy, behaviour_policy=self.bpolicy)
 
     def train(self, num_episodes):
         self.agent.train(num_episodes=num_episodes)

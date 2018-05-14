@@ -41,7 +41,7 @@ class ExperimentAgent:
 
         " Agent Parameters "
         self.agent = QSigma(n=n, gamma=gamma, beta=beta, sigma=sigma, environment=self.env,
-                            function_approximator=self.fa, target_policy=self.tpolicy, behavior_policy=self.bpolicy)
+                            function_approximator=self.fa, target_policy=self.tpolicy, behaviour_policy=self.bpolicy)
         self.agent_parameters = {"beta":beta, "gamma":gamma, "n":n, "bpolicy":self.bpolicy, "tpolicy":self.tpolicy}
 
     def train(self, num_episodes):
@@ -55,7 +55,7 @@ class ExperimentAgent:
         for var in tf.global_variables():
             self.tf_session.run(var.initializer)
         self.agent = QSigma(beta=self.agent_parameters["beta"], gamma=self.agent_parameters["gamma"],
-                            n=self.agent_parameters["n"], behavior_policy=self.agent_parameters["bpolicy"],
+                            n=self.agent_parameters["n"], behaviour_policy=self.agent_parameters["bpolicy"],
                             target_policy=self.agent_parameters["tpolicy"],
                             environment=self.env, function_approximator=self.fa)
 

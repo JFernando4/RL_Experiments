@@ -74,9 +74,9 @@ class QSigmaReturnFunction:
                 qv = qvalues[step]
                 bprob = bprobabilities[step]
                 sig = sigmas[step]
-                tprob = self.tpolicy.probability_of_action(q_values=qvalues, all_actions=True)
+                tprob = self.tpolicy.probability_of_action(q_values=qv, all_actions=True)
                 if self.compute_bprobabilities:
-                    bprob = self.bpolicy.probability_of_action(q_values=qvalues, all_actions=True)
+                    bprob = self.bpolicy.probability_of_action(q_values=qv, all_actions=True)
                 assert bprob[a] > 0
                 rho = tprob[a] / bprob[a]
                 if self.truncate_rho:
@@ -85,4 +85,4 @@ class QSigmaReturnFunction:
                 return r + self.gamma * (rho * sig + (1-sig) * tprob[a]) \
                        * self.recursive_return_function2(rewards, actions, qvalues, terminations, bprobabilities,
                                                          sigmas, step=step+1, base_value=qv[a]) + \
-                       self.gamma (1-sig) * (average_action_value - tprob[a] * qvalues[a])
+                       self.gamma * (1-sig) * (average_action_value - tprob[a] * qv[a])

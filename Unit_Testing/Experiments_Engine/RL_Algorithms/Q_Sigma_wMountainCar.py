@@ -38,8 +38,8 @@ class Test_MountainCar_Environment(unittest.TestCase):
         config1.sigma = 0.5
         config1.save_summary = True
         self.summary = {}
-        self.agent1 = QSigma(config=config1,  environment=self.env, function_approximator=self.fa1,
-                            target_policy=self.tpolicy, behavior_policy=self.bpolicy, summary=self.summary)
+        self.agent1 = QSigma(config=config1, environment=self.env, function_approximator=self.fa1,
+                             target_policy=self.tpolicy, behaviour_policy=self.bpolicy, summary=self.summary)
 
         ### Test 2 Setup ###
         config.behaviour_policy = Config()
@@ -57,7 +57,7 @@ class Test_MountainCar_Environment(unittest.TestCase):
         self.fa2 = TileCoderFA(numTilings=8, numActions=self.env.get_num_actions(), alpha=0.1,
                               state_space_size=self.env.get_observation_dimensions()[0], tile_side_length=10)
         self.agent2 = QSigma(config=config2, environment=self.env, function_approximator=self.fa2,
-                            target_policy=self.tpolicy, behavior_policy=self.bpolicy2)
+                             target_policy=self.tpolicy, behaviour_policy=self.bpolicy2)
 
         ### Test 3 Setup ###
         config.behaviour_policy = Config()
@@ -76,7 +76,7 @@ class Test_MountainCar_Environment(unittest.TestCase):
         self.fa3 = TileCoderFA(numTilings=8, numActions=self.env.get_num_actions(), alpha=0.01,
                               state_space_size=self.env.get_observation_dimensions()[0], tile_side_length=10)
         self.agent3 = QSigma(config=config3, environment=self.env, function_approximator=self.fa3,
-                             target_policy=self.tpolicy, behavior_policy=self.bpolicy3)
+                             target_policy=self.tpolicy, behaviour_policy=self.bpolicy3)
 
     def test_train(self):
         print("\n############ Training with Recursive Function ##############")

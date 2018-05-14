@@ -8,7 +8,7 @@ from Experiments_Engine.config import Config
 
 class QSigma(RL_ALgorithmBase):
 
-    def __init__(self, environment, function_approximator, target_policy, behavior_policy, config=None, er_buffer=None,
+    def __init__(self, environment, function_approximator, target_policy, behaviour_policy, config=None, er_buffer=None,
                  summary=None):
         super().__init__()
         """
@@ -45,7 +45,7 @@ class QSigma(RL_ALgorithmBase):
 
         " Other Parameters "
         # Behaviour and Target Policies
-        self.bpolicy = behavior_policy
+        self.bpolicy = behaviour_policy
         self.tpolicy = target_policy
 
         # Experience Replay Buffer: used for storing and retrieving observations. Mainly for Deep RL

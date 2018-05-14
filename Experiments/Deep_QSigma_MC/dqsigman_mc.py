@@ -114,7 +114,7 @@ class ExperimentAgent():
 
         """ RL Agent """
         self.agent = QSigma(function_approximator=self.function_approximator, target_policy=self.target_policy,
-                            behavior_policy=self.behaviour_policy, environment=self.env,
+                            behaviour_policy=self.behaviour_policy, environment=self.env,
                             er_buffer=self.qsigma_erp, config=self.config, summary=self.summary)
 
         if restore:

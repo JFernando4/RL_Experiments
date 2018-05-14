@@ -77,9 +77,6 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         self.env = ALE_Environment(config=config, games_directory=self.games_directory, rom_filename=self.rom_name,
                                    summary=self.summary)
 
-        stacked_obs_dims = self.env.get_observation_dimensions()
-        num_actions = self.env.get_num_actions()
-
         self.target_network = Model_nCPmFO(config=config, name="target")
         self.update_network = Model_nCPmFO(config=config, name="update")
 
@@ -107,7 +104,7 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
 
         """ RL Agent """
         self.agent = QSigma(environment=self.env, function_approximator=self.function_approximator,
-                            target_policy=self.target_policy, behavior_policy=self.behavior_policy,
+                            target_policy=self.target_policy, behaviour_policy=self.behavior_policy,
                             er_buffer=er_buffer, config=config, summary=self.summary)
 
         davariables = self.target_network.get_variables_as_list(tf_session=tf_sess)

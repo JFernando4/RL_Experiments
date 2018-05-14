@@ -76,7 +76,7 @@ def main():
                               batch_size=batch_size, alpha=alpha, tf_session=sess,
                               observation_dimensions=observation_dimensions, number_of_percentiles=0)
         agent = QSigma(n=n, gamma=gamma, beta=beta, sigma=sigma, environment=env, function_approximator=fa,
-                       target_policy=tpolicy, behavior_policy=bpolicy)
+                       target_policy=tpolicy, behaviour_policy=bpolicy)
 
     while env.frame_count < 50000:
         training_loop(rl_agent=agent, iterations=1, episodes_per_iteration=1, render=True, agent_render=False,

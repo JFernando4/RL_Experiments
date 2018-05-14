@@ -100,11 +100,12 @@ class QSigmaExperienceReplayBuffer:
     def get_data(self, update_function):
         indices = self.sample_indices()
 
-        states = np.zeros((self.batch_sz, self.frame_stack) + tuple(self.env_state_dims), dtype=self.obs_dtype)
-        actions = self.action.take(indices)
+        sample_states = np.zeros((self.batch_sz, self.frame_stack) + tuple(self.env_state_dims), dtype=self.obs_dtype)
+        sample_actions = self.action.take(indices)
 
         # Abbreviations: tj = trajectory, tjs = trajectories
-        tjs_states = []
+        tjs_states = np.zeros(shape=(self.batch_sz * self.n, self.frame_stack) + tuple(self.env_state_dims),
+                              dtype=self.obs_dtype)
         tjs_actions = np.zeros(self.batch_sz * self.n, np.uint8)
         tjs_rewards = np.zeros(self.batch_sz * self.n, np.int32)
         tjs_terminations = np.zeros(self.batch_sz * self.n, np.bool)
@@ -124,53 +125,55 @@ class QSigmaExperienceReplayBuffer:
             left_terminal_idx = 0 if left_terminal_rev_idx == 0 else (self.frame_stack - 1) - left_terminal_rev_idx
 
             # First terminal state from center to right
-            right_terminal = self.terminate.take(idx + np.arange(idx + self.n + 1))
+            right_terminal = self.terminate.take(idx + np.arange(self.n + 1))
             right_terminal_true_idx = np.argmax(right_terminal)
-            right_terminal_idx = self.n if right_terminal_true_idx == 0 else right_terminal_true_idx
+            right_terminal_stop = self.n if right_terminal_true_idx == 0 else right_terminal_true_idx
+
 
             # trajectory indices
-            trajectory_end_idx = tj_start_idx + right_terminal_idx + 1
-            trajectory_slice = slice(tj_start_idx, trajectory_end_idx)
+            trajectory_end_idx = tj_start_idx + right_terminal_stop - 1
+            trajectory_slice = slice(tj_start_idx, trajectory_end_idx + 1)
             tjs_slices[batch_idx] = trajectory_slice
-            trajectory_indices = idx + 1 + np.arange(right_terminal_idx + 1)
+            trajectory_indices = idx + 1 + np.arange(right_terminal_stop)
 
             # Collecting: trajectory actions, rewards, terminations, bprobabilities, and sigmas
             tjs_actions[trajectory_slice] = self.action.take(trajectory_indices)
             tjs_rewards[trajectory_slice] = self.reward.take(trajectory_indices)
-            tjs_terminations[trajectory_slice] = self.terminate.take(trajectory_slice)
-            tjs_bprobabilities[trajectory_slice] = self.bprobabilities.take(trajectory_slice)
-            tjs_sigmas[trajectory_slice] = self.sigma.take(trajectory_slice)
+            tjs_terminations[trajectory_slice] = self.terminate.take(trajectory_indices)
+            tjs_bprobabilities[trajectory_slice] = self.bprobabilities.take(trajectory_indices)
+            tjs_sigmas[trajectory_slice] = self.sigma.take(trajectory_indices)
 
             # Stacks of states
-            traj_state_stack_sz = self.frame_stack + right_terminal_idx
+            traj_state_stack_sz = self.frame_stack + right_terminal_stop
             traj_state_stack = self.state.take(start_idx + np.arange(traj_state_stack_sz))
             traj_state_stack[:left_terminal_idx] *= 0
 
-            state_stack_slices = np.arange(traj_state_stack_sz)[:, None] + np.arange(self.frame_stack)
+            state_stack_slices = np.arange(traj_state_stack_sz - self.frame_stack + 1)[:, None] \
+                                 + np.arange(self.frame_stack)
             state_stacks = traj_state_stack.take(state_stack_slices, axis=0)
 
-            states[batch_idx] = state_stacks[0]
-            tjs_states.append(state_stacks[1:])
+            sample_states[batch_idx] = state_stacks[0]
+            tjs_states[trajectory_slice] = state_stacks[1:]
 
-            tj_start_idx += trajectory_end_idx + 1
+            tj_start_idx = trajectory_end_idx + 1
             batch_idx += 1
 
-        tjs_states = np.array(tjs_states, dtype=np.uint8)
+        tjs_states = tjs_states[:tj_start_idx]
         # We wait until the end to retrieve the q_values because it's more efficient to make only one call to
         # update_function when using a gpu.
-        trajectories_q_values = update_function(tjs_states, reshape=False)
+        trajectories_q_values = update_function(np.squeeze(tjs_states), reshape=False)
         estimated_returns = np.zeros(self.batch_sz, dtype=np.float64)
         for i in range(self.batch_sz):
             tslice = tjs_slices[i]
             rewards = tjs_rewards[tslice]
             terminations = tjs_terminations[tslice]
-            actions = tjs_actions[tslice]
+            a = tjs_actions[tslice]
             qvalues = trajectories_q_values[tslice]
             sigmas = tjs_sigmas[tslice]
             bprobabilities = tjs_bprobabilities[tslice]
-            estimated_returns[i] = self.return_function.recursive_return_function2(rewards, actions, qvalues,
+            estimated_returns[i] = self.return_function.recursive_return_function2(rewards, a, qvalues,
                                                                                    terminations, bprobabilities, sigmas)
-        return states, actions, estimated_returns
+        return sample_states, sample_actions, estimated_returns
 
     def gather_data(self, daindex, update_function):
         state = self.stack_frames(daindex)

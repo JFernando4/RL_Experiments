@@ -3,7 +3,7 @@ import numpy as np
 
 class Percentile_Estimator:
 
-    def __init__(self, number_of_percentiles=4, learning_rate=0.01):
+    def __init__(self, number_of_percentiles=4, learning_rate=0.001):
         self._number_of_percentiles = number_of_percentiles
         self._lr = learning_rate
         self._percentiles = np.zeros(self._number_of_percentiles)
