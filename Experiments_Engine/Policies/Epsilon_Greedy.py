@@ -57,19 +57,24 @@ class EpsilonGreedyPolicy(PolicyBase):
     def probability_of_action(self, q_values, action=0, all_actions=False):
         max_q = max(q_values)
         total_max_actions = sum(max_q == array(q_values))
-        action_probabilities = zeros(self.num_actions, dtype=np.float64)
+        action_probabilities = zeros(self.num_actions, dtype=np.float64) + self.p_random
 
-        for i in range(self.num_actions):
-            if q_values[i] == max_q:
-                action_probabilities[i] = (self.p_optimal / total_max_actions) \
+        action_probabilities[np.squeeze(np.argwhere(q_values == max_q))] = (self.p_optimal / total_max_actions) \
                                           + (total_max_actions - 1) * (self.p_random / total_max_actions)
-            else:
-                action_probabilities[i] = self.p_random
 
         if all_actions:
             return action_probabilities
         else:
             return action_probabilities[action]
+
+        # copy_action_prob = action_probabilities
+        # for i in range(self.num_actions):
+        #     if q_values[i] == max_q:
+        #         action_probabilities[i] = (self.p_optimal / total_max_actions) \
+        #                                   + (total_max_actions - 1) * (self.p_random / total_max_actions)
+        #     else:
+        #         action_probabilities[i] = self.p_random
+        # assert len(np.argwhere((copy_action_prob == action_probabilities) is False)) == 0
 
     """ Moves one step closer to the final epsilon """
     def anneal(self):
