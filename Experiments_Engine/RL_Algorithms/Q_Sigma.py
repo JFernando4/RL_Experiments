@@ -191,8 +191,7 @@ class QSigma(RL_ALgorithmBase):
                         else:   # No need to compute the return if we're using experience replay
                             G = 0
                         if self.config.rand_steps_count >= self.initial_rand_steps:
-                            self.fa.update(States[tau % (self.n+1)], Actions[tau % (self.n+1)], nstep_return=G,
-                                       correction=1)
+                            self.fa.update(States[tau % (self.n+1)], Actions[tau % (self.n+1)], nstep_return=G)
                         trajectory.pop(0)
 
                 t += 1

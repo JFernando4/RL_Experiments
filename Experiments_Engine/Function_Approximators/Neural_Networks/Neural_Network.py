@@ -70,19 +70,20 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
 
         " Buffer "
         self.buffer = Buffer(buffer_size=self.batch_sz, observation_dimensions=self.obs_dims)
+        self.train_p = 0.9
 
-    def update(self, state, action, nstep_return, correction):
+    def update(self, state, action, nstep_return):
         value = nstep_return
         dims = [1] + list(self.obs_dims)
         sample_state = state.reshape(dims)
         sample_action = np.column_stack((0, np.zeros(shape=[1,1], dtype=int) + action))
-        abs_td_error = np.abs(self.get_td_error(sample_state, sample_action, value, correction))
+        abs_td_error = np.abs(self.get_td_error(sample_state, sample_action, value))
         self.percentile_estimator.add_to_record(abs_td_error)
-        if abs_td_error >= self.percentile_estimator.get_percentile(self.train_percentile_index):
+        # if abs_td_error >= self.percentile_estimator.get_percentile(self.train_percentile_index):
+        if np.random.rand() > self.train_p:
             buffer_entry = (sample_state,
                             np.zeros(shape=[1,1], dtype=int) + action,
-                            value,
-                            correction)
+                            value)
             self.buffer.add_to_buffer(buffer_entry)
             self.train(abs_td_error)
             # print(abs_td_error)
@@ -101,12 +102,11 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         if not self.buffer.buffer_full:
             return
         else:
-            sample_frames, sample_actions, sample_labels, sample_isampling = self.buffer.sample(self.batch_sz)
+            sample_frames, sample_actions, sample_labels = self.buffer.sample(self.batch_sz)
             sample_actions = np.column_stack((np.arange(sample_actions.shape[0]), sample_actions))
             feed_dictionary = {self.network.x_frames: sample_frames,
                                self.network.x_actions: sample_actions,
-                               self.network.y: sample_labels,
-                               self.network.isampling: sample_isampling}
+                               self.network.y: sample_labels}
 
             if self.adjust_alpha:
                 if self.num_percentiles != 0:
@@ -120,11 +120,10 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
                 self.cumulative_loss += train_loss
                 self.training_steps += 1
 
-    def get_td_error(self, frames, actions, labels, isampling):
+    def get_td_error(self, frames, actions, labels):
         feed_dictionary = {self.network.x_frames: frames,
                            self.network.x_actions: actions,
-                           self.network.y: labels,
-                           self.network.isampling: isampling}
+                           self.network.y: labels}
         td_error = np.sum(np.abs(self.sess.run(self.network.td_error, feed_dict=feed_dictionary)))
         return td_error
 

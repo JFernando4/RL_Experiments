@@ -62,7 +62,7 @@ class NeuralNetwork_wER_FA(FunctionApproximatorBase):
             for var in tf.global_variables():
                 self.sess.run(var.initializer)
 
-    def update(self, state, action, nstep_return, correction):
+    def update(self, state, action, nstep_return):
         if self.er_buffer.ready_to_sample():
             batch = self.er_buffer.sample_from_buffer(update_function=self.get_next_states_values)
             sample_frames = []
@@ -99,11 +99,16 @@ class NeuralNetwork_wER_FA(FunctionApproximatorBase):
         y_hat = self.get_next_states_values(state)
         return y_hat[action]
 
-    def get_next_states_values(self, state):
-        dims = [1] + list(self.obs_dims)
-        feed_dictionary = {self.target_network.x_frames: state.reshape(dims)}
-        y_hat = self.sess.run(self.target_network.y_hat, feed_dict=feed_dictionary)
-        return y_hat[0]
+    def get_next_states_values(self, state, reshape=True):
+        if reshape:
+            dims = [1] + list(self.obs_dims)
+            feed_dictionary = {self.target_network.x_frames: state.reshape(dims)}
+            y_hat = self.sess.run(self.target_network.y_hat, feed_dict=feed_dictionary)
+            return y_hat[0]
+        else:
+            feed_dictionary = {self.target_network.x_frames: state}
+            y_hat = self.sess.run(self.target_network.y_hat, feed_dict=feed_dictionary)
+            return y_hat
 
     def store_in_summary(self):
         if self.save_summary:

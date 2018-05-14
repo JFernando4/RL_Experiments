@@ -33,6 +33,7 @@ class Model_nCPmFO(ModelBase):
         full_layers             int             1                   number of fully connected layers
         max_pool                bool            True                indicates whether to max pool between each conv layer
         frames_format           str             "NCHW"              Specifies the format of the frames fed to the network
+        norm_factor             float           1                   Normalizes the frames by the value provided               
         """
         self.dim_out = check_attribute_else_default(config, 'dim_out', [10,10,10])
         self.filter_dims = check_attribute_else_default(config, 'filter_dims', [2,2])
@@ -44,6 +45,7 @@ class Model_nCPmFO(ModelBase):
         self.fully_connected_layers = check_attribute_else_default(config, 'full_layers', 1)
         self.max_pool = check_attribute_else_default(config, 'max_pool', True)
         self.frames_format = check_attribute_else_default(config, 'frames_format', 'NCHW')
+        self.norm_factor = check_attribute_else_default(config, 'norm_factor', 1.)
 
         """
         Other Parameters:
@@ -55,9 +57,9 @@ class Model_nCPmFO(ModelBase):
 
         " Placehodler "
         self.x_frames = tf.placeholder(tf.float32, shape=(None, channels, height, width))   # input frames
+        self.x_frames = tf.divide(self.x_frames, self.norm_factor)
         self.x_actions = tf.placeholder(tf.int32, shape=(None, row_and_action_number))      # input actions
         self.y = tf.placeholder(tf.float32, shape=None)                                     # target
-        self.isampling = tf.placeholder(tf.float32, shape=None)                             # importance sampling term
 
         " Variables for Training "
         self.train_vars = []
@@ -109,8 +111,7 @@ class Model_nCPmFO(ModelBase):
 
         # Obtaining y_hat and Scaling by the Importance Sampling
         y_hat = tf.gather_nd(self.y_hat, self.x_actions)
-        y_hat = tf.multiply(y_hat, self.isampling)
-        y = tf.multiply(self.y, self.isampling)
+        y = self.y
         # Temporal Difference Error
         self.td_error = tf.subtract(y, y_hat)
         # Loss
@@ -171,7 +172,6 @@ class Model_mFO(ModelBase):
         self.x_frames = tf.placeholder(tf.float32, shape=(None, dim_in[0]))             # input frames
         self.x_actions = tf.placeholder(tf.int32, shape=(None, row_and_action_number))  # input actions
         self.y = tf.placeholder(tf.float32, shape=None)                                 # target
-        self.isampling = tf.placeholder(tf.float32, shape=None)                         # importance sampling term
         " Variables for Training "
         self.train_vars = []
 
@@ -196,8 +196,7 @@ class Model_mFO(ModelBase):
 
         # Obtaining y_hat and Scaling by the Importance Sampling
         y_hat = tf.gather_nd(self.y_hat, self.x_actions)
-        y_hat = tf.multiply(y_hat, self.isampling)
-        y = tf.multiply(self.y, self.isampling)
+        y = self.y
         # Temporal Difference Error
         self.td_error = tf.subtract(y, y_hat)
         # Loss
