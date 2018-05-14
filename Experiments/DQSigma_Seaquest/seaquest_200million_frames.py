@@ -65,8 +65,12 @@ class ExperimentAgent():
         self.config.beta = 1.0
         self.config.sigma = 0.5
         self.config.use_er_buffer = True
-        self.config.initial_rand_steps = 50
+        self.config.initial_rand_steps = 50000
         self.config.rand_steps_count = 0
+
+        " QSigma Return Function "
+        self.config.compute_bprobabilities = True
+        self.config.truncate_rho = False
 
         " Neural Network "
         self.config.alpha = 0.00025
