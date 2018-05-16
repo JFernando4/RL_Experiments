@@ -1,5 +1,8 @@
 import numpy as np
 import tensorflow as tf
+import argparse
+import pickle
+import os
 
 from Experiments_Engine.Environments import ALE_Environment
 from Experiments_Engine.Function_Approximators import NeuralNetwork_wER_FA, Model_nCPmFO, QSigmaExperienceReplayBuffer
@@ -7,9 +10,9 @@ from Experiments_Engine.RL_Algorithms import QSigmaReturnFunction, QSigma
 from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy
 from Experiments_Engine.config import Config
 
-class ExperimentAgent():
+class ExperimentAgent:
 
-    def __init__(self):
+    def __init__(self, experiment_arguments):
         homepath = "/home/jfernando/"
         self.games_directory = homepath + "PycharmProjects/RL_Experiments/Experiments_Engine/Environments/Arcade_Learning_Environment/Supported_Roms/"
         self.rom_name = "seaquest.bin"
@@ -60,12 +63,12 @@ class ExperimentAgent():
         self.config.reward_clipping = True
 
         " QSigma Agent Parameters "
-        self.config.n = 3
+        self.config.n = experiment_arguments.n
         self.config.gamma = 0.99
-        self.config.beta = 1.0
-        self.config.sigma = 0.5
+        self.config.beta = experiment_arguments.beta
+        self.config.sigma = experiment_arguments.sigma
         self.config.use_er_buffer = True
-        self.config.initial_rand_steps = 50000
+        self.config.initial_rand_steps = 50
         self.config.rand_steps_count = 0
 
         " QSigma Return Function "
@@ -121,9 +124,9 @@ class ExperimentAgent():
 
 class Experiment():
 
-    def __init__(self):
-        self.agent = ExperimentAgent()
-        max_number_of_frames = 110000
+    def __init__(self, experiment_arguments):
+        self.agent = ExperimentAgent(experiment_arguments)
+        max_number_of_frames = 40000000
         episode_number = 0
         while self.agent.get_number_of_frames() < max_number_of_frames:
             episode_number += 1
@@ -135,7 +138,19 @@ class Experiment():
 
 
 if __name__ == "__main__":
-    Experiment()
+    """ Experiment Parameters """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-n', action='store', default=1, type=np.uint8)
+    parser.add_argument('-sigma', action='store', default=0.5, type=np.float64)
+    parser.add_argument('-beta', action='store', default=1, type=np.float64)
+    parser.add_argument('-target_epsilon', action='store', default=0.1, type=np.float64)
+    parser.add_argument('-anneal_epsilon', action='store_true', default=False)
+    parser.add_argument('-quiet', action='store_false', default=True)
+    parser.add_argument('-dump_agent', action='store_false', default=True)
+    parser.add_argument('-name', action='store', default='agent_1', type=str)
+    args = parser.parse_args()
+
+    Experiment(args)
 
 
 

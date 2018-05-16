@@ -77,7 +77,9 @@ class NeuralNetwork_wER_FA(FunctionApproximatorBase):
             # sample_actions = np.column_stack((np.arange(len(sample_actions)), sample_actions))
             # sample_returns = np.array(sample_returns)
 
-            sample_frames, sample_actions, sample_returns = self.er_buffer.get_data(update_function=self.get_next_states_values)
+            # sample_frames, sample_actions, sample_returns = self.er_buffer.get_data(
+            #     update_function=self.get_next_states_values)
+            sample_frames, sample_actions, sample_returns = self.er_buffer.get_data_optimized(update_function=self.get_next_states_values)
             sample_actions = np.column_stack([np.arange(len(sample_actions)), sample_actions])
             feed_dictionary = {self.update_network.x_frames: np.squeeze(sample_frames),
                                self.update_network.x_actions: sample_actions,

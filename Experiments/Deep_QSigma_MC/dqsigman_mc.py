@@ -3,6 +3,7 @@ import numpy as np
 import os
 import pickle
 import argparse
+import time
 
 from Experiments_Engine.Environments import Mountain_Car                                # Environment
 from Experiments_Engine.Function_Approximators import QSigmaExperienceReplayBuffer      # Replay Buffer
@@ -260,4 +261,7 @@ if __name__ == "__main__":
     exp_params = args
     experiment = Experiment(results_dir=results_directory, save_agent=args['dump_agent'], restore_agent=False,
                             max_number_of_frames=args['frames'], experiment_parameters=exp_params)
+    start_time = time.time()
     experiment.run_experiment(verbose=args['quiet'])
+    end_time = time.time()
+    print("Total running time:", end_time - start_time)

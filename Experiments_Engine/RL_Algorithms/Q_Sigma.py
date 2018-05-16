@@ -157,7 +157,8 @@ class QSigma(RL_ALgorithmBase):
 
                     if terminate:
                         T = t + 1
-                        bpropabilities = np.zeros(self.env.get_num_actions(), dtype=np.float64)
+                        bpropabilities = np.ones\
+                            (self.env.get_num_actions(), dtype=np.float64)
                         A = np.uint8(0)
                     else:
                         if self.config.rand_steps_count >= self.initial_rand_steps:

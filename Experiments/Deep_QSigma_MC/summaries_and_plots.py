@@ -21,7 +21,8 @@ METHOD_NAME_DICTIONARY = { # Folder Name: ["Name of Method", "Specifics of the A
     "Sarsa_wTruncatedRho": ["Q(1)", "Off + TR"],
     "TreeBackup": ["Q(0)", "No Anneal"],
     "TreeBackup_wAnnealingEpsilon": ["Q(0)", "Anneal"],
-    'test': ['', '']}
+    'test': ['', ''],
+    "TreeBackup_n2": ['','']}
 
 
 def aggregate_method_data(pathname, reread_data=True):
@@ -163,12 +164,12 @@ if __name__ == "__main__":
     # results_summary_data(results_path, evaluation_frames, average_window, ci_error=0.05, max_agents=5,
     #                      name="preliminary")
 
-    evaluation_frames = [60000, 120000, 250000, 500000, 1000000]
+    evaluation_frames = [60000, 120000, 250000, 500000]
     # omit_list = ["DecayingSigma_wTruncatedRho", "QSigma0.5_wTruncatedRho", "Sarsa_wTruncatedRho",
     #              "DecayingSigma", "Sarsa", "QSigma0.5"]
-    # average_window = 10
-    # results_summary_data(results_path, evaluation_frames, average_window, ci_error=0.05, omit_list=omit_list,
-    #                      max_agents=50, name="50runs")
+    average_window = 10
+    results_summary_data(results_path, evaluation_frames, average_window, ci_error=0.05, omit_list=[],
+                         max_agents=10, name="n2")
     #
     # omit_list = ["DecayingSigma_wTruncatedRho", "QSigma0.5_wTruncatedRho", "Sarsa_wTruncatedRho",
     #              "DecayingSigma", "Sarsa", "QSigma0.5", 'DecayingSigma_OnPolicy', 'QLearning', 'QLearning_wAnnealingEpsilon',
