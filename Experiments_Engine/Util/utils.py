@@ -1,6 +1,7 @@
 
 def check_attribute_else_default(object_type, attr_name, default_value):
     if not hasattr(object_type, attr_name):
+        print("Creating attribute", attr_name)
         setattr(object_type, attr_name, default_value)
     return getattr(object_type, attr_name)
 

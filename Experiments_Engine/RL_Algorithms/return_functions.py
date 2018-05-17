@@ -163,7 +163,7 @@ class QSigmaReturnFunction:
             Q_t = qvalues[:, i, :]
             Sigma_t = sigmas[:, i]
             exec_q = Q_t[batch_idxs, A_t]       # The action-value of the executed actions
-            assert np.sum(exec_q == selected_qval[:,-i]) == batch_size
+            assert np.sum(exec_q == selected_qval[:,i]) == batch_size
             tprob = tprobabilities[:, i, :]     # The probability of the executed actions under the target policy
             exec_tprob = tprob[batch_idxs, A_t]
             bprob = bprobabilities[:, i, :]
