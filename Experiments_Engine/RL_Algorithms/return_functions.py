@@ -143,11 +143,16 @@ class QSigmaReturnFunction:
         bprobabilities = bprobabilities if not self.compute_bprobabilities \
                          else np.zeros([batch_size, self.n, self.tpolicy.num_actions], dtype=np.float64)
 
-        for i in range(batch_size):
-            for j in range(self.n):
-                tprobabilities[i,j] = self.tpolicy.probability_of_action(qvalues[i,j], all_actions=True)
-                if self.compute_bprobabilities:
-                    bprobabilities[i,j] = self.bpolicy.probability_of_action(qvalues[i,j], all_actions=True)
+        for i in range(self.n):
+            tprobabilities[:,i] = self.tpolicy.batch_probability_of_action(qvalues[:,i])
+            if self.compute_bprobabilities:
+                bprobabilities[:, i] = self.bpolicy.batch_probability_of_action(qvalues[:,i])
+
+        # for i in range(batch_size):
+        #     for j in range(self.n):
+        #         tprobabilities[i,j] = self.tpolicy.probability_of_action(qvalues[i,j], all_actions=True)
+        #         if self.compute_bprobabilities:
+        #             bprobabilities[i,j] = self.bpolicy.probability_of_action(qvalues[i,j], all_actions=True)
 
         selected_qval = qvalues.take(np.arange(actions.size) * num_actions + actions.flatten()).reshape(actions.shape)
         batch_idxs = np.arange(batch_size)
