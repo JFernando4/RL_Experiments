@@ -55,26 +55,40 @@ class EpsilonGreedyPolicy(PolicyBase):
 
     """" Returns the probability of a given action or of all the actions """
     def probability_of_action(self, q_values, action=0, all_actions=False):
-        max_q = max(q_values)
-        total_max_actions = sum(max_q == array(q_values))
+        assert isinstance(q_values, np.ndarray)
+        max_q = np.max(q_values)
+        total_max_actions = np.sum(max_q == array(q_values))
         action_probabilities = zeros(self.num_actions, dtype=np.float64) + self.p_random
 
-        action_probabilities[np.squeeze(np.argwhere(q_values == max_q))] = (self.p_optimal / total_max_actions) \
-                                          + (total_max_actions - 1) * (self.p_random / total_max_actions)
+        """ Sanity Check:
+        Let p_random = epsilon / (#actions), p_optimal = p_random + (1 - epsilon), and (#optimal) and (#actions) 
+        be the total number of optimal actions and total number of actions, respectively. Then we have:
+            
+        \sum_{a != optimal} p_random + \sum_{a == optimal} [(p_optimal + (#optimal -1) p_random] / (#optimal)   =
+            p_random * (#actions - #optimal) + (#optimal) [p_optimal + (#optimal-1) p_random] / (#optimal)      =
+            (#actions) p_random) + p_optimal - p_random = epsilon + (1-epsilon) + p_random - p_random = 1
+            
+        as long as epsilon \in [0,1]
+        """
+        action_probabilities[np.squeeze(np.argwhere(q_values == max_q))] = \
+            (self.p_optimal + (total_max_actions - 1) * self.p_random) / total_max_actions
 
         if all_actions:
             return action_probabilities
         else:
             return action_probabilities[action]
 
-        # copy_action_prob = action_probabilities
-        # for i in range(self.num_actions):
-        #     if q_values[i] == max_q:
-        #         action_probabilities[i] = (self.p_optimal / total_max_actions) \
-        #                                   + (total_max_actions - 1) * (self.p_random / total_max_actions)
-        #     else:
-        #         action_probabilities[i] = self.p_random
-        # assert len(np.argwhere((copy_action_prob == action_probabilities) is False)) == 0
+    def batch_probability_of_action(self, q_values):
+        max_qs = np.max(q_values, axis=1)
+        equal_to_max_qs = np.equal(q_values, max_qs[:, None])
+        total_max_actions = np.sum(equal_to_max_qs, axis=1)
+        max_actions_indices = np.argwhere(equal_to_max_qs)
+
+        action_probabilities = np.zeros(q_values.shape, dtype=np.float64) + self.p_random
+        action_probabilities[max_actions_indices[:, 0], max_actions_indices[:,1]] = \
+            np.divide(self.p_optimal + (total_max_actions[max_actions_indices[:, 0]] - 1) * self.p_random,
+                      total_max_actions[max_actions_indices[:, 0]])
+        return action_probabilities
 
     """ Moves one step closer to the final epsilon """
     def anneal(self):
