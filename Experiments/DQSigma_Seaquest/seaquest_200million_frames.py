@@ -3,6 +3,7 @@ import tensorflow as tf
 import argparse
 import pickle
 import os
+import time
 
 from Experiments_Engine.Environments import ALE_Environment
 from Experiments_Engine.Function_Approximators import NeuralNetwork_wER_FA, Model_nCPmFO, QSigmaExperienceReplayBuffer
@@ -50,7 +51,7 @@ class ExperimentAgent:
             self.config.conv_layers = 3
             self.config.full_layers = 1
             self.config.max_pool = False
-            self.config.frames_format = "NHWC"  # NCHW doesn't work with cpu in tensorflow, but it's more efficient on a gpu
+            self.config.frames_format = "NCHW"  # NCHW doesn't work with cpu in tensorflow, but it's more efficient on a gpu
             self.config.norm_factor = 255.0
 
             " Policies Parameters "
@@ -63,7 +64,7 @@ class ExperimentAgent:
             self.config.behaviour_policy.initial_epsilon = 1
             self.config.behaviour_policy.anneal_epsilon = True
             self.config.behaviour_policy.final_epsilon = 0.1
-            self.config.behaviour_policy.annealing_period = 1000000
+            self.config.behaviour_policy.annealing_period = 800000  # Because the frame skip is 5 instead of 4
 
             " Experience Replay Buffer Parameters "
             self.config.buff_sz = 100000
@@ -77,7 +78,7 @@ class ExperimentAgent:
             self.config.beta = experiment_arguments.beta
             self.config.sigma = experiment_arguments.sigma
             self.config.use_er_buffer = True
-            self.config.initial_rand_steps = 10
+            self.config.initial_rand_steps = 50000
 
             " QSigma Return Function "
             self.config.compute_bprobabilities = True
@@ -220,7 +221,7 @@ if __name__ == "__main__":
     """ Experiment Parameters """
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', action='store', default=1, type=np.uint8)
-    parser.add_argument('-frames', action='store', default=MAX_FRAMES, type=np.uint32)
+    parser.add_argument('-frames', action='store', default=MAX_FRAMES - 1, type=np.uint32)
     parser.add_argument('-sigma', action='store', default=0.5, type=np.float64)
     parser.add_argument('-beta', action='store', default=1, type=np.float64)
     parser.add_argument('-target_epsilon', action='store', default=0.1, type=np.float64)
@@ -236,8 +237,11 @@ if __name__ == "__main__":
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
 
+    start = time.time()
     Experiment(args, results_directory)
+    end = time.time()
 
+    print('Total running time:', end-start)
 
 
 
