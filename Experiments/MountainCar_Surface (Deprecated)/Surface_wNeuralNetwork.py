@@ -4,7 +4,7 @@ import os
 import tensorflow as tf
 
 import Experiments.Experiments_Utilities.dir_management_utilities as dir_management_utilities
-from Experiments_Engine.Environments.OG_MountainCar import Mountain_Car
+from Experiments_Engine.Environments.MountainCar import MountainCar
 from Experiments_Engine.RL_Algorithms.Q_Sigma import QSigma
 from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy
 from Experiments_Engine.Function_Approximators.Neural_Networks.Neural_Network import NeuralNetwork_FA
@@ -14,7 +14,7 @@ from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.mode
 class ExperimentAgent:
 
     def __init__(self, alpha, beta, epsilon_bpolicy, epsilon_tpolicy, gamma, n, sigma, dim_out, fully_connected_layers):
-        self.env = Mountain_Car()
+        self.env = MountainCar()
         self.tpolicy = EpsilonGreedyPolicy(initial_epsilon=epsilon_tpolicy, numActions=self.env.get_num_actions())
         self.bpolicy = EpsilonGreedyPolicy(initial_epsilon=epsilon_bpolicy, numActions=self.env.get_num_actions())
 
@@ -51,7 +51,7 @@ class ExperimentAgent:
         return self.agent.get_return_per_episode()
 
     def reset_agent(self):
-        self.env = Mountain_Car()
+        self.env = MountainCar()
         for var in tf.global_variables():
             self.tf_session.run(var.initializer)
         self.agent = QSigma(beta=self.agent_parameters["beta"], gamma=self.agent_parameters["gamma"],

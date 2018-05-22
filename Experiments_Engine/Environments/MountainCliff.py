@@ -9,13 +9,13 @@ from Experiments_Engine.config import Config
 from Experiments_Engine.Util import check_dict_else_default, check_attribute_else_default
 
 
-class Mountain_Car(EnvironmentBase):
+class MountainCliff(EnvironmentBase):
     """
     Environment Specifications:
     Number of Actions = 3
     Observation Dimension = 2 (position, velocity)
     Observation Dtype = np.float32
-    Reward = -1 at every step
+    Reward = -1 at every step and -100 when the position is < -1.2
 
     Summary Name: steps_per_episode
     """
@@ -57,7 +57,6 @@ class Mountain_Car(EnvironmentBase):
 
     " Update environment "
     def update(self, A):
-        # To prevent episodes from going on forever
         self.step_count += 1
 
         if A not in self.actions:
@@ -81,7 +80,9 @@ class Mountain_Car(EnvironmentBase):
             velocity = -0.07
 
         if position < -1.2:
-            position = -1.2
+            position = -0.6 + random() * 0.2
+            reward = -100.0
+            velocity = 0.0
         elif position > 0.5:
             position = 0.5
             terminate = True
@@ -96,14 +97,12 @@ class Mountain_Car(EnvironmentBase):
         return self.current_state, reward, terminate
 
     " Getters "
-        # Actions
     def get_num_actions(self):
         return 3
 
     def get_actions(self):
         return self.actions
 
-        # State of the environment
     def get_observation_dimensions(self):
         return [2]
 

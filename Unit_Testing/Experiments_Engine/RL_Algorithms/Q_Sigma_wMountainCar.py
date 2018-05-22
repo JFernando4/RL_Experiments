@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from Experiments_Engine.Environments.OG_MountainCar import Mountain_Car
+from Experiments_Engine.Environments.MountainCar import MountainCar
 from Experiments_Engine.RL_Algorithms.Q_Sigma import QSigma
 from Experiments_Engine.Function_Approximators.TileCoder.Tile_Coding_FA import TileCoderFA
 from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy
@@ -13,7 +13,7 @@ class Test_MountainCar_Environment(unittest.TestCase):
 
     def setUp(self):
         config = Config()
-        self.env = Mountain_Car(config)
+        self.env = MountainCar(config)
 
         " Target Policy Parameters "
         config.num_actions = self.env.get_num_actions()

@@ -5,7 +5,7 @@ import pickle
 import argparse
 import time
 
-from Experiments_Engine.Environments import Mountain_Car                                # Environment
+from Experiments_Engine.Environments import MountainCar                                # Environment
 from Experiments_Engine.Function_Approximators import QSigmaExperienceReplayBuffer      # Replay Buffer
 from Experiments_Engine.Function_Approximators import NeuralNetwork_wER_FA, Model_mFO   # Function Approximator and Model
 from Experiments_Engine.RL_Algorithms import QSigma, QSigmaReturnFunction               # RL Agent
@@ -90,7 +90,7 @@ class ExperimentAgent():
             self.config.truncate_rho = self.truncate_rho
 
         " Environment "
-        self.env = Mountain_Car(config=self.config, summary=self.summary)
+        self.env = MountainCar(config=self.config, summary=self.summary)
 
         " Models "
         self.tnetwork = Model_mFO(config=self.config, name='target')

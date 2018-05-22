@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 import Experiments.Experiments_Utilities.dir_management_utilities as dir_management_utilities
-from Experiments_Engine.Environments.OG_MountainCar import Mountain_Car
+from Experiments_Engine.Environments.MountainCar import MountainCar
 from Experiments_Engine.RL_Algorithms.Q_Sigma import QSigma
 from Experiments_Engine.Function_Approximators.TileCoder.Tile_Coding_FA import TileCoderFA
 from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy
@@ -12,7 +12,7 @@ from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy
 class ExperimentAgent:
 
     def __init__(self, alpha, numTilings, beta, epsilon_bpolicy, epsilon_tpolicy, gamma, n, sigma):
-        self.env = Mountain_Car()
+        self.env = MountainCar()
         self.fa = TileCoderFA(numTilings=numTilings, numActions=self.env.get_num_actions(), alpha=alpha,
                               state_space_range=(self.env.get_high() - self.env.get_low()),
                               state_space_size=len(self.env.get_current_state()), tile_side_length=10)
