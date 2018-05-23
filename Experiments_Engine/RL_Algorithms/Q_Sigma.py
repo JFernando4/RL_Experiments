@@ -57,32 +57,25 @@ class QSigma(RL_ALgorithmBase):
         # Environment that the agent is interacting with
         self.env = environment
 
-    def recursive_return_function(self, trajectory, n=0, base_value=None):
-        if n == self.n:
-            assert base_value is not None, "The base value of the recursive function can't be None."
-            return base_value
-        else:
-            reward, action, qvalues, termination = trajectory.pop(0)
+    def iterative_return_function(self, trajectory):
+        trajectory_len = len(trajectory)
+        last_reward, last_action, last_qvalues, last_termination = trajectory[trajectory_len-1]
+        estimate_return = last_reward if last_termination else last_qvalues[last_action]
+        for i in range(trajectory_len-1, -1, -1):
+            R_t, A_t, Q_t, termination = trajectory[i]
             if termination:
-                return reward
+                estimate_return = R_t
             else:
-                tprobabilities = self.tpolicy.probability_of_action(q_values=qvalues, all_actions=True)
-                bprobabilities = self.bpolicy.probability_of_action(q_values=qvalues, all_actions=True)
-                assert bprobabilities[action] != 0
-                rho = tprobabilities[action] / bprobabilities[action]
-                assert isinstance(tprobabilities, np.ndarray) and isinstance(qvalues, np.ndarray)
-                average_action_value = self.expected_action_value(qvalues, tprobabilities)
-                return reward + \
-                       self.gamma * (rho * self.sigma + (1-self.sigma) * tprobabilities[action]) \
-                       * self.recursive_return_function(trajectory=trajectory, n=n+1, base_value=qvalues[action]) +\
-                       self.gamma * (1-self.sigma) * (average_action_value - tprobabilities[action] * qvalues[action])
-
-    @staticmethod
-    def expected_action_value(q_values, p_values):
-        expected = 0
-        for i in range(len(q_values)):
-            expected += q_values[i] * p_values[i]
-        return expected
+                Sigma_t = self.sigma
+                tprobs = self.tpolicy.probability_of_action(Q_t, all_actions=True)
+                bprobs = self.bpolicy.probability_of_action(Q_t, all_actions=True)
+                assert bprobs[A_t] != 0
+                rho = tprobs[A_t]/bprobs[A_t]
+                v_t = np.sum(np.multiply(tprobs, Q_t))
+                pi_t = tprobs[A_t]
+                estimate_return = R_t + self.gamma * (rho * Sigma_t + (1-Sigma_t) * pi_t) * estimate_return +\
+                                  self.gamma * (1-Sigma_t) * (v_t - pi_t * Q_t[A_t])
+        return estimate_return
 
     def sample_run(self, tpolicy=False, render=True):
         policy = self.bpolicy
@@ -188,7 +181,8 @@ class QSigma(RL_ALgorithmBase):
                     if len(trajectory) >= 1:
                         temp_copy_of_trajectory = list(trajectory)
                         if not self.use_er_buffer:
-                            G = self.recursive_return_function(temp_copy_of_trajectory)
+                            # G = self.recursive_return_function(temp_copy_of_trajectory)
+                            G = self.iterative_return_function(trajectory)
                         else:   # No need to compute the return if we're using experience replay
                             G = 0
                         if self.config.rand_steps_count >= self.initial_rand_steps:
