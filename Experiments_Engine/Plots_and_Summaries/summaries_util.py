@@ -40,10 +40,10 @@ def create_results_file(pathname, columns, headers, title="", addtofile=False, r
         if not addtofile:
             results_file.write("##########  " + title + "  ##########\n\n")
             for header in headers:
-                results_file.write(header + "\t\t")
+                results_file.write(header + "\t")
         results_file.write('\n')
         for j in range(numrows):
             for i in range(numcolumns):
-                results_file.write(str(columns[i][j]) + "\t\t")
+                results_file.write(str(columns[i][j]) + "\t")
             results_file.write("\n")
     return
