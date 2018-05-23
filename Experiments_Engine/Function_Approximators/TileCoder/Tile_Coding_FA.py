@@ -1,61 +1,65 @@
 from pylab import random, asarray
-from numpy import zeros
 import numpy as np
 
 from Experiments_Engine.Objects_Bases import FunctionApproximatorBase
 from Experiments_Engine.Function_Approximators.TileCoder import IHT, tiles
+from Experiments_Engine.config import Config
+from Experiments_Engine.Util import check_attribute_else_default
+
 
 class TileCoderFA(FunctionApproximatorBase):
 
-    def __init__(self, numTilings=8, numActions=3, alpha=0.1, state_space_range=None, state_space_size=2,
-                 tile_side_length=10):
-        """ state_space_range should be a list
-            tiles_factor is how much of the space each tile covers, e.g. 1 is unit tiles, 4 => each tile is 1/4 the
-            size of the unit tile
-        """
-        self.numActions = numActions
-        self.numTilings = numTilings
-        self.alpha_factor = 1/self.numTilings
-        self.alpha = alpha
-        self.tile_side_length = tile_side_length
-        self.tiles_per_tiling = (self.tile_side_length + 1) ** state_space_size
-        self.numTiles = (self.numTilings * self.tiles_per_tiling)
-        self.iht = IHT(self.numTiles)
-        self.theta = 0.001 * random(self.numTiles * self.numActions)
-
-        if state_space_range is None: self.state_space_range = [1] * state_space_size
-        else: self.state_space_range = state_space_range
-        self.scale_factor = self.tile_side_length
+    def __init__(self, config=None):
         super().__init__()
+        assert isinstance(config, Config)
+        """
+        Parameters in config:
+        Name:                   Type:           Default:            Description: (Omitted when self-explanatory)
+        num_tilings             int             32                  Number of tilings
+        tiling_side_length      int             8                   The length of the tiling side
+        num_actions             int             3                   Number of actions
+        num_dims                int             2                   Number of dimensions
+        alpha                   float           0.1                 Learning rate
+        """
+        self.num_tilings = check_attribute_else_default(config, 'num_tilings', 32)
+        self.tiling_side_length = check_attribute_else_default(config, 'tiling_side_length', 8)
+        self.num_actions = check_attribute_else_default(config, 'num_actions', 3)
+        self.num_dims = check_attribute_else_default(config, 'num_dims', 2)
+        self.alpha = check_attribute_else_default(config, 'alpha', 0.1)
+
+        self.tiles_per_tiling = (self.tiling_side_length + 1) ** self.num_dims
+        self.num_tiles = (self.num_tilings * self.tiles_per_tiling)
+        self.theta = 0.001 * random(self.num_tiles * self.num_actions)
+        self.iht = IHT(self.num_tiles)
 
     """ Updates the value of the parameters corresponding to the state and action """
-    def update(self, state, action, nstep_return, correction):
+    def update(self, state, action, nstep_return):
         current_estimate = self.get_value(state, action)
-        value = correction * (nstep_return - current_estimate)
-        scaled_state = np.multiply(np.asarray(state).flatten(), self.scale_factor)
+        value = nstep_return - current_estimate
+        scaled_state = np.multiply(np.asarray(state).flatten(), self.tiling_side_length)
         tile_indices = asarray(
-            tiles(self.iht, self.numTilings, scaled_state),
-            dtype=int) + (action * self.numTiles)
-        self.theta[tile_indices] += self.alpha * self.alpha_factor * value
+            tiles(self.iht, self.num_tilings, scaled_state),
+            dtype=int) + (action * self.num_tiles)
+        self.theta[tile_indices] += self.alpha * value
 
     """ Return the value of a specific state-action pair """
     def get_value(self, state, action):
-        scaled_state = np.multiply(np.asarray(state).flatten(), self.scale_factor)
+        scaled_state = np.multiply(np.asarray(state).flatten(), self.tiling_side_length)
 
         tile_indices = asarray(
-            tiles(self.iht, self.numTilings, scaled_state),
-            dtype=int) + (action * self.numTiles)
+            tiles(self.iht, self.num_tilings, scaled_state),
+            dtype=int) + (action * self.num_tiles)
 
         return sum(self.theta[tile_indices])
 
-    """ Returns the values of the next state, a.k.a all the action values of the current state """
+    """ Returns all the action values of the current state """
     def get_next_states_values(self, state):
-        scaled_state = np.multiply(np.asarray(state).flatten(), self.scale_factor)
+        scaled_state = np.multiply(np.asarray(state).flatten(), self.tiling_side_length)
 
-        values = zeros(self.numActions)
-        for action in range(self.numActions):
+        values = np.zeros(self.num_actions)
+        for action in range(self.num_actions):
             tile_indices = asarray(
-                tiles(self.iht, self.numTilings, scaled_state),
-                dtype=int) + (action * self.numTiles)
-            values[action] = sum(self.theta[tile_indices])
+                tiles(self.iht, self.num_tilings, scaled_state),
+                dtype=int) + (action * self.num_tiles)
+            values[action] = np.sum(self.theta[tile_indices])
         return values
