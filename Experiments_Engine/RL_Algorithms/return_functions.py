@@ -36,35 +36,9 @@ class QSigmaReturnFunction:
         if self.compute_bprobabilities:
             assert self.bpolicy is not None
 
-    def recursive_return_function(self, trajectory, step=0, base_value=None):
-        if step == self.n:
-            assert base_value is not None, "The base value of the recursive function can't be None."
-            return base_value
-        else:
-            reward, action, qvalues, termination, bprobabilities, sigma = trajectory.pop(0)
-            if termination:
-                return reward
-            else:
-                tprobabilities = self.tpolicy.probability_of_action(q_values=qvalues, all_actions=True)
-                if self.compute_bprobabilities:
-                    bprobabilities = self.bpolicy.probability_of_action(q_values=qvalues, all_actions=True)
-                assert bprobabilities[action] != 0
-                rho = tprobabilities[action] / bprobabilities[action]
-                if self.truncate_rho:
-                    rho = min(rho, 1)
-                average_action_value = np.sum(np.multiply(tprobabilities, qvalues))
-                return reward + \
-                       self.gamma * (rho * sigma + (1-sigma) * tprobabilities[action]) \
-                       * self.recursive_return_function(trajectory=trajectory, step=step + 1, base_value=qvalues[action]) + \
-                       self.gamma * (1-sigma) * (average_action_value - tprobabilities[action] * qvalues[action])
-
-
-    def recursive_return_function2(self, rewards, actions, qvalues, terminations, bprobabilities, sigmas, step=0):
-                                   # base_value=None):
+    def recursive_return_function(self, rewards, actions, qvalues, terminations, bprobabilities, sigmas, step=0):
         if step == self.n:
             raise RecursionError('This case should be impossible!')
-            # assert base_value is not None
-            # return base_value
         else:
             r = rewards[step]
             T = terminations[step]
@@ -88,7 +62,6 @@ class QSigmaReturnFunction:
                 else:
                     next_return = self.recursive_return_function2(rewards, actions, qvalues, terminations,
                                                                   bprobabilities, sigmas, step=step+1)
-                                                                  # , base_value=qv[a])
                 return r + self.gamma * (rho * sig + (1-sig) * tprob[a]) * next_return + \
                        self.gamma * (1-sig) * (average_action_value - tprob[a] * qv[a])
 
@@ -108,8 +81,6 @@ class QSigmaReturnFunction:
                 tprobs = self.tpolicy.probability_of_action(Q_t, all_actions=True)
                 bprobs = bprobabilities[i]
                 if self.compute_bprobabilities: bprobs = self.bpolicy.probability_of_action(Q_t, all_actions=True)
-                if bprobs[A_t] == 0:
-                    print("Oh no!")
                 assert bprobs[A_t] != 0
 
                 rho = tprobs[A_t]/bprobs[A_t]
