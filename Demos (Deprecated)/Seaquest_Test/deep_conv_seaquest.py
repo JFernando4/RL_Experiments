@@ -10,7 +10,7 @@ from Experiments_Engine.Environments.Arcade_Learning_Environment.ALE_Environment
 from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities import models
 from Experiments_Engine.Function_Approximators.Neural_Networks.Neural_Network import NeuralNetwork_FA      # Function Approximator
 from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy                                 # Policies
-from Experiments_Engine.RL_Algorithms.Q_Sigma import QSigma                                                # RL ALgorithm
+from Experiments_Engine.RL_Agents.qsigma import QSigma                                                # RL ALgorithm
 from Experiments_Engine.config import Config
 
 def main():

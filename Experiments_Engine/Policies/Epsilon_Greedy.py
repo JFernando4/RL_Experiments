@@ -101,3 +101,5 @@ class EpsilonGreedyPolicy(PolicyBase):
                 self.epsilon = self.final_epsilon
             self.p_random = (self.epsilon / self.num_actions)
             self.p_optimal = self.p_random + (1 - self.epsilon)
+            return
+        else: return

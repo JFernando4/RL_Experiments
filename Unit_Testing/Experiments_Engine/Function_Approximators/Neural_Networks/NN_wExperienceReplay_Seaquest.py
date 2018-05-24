@@ -4,7 +4,7 @@ import tensorflow as tf
 
 from Experiments_Engine.Environments import ALE_Environment
 from Experiments_Engine.Function_Approximators import NeuralNetwork_wER_FA, Model_nCPmFO, QSigmaExperienceReplayBuffer
-from Experiments_Engine.RL_Algorithms import QSigmaReturnFunction, QSigma
+from Experiments_Engine.RL_Agents import QSigmaReturnFunction, QSigma
 from Experiments_Engine.Policies import EpsilonGreedyPolicy
 from Experiments_Engine.config import Config
 

@@ -2,10 +2,10 @@ import unittest
 import numpy as np
 
 from Experiments_Engine.Environments.MountainCar import MountainCar
-from Experiments_Engine.RL_Algorithms.Q_Sigma import QSigma
+from Experiments_Engine.RL_Agents.qsigma import QSigma
 from Experiments_Engine.Function_Approximators.TileCoder.Tile_Coding_FA import TileCoderFA
 from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy
-from Experiments_Engine.RL_Algorithms.return_functions import QSigmaReturnFunction
+from Experiments_Engine.RL_Agents.return_functions import QSigmaReturnFunction
 from Experiments_Engine.config import Config
 
 
@@ -21,22 +21,28 @@ class Test_MountainCar_Environment(unittest.TestCase):
         config.target_policy.num_actions = self.env.get_num_actions()
         config.target_policy.initial_epsilon = 0.1
         config.target_policy.anneal_epsilon = False
-        " QSigma Parameters "
+
+        " FA Parameters "
+        config.num_tilings = 32
+        config.tiling_side_length = 8
+        config.num_actions = 3
+        config.num_dims = 2
+        config.alpha = (1/4) / 32
 
         self.tpolicy = EpsilonGreedyPolicy(config, behaviour_policy=False)
 
         ### Test 1 Setup ###
-        self.fa1 = TileCoderFA(numTilings=8, numActions=self.env.get_num_actions(), alpha=0.1,
-                              state_space_size=self.env.get_observation_dimensions()[0], tile_side_length=10)
+        self.fa1 = TileCoderFA(config)
         config.behaviour_policy = config.target_policy
         self.bpolicy = EpsilonGreedyPolicy(config, behaviour_policy=True)
 
         config1 = Config()
-        config1.n = 3
+        config1.n = 4
         config1.gamma = 1
         config1.beta = 1
         config1.sigma = 0.5
         config1.save_summary = True
+
         self.summary = {}
         self.agent1 = QSigma(config=config1, environment=self.env, function_approximator=self.fa1,
                              target_policy=self.tpolicy, behaviour_policy=self.bpolicy, summary=self.summary)
@@ -54,8 +60,7 @@ class Test_MountainCar_Environment(unittest.TestCase):
         config2.beta = 1
         config2.sigma = 0.5
         self.bpolicy2 = EpsilonGreedyPolicy(config, behaviour_policy=True)
-        self.fa2 = TileCoderFA(numTilings=8, numActions=self.env.get_num_actions(), alpha=0.1,
-                              state_space_size=self.env.get_observation_dimensions()[0], tile_side_length=10)
+        self.fa2 = TileCoderFA(config)
         self.agent2 = QSigma(config=config2, environment=self.env, function_approximator=self.fa2,
                              target_policy=self.tpolicy, behaviour_policy=self.bpolicy2)
 
@@ -73,13 +78,12 @@ class Test_MountainCar_Environment(unittest.TestCase):
         config3.initial_rand_steps = 5000
         config3.rand_steps_count = 0
         self.bpolicy3 = EpsilonGreedyPolicy(config, behaviour_policy=True)
-        self.fa3 = TileCoderFA(numTilings=8, numActions=self.env.get_num_actions(), alpha=0.01,
-                              state_space_size=self.env.get_observation_dimensions()[0], tile_side_length=10)
+        self.fa3 = TileCoderFA(config)
         self.agent3 = QSigma(config=config3, environment=self.env, function_approximator=self.fa3,
                              target_policy=self.tpolicy, behaviour_policy=self.bpolicy3)
 
     def test_train(self):
-        print("\n############ Training with Recursive Function ##############")
+        print("\n############ Testing Training Function ##############")
         print("Training 50 episodes:")
         for i in range(50):
             # print("\tTraining episode:", i+1)

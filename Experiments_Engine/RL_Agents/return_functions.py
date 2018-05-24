@@ -60,7 +60,7 @@ class QSigmaReturnFunction:
                 if step == self.n -1:
                     next_return = qv[a]
                 else:
-                    next_return = self.recursive_return_function2(rewards, actions, qvalues, terminations,
+                    next_return = self.recursive_return_function(rewards, actions, qvalues, terminations,
                                                                   bprobabilities, sigmas, step=step+1)
                 return r + self.gamma * (rho * sig + (1-sig) * tprob[a]) * next_return + \
                        self.gamma * (1-sig) * (average_action_value - tprob[a] * qv[a])
@@ -118,12 +118,6 @@ class QSigmaReturnFunction:
             tprobabilities[:,i] = self.tpolicy.batch_probability_of_action(qvalues[:,i])
             if self.compute_bprobabilities:
                 bprobabilities[:, i] = self.bpolicy.batch_probability_of_action(qvalues[:,i])
-
-        # for i in range(batch_size):
-        #     for j in range(self.n):
-        #         tprobabilities[i,j] = self.tpolicy.probability_of_action(qvalues[i,j], all_actions=True)
-        #         if self.compute_bprobabilities:
-        #             bprobabilities[i,j] = self.bpolicy.probability_of_action(qvalues[i,j], all_actions=True)
 
         selected_qval = qvalues.take(np.arange(actions.size) * num_actions + actions.flatten()).reshape(actions.shape)
         batch_idxs = np.arange(batch_size)

@@ -8,7 +8,7 @@ import time
 from Experiments_Engine.Environments import MountainCar                                # Environment
 from Experiments_Engine.Function_Approximators import QSigmaExperienceReplayBuffer      # Replay Buffer
 from Experiments_Engine.Function_Approximators import NeuralNetwork_wER_FA, Model_mFO   # Function Approximator and Model
-from Experiments_Engine.RL_Algorithms import QSigma, QSigmaReturnFunction               # RL Agent
+from Experiments_Engine.RL_Agents import QSigma, QSigmaReturnFunction               # RL Agent
 from Experiments_Engine.Policies import EpsilonGreedyPolicy                             # Policy
 from Experiments_Engine.config import Config                                            # Experiment configurations
 

@@ -1,2 +1,3 @@
 from .MountainCar import MountainCar
+from .MountainCliff import MountainCliff
 from .Arcade_Learning_Environment.ALE_Environment import ALE_Environment

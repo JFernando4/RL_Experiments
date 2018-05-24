@@ -4,7 +4,7 @@ import os
 
 import Experiments.Experiments_Utilities.dir_management_utilities as dir_management_utilities
 from Experiments_Engine.Environments.MountainCar import MountainCar
-from Experiments_Engine.RL_Algorithms.Q_Sigma import QSigma
+from Experiments_Engine.RL_Agents.qsigma import QSigma
 from Experiments_Engine.Function_Approximators.TileCoder.Tile_Coding_FA import TileCoderFA
 from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy
 

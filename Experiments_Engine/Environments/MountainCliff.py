@@ -100,12 +100,6 @@ class MountainCliff(EnvironmentBase):
     def get_num_actions(self):
         return 3
 
-    def get_actions(self):
-        return self.actions
-
-    def get_observation_dimensions(self):
-        return [2]
-
     def get_current_state(self):
         return self.current_state
 

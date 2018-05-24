@@ -102,8 +102,7 @@ class QSigma(RL_ALgorithmBase):
             # Storing in the experience replay buffer
             if self.use_er_buffer:
                 observation = {"reward": 0, "action":A, "state":self.env.get_state_for_er_buffer(), "terminate": False,
-                               "rl_return": np.nan, "uptodate":False, "bprobabilities": np.zeros(q_values.shape),
-                               "sigma":self.sigma}
+                               "bprobabilities": np.zeros(q_values.shape), "sigma":self.sigma}
                 self.er_buffer.store_observation(observation)
             T = inf
             t = 0
@@ -142,8 +141,7 @@ class QSigma(RL_ALgorithmBase):
                     # Storing in the experience replay buffer
                     if self.use_er_buffer:
                         observation = {"reward": R, "action": A, "state": self.env.get_state_for_er_buffer(),
-                                       "terminate": terminate, "rl_return": np.nan, "uptodate": False,
-                                       "bprobabilities": bpropabilities, "sigma": self.sigma}
+                                       "terminate": terminate, "bprobabilities": bpropabilities, "sigma": self.sigma}
                         self.er_buffer.store_observation(observation)
                 # Computing the return and updating the function approximator
                 tau = t - self.n + 1

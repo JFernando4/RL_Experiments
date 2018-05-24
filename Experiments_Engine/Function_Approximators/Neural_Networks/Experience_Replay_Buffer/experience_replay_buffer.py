@@ -1,6 +1,6 @@
 import numpy as np
 from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities import CircularBuffer
-from Experiments_Engine.RL_Algorithms import QSigmaReturnFunction
+from Experiments_Engine.RL_Agents import QSigmaReturnFunction
 from Experiments_Engine.Policies import EpsilonGreedyPolicy
 
 class Experience_Replay_Buffer:

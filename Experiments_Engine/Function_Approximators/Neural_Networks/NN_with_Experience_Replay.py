@@ -75,7 +75,6 @@ class NeuralNetwork_wER_FA(FunctionApproximatorBase):
             self.cumulative_loss += train_loss
             self.config.update_count += 1
             if self.config.update_count >= self.tnetwork_update_freq:
-                self.er_buffer.out_of_date_buffer()
                 self.config.update_count = 0
                 self.update_target_network()
 

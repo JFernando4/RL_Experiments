@@ -1,7 +1,7 @@
 import numpy as np
 
 from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities import CircularBuffer
-from Experiments_Engine.RL_Algorithms.return_functions import QSigmaReturnFunction
+from Experiments_Engine.RL_Agents.return_functions import QSigmaReturnFunction
 from Experiments_Engine.Util.utils import check_attribute_else_default
 
 
@@ -42,8 +42,6 @@ class QSigmaExperienceReplayBuffer:
         self.action = CircularBuffer(self.buff_sz, shape=(), dtype=np.uint8)
         self.reward = CircularBuffer(self.buff_sz, shape=(), dtype=np.int32)
         self.terminate = CircularBuffer(self.buff_sz, shape=(), dtype=np.bool)
-        self.rl_return = CircularBuffer(self.buff_sz, shape=(), dtype=np.float64)
-        self.uptodate = CircularBuffer(self.buff_sz, shape=(), dtype=np.bool)
         self.bprobabilities = CircularBuffer(self.buff_sz, shape=(self.num_actions,), dtype=np.float64)
         self.sigma = CircularBuffer(self.buff_sz, shape=(), dtype=np.float32)
 
@@ -51,7 +49,7 @@ class QSigmaExperienceReplayBuffer:
         """ The only two keys that are required are 'state' """
         assert isinstance(observation, dict)
         assert all(akey in observation.keys() for akey in
-                   ["reward", "action", "state", "terminate", "rl_return", "uptodate", "bprobabilities", "sigma"])
+                   ["reward", "action", "state", "terminate", "bprobabilities", "sigma"])
         reward = observation["reward"]
         if self.reward_clipping:
             if reward > 0: reward = 1
@@ -61,8 +59,6 @@ class QSigmaExperienceReplayBuffer:
         self.action.append(observation["action"])
         self.reward.append(reward)
         self.terminate.append(observation["terminate"])
-        self.rl_return.append(observation["rl_return"])
-        self.uptodate.append(observation["uptodate"])
         self.bprobabilities.append(observation["bprobabilities"])
         self.sigma.append(observation["sigma"])
 
@@ -76,15 +72,9 @@ class QSigmaExperienceReplayBuffer:
         index_number = 0
         while index_number != self.batch_sz:
             if not self.full_buffer:
-                #new:
                 daindx = np.random.randint(self.frame_stack - 1, self.current_index - (self.n + 1))
-                #old:
-                # daindx = np.random.randint(self.current_index - (self.n + self.frame_stack))
             else:
-                #new:
                 daindx = np.random.randint(self.frame_stack - 1, self.buff_sz-1 - (self.n + 1))
-                #old:
-                # daindx = np.random.randint(self.buff_sz - (self.n + self.frame_stack))
             if not self.terminate[daindx]:
                 dasample[index_number] = daindx
                 index_number += 1
@@ -164,10 +154,8 @@ class QSigmaExperienceReplayBuffer:
             qvalues = trajectories_q_values[tslice]
             sigmas = tjs_sigmas[tslice]
             bprobabilities = tjs_bprobabilities[tslice]
-            # estimated_returns[i] = self.return_function.recursive_return_function2(rewards, a, qvalues,
-            #                                                                        terminations, bprobabilities, sigmas)
-            estimated_returns[i] = self.return_function.iterative_return_function(rewards, a, qvalues,
-                                                                                   terminations, bprobabilities, sigmas)
+            estimated_returns[i] = self.return_function.iterative_return_function(rewards, a, qvalues, terminations,
+                                                                                  bprobabilities, sigmas)
         return sample_states, sample_actions, estimated_returns
 
     def get_data_optimized(self, update_function):
@@ -245,65 +233,5 @@ class QSigmaExperienceReplayBuffer:
                                                                                  tjs_sigmas, self.batch_sz)
         return sample_states, sample_actions, estimated_returns
 
-    def out_of_date_buffer(self):
-        self.uptodate.data[:] = False
-
     def ready_to_sample(self):
         return self.batch_sz < (self.current_index - (self.n + self.frame_stack))
-
-    """ Gettters """
-    def get_obs_dtype(self):
-        return self.obs_dtype
-
-################ Deprecated #################
-    def stack_frames(self, indx):
-        if self.frame_stack == 1:
-            return self.state[indx]
-        else:
-            frame = np.zeros((self.frame_stack, ) + tuple(self.env_state_dims), dtype=self.obs_dtype)
-            current_frame = 0
-            for i in range(indx, indx+self.frame_stack):
-                if self.terminate[i]:
-                    for _ in range(i + indx, indx + self.frame_stack):
-                        frame[current_frame] = self.state[i]
-                        current_frame += 1
-                    break
-                else:
-                    frame[current_frame] = self.state[i]
-                    current_frame += 1
-            return frame
-
-    def gather_data(self, daindex, update_function):
-        state = self.stack_frames(daindex)
-        action = self.action[daindex]
-        if (self.rl_return[daindex] is not np.nan) and (self.uptodate[daindex] is True):
-            qsigma_return = self.rl_return[daindex]
-        else:
-            trajectory = []
-            for i in range(daindex + 1, daindex + self.n + 1):
-                temp_state = self.stack_frames(i)
-                q_values = update_function(temp_state)
-                temp_action = self.action[i]
-                temp_reward = self.reward[i]
-                temp_terminate = self.terminate[i]
-                temp_bprobabilities = self.bprobabilities[i]
-                temp_sigma = self.sigma[i]
-                step_in_trajectory = [temp_reward, temp_action, q_values, temp_terminate,
-                                      temp_bprobabilities, temp_sigma]
-                trajectory.append(step_in_trajectory)
-                if temp_terminate:
-                    break
-            new_trajectory = list(trajectory)
-            qsigma_return = self.return_function.recursive_return_function(trajectory, step=0)
-            self.rl_return.set_item(daindex, qsigma_return)
-            self.uptodate.set_item(daindex, True)
-        return [state, action, qsigma_return]
-
-    def sample_from_buffer(self, update_function=None):
-        assert update_function is not None, "You need to provide an update_function."
-        daindices = self.sample_indices()
-        dabatch = []
-        for daindex in daindices:
-            data_point = self.gather_data(daindex, update_function)
-            dabatch.append(data_point)
-        return dabatch
