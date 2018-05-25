@@ -5,14 +5,22 @@ import pickle
 import argparse
 import time
 
-from Experiments_Engine.Environments import MountainCar                                # Environment
-from Experiments_Engine.Function_Approximators import OffPolicyQSigmaExperienceReplayBuffer      # Replay Buffer
-from Experiments_Engine.Function_Approximators import NeuralNetwork_wER_FA, Model_mFO   # Function Approximator and Model
-from Experiments_Engine.RL_Agents import QSigma, OffPolicyQSigmaReturnFunction               # RL Agent
-from Experiments_Engine.Policies import EpsilonGreedyPolicy                             # Policy
-from Experiments_Engine.config import Config                                            # Experiment configurations
+# Environment
+from Experiments_Engine.Environments import MountainCar
+# Replay Buffer
+from Experiments_Engine.Function_Approximators import OffPolicyQSigmaExperienceReplayBuffer, OnPolicyQSigmaExperienceReplayBuffer
+# Function Approximator and Model
+from Experiments_Engine.Function_Approximators import NeuralNetwork_wER_FA, Model_mFO
+# RL Agents and Return Fuctions
+from Experiments_Engine.RL_Agents import QSigma, OffPolicyQSigmaReturnFunction, OnPolicyQSigmaReturnFunction, ReplayBufferAgent
+# Policy
+from Experiments_Engine.Policies import EpsilonGreedyPolicy
+# Experiment configurations
+from Experiments_Engine.config import Config
+
 
 MAX_TRAINING_FRAMES = 1000000
+
 
 class ExperimentAgent():
 
@@ -29,6 +37,7 @@ class ExperimentAgent():
         self.truncate_rho = experiment_parameters['truncate_rho']
         self.compute_bprobabilities = experiment_parameters['compute_bprobabilities']
         self.anneal_epsilon = experiment_parameters['anneal_epsilon']
+        self.fixed_buffer_sigma = experiment_parameters['fixed_buffer_sigma']
 
         if restore:
             with open(os.path.join(restore_data_dir, 'experiment_config.p'), mode='rb') as experiment_config_file:
@@ -100,12 +109,21 @@ class ExperimentAgent():
         self.target_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=False)
         self.behaviour_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=True)
 
-        """ QSigma return function """
-        self.rl_return_fun = OffPolicyQSigmaReturnFunction(config=self.config, tpolicy=self.target_policy,
-                                                           bpolicy=self.behaviour_policy)
+        if not self.fixed_buffer_sigma:
+            """ QSigma return function """
+            self.rl_return_fun = OffPolicyQSigmaReturnFunction(config=self.config, tpolicy=self.target_policy,
+                                                               bpolicy=self.behaviour_policy)
 
-        """ QSigma replay buffer """
-        self.qsigma_erp = OffPolicyQSigmaExperienceReplayBuffer(config=self.config, return_function=self.rl_return_fun)
+            """ QSigma replay buffer """
+            self.qsigma_erp = OffPolicyQSigmaExperienceReplayBuffer(config=self.config, return_function=self.rl_return_fun)
+
+        else:
+            """ QSigma return function """
+            self.rl_return_fun = OnPolicyQSigmaReturnFunction(config=self.config, tpolicy=self.target_policy)
+
+            """ QSigma replay buffer """
+            self.qsigma_erp = OnPolicyQSigmaExperienceReplayBuffer(config=self.config,
+                                                                   return_function=self.rl_return_fun)
 
         """ Neural Network """
         self.function_approximator = NeuralNetwork_wER_FA(optimizer=self.optimizer, target_network=self.tnetwork,
@@ -157,7 +175,6 @@ class ExperimentAgent():
     def save_parameters(self, dir_name):
         txt_file_pathname = os.path.join(dir_name, "agent_parameters.txt")
         params_txt = open(txt_file_pathname, "w")
-        assert isinstance(self.rl_return_fun, OffPolicyQSigmaReturnFunction)
         params_txt.write("# Agent #\n")
         params_txt.write("\tn = " + str(self.config.n) + "\n")
         params_txt.write("\tgamma = " + str(self.config.gamma) + "\n")
@@ -184,7 +201,6 @@ class ExperimentAgent():
         params_txt.write("\tannealing period = " + str(self.config.behaviour_policy.annealing_period) + "\n")
         params_txt.write("\n")
 
-        assert isinstance(self.qsigma_erp, OffPolicyQSigmaExperienceReplayBuffer)
         params_txt.write("# Function Approximator: Neural Network with Experience Replay #\n")
         params_txt.write("\talpha = " + str(self.config.alpha) + "\n")
         params_txt.write("\ttarget network update frequency = " + str(self.config.tnetwork_update_freq) + "\n")
@@ -194,6 +210,8 @@ class ExperimentAgent():
         params_txt.write("\toutput dimensions per layer = " + str(self.config.dim_out) + "\n")
         params_txt.write("\tgate function = " + str(self.config.gate_fun) + "\n")
         params_txt.write("\n")
+
+        params_txt.write("\tfixed_buffer_sigma = " + str(self.fixed_buffer_sigma))
 
         params_txt.close()
 
@@ -230,7 +248,6 @@ class Experiment:
                     print("The average training loss is:", np.average(nn_loss[-100:]))
                 print("The return in the last episode was:", return_per_episode[-1])
                 print("The total number of steps is:", self.agent.get_number_of_frames())
-
         if self.save_agent:
             self.agent.save_agent(self.results_dir)
         self.agent.save_results(self.results_dir)
@@ -250,6 +267,11 @@ if __name__ == "__main__":
     parser.add_argument('-dump_agent', action='store_false', default=True)
     parser.add_argument('-frames', action='store', default=500000, type=np.int32)
     parser.add_argument('-name', action='store', default='agent_1', type=str)
+    parser.add_argument('-fixed_buffer_sigma', action='store_true', default=False)
+    """ Note:
+        If fixed_buffer_sigma, then sigma_t is not stored in the buffer, instead the same sigma is used for all 
+        the observations in the buffer.
+    """
     args = vars(parser.parse_args())
 
     """ Directories """
