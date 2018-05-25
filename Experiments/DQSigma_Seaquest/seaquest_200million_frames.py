@@ -6,8 +6,8 @@ import os
 import time
 
 from Experiments_Engine.Environments import ALE_Environment
-from Experiments_Engine.Function_Approximators import NeuralNetwork_wER_FA, Model_nCPmFO, QSigmaExperienceReplayBuffer
-from Experiments_Engine.RL_Algorithms import QSigmaReturnFunction, QSigma
+from Experiments_Engine.Function_Approximators import NeuralNetwork_wER_FA, Model_nCPmFO, OnPolicyQSigmaExperienceReplayBuffer
+from Experiments_Engine.RL_Agents import OnPolicyQSigmaReturnFunction, ReplayBufferAgent
 from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy
 from Experiments_Engine.config import Config
 
@@ -51,20 +51,14 @@ class ExperimentAgent:
             self.config.conv_layers = 3
             self.config.full_layers = 1
             self.config.max_pool = False
-            self.config.frames_format = "NCHW"  # NCHW doesn't work with cpu in tensorflow, but it's more efficient on a gpu
+            self.config.frames_format = "NHWC"  # NCHW doesn't work with cpu in tensorflow, but it's more efficient on a gpu
             self.config.norm_factor = 255.0
 
             " Policies Parameters "
             " Target Policy "
             self.config.target_policy = Config()
-            self.config.target_policy.initial_epsilon = 0.1
+            self.config.target_policy.initial_epsilon = 0.01
             self.config.target_policy.anneal_epsilon = False
-            " Behaviour Policy "
-            self.config.behaviour_policy = Config()
-            self.config.behaviour_policy.initial_epsilon = 1
-            self.config.behaviour_policy.anneal_epsilon = True
-            self.config.behaviour_policy.final_epsilon = 0.1
-            self.config.behaviour_policy.annealing_period = 800000  # Because the frame skip is 5 instead of 4
 
             " Experience Replay Buffer Parameters "
             self.config.buff_sz = 100000
@@ -75,14 +69,10 @@ class ExperimentAgent:
             " QSigma Agent Parameters "
             self.config.n = experiment_arguments.n
             self.config.gamma = 0.99
-            self.config.beta = experiment_arguments.beta
+            self.config.sigma_decay = experiment_arguments.sigma_decay
             self.config.sigma = experiment_arguments.sigma
             self.config.use_er_buffer = True
             self.config.initial_rand_steps = 50000
-
-            " QSigma Return Function "
-            self.config.compute_bprobabilities = True
-            self.config.truncate_rho = False
 
             " Neural Network "
             self.config.alpha = 0.00025
@@ -100,14 +90,12 @@ class ExperimentAgent:
 
         """ Policies """
         self.target_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=False)
-        self.behaviour_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=True)
 
         """ Return Function """
-        self.return_function = QSigmaReturnFunction(config=self.config, tpolicy=self.target_policy,
-                                               bpolicy=self.behaviour_policy)
+        self.return_function = OnPolicyQSigmaReturnFunction(config=self.config, tpolicy=self.target_policy)
 
         """ Experience Replay Buffer """
-        self.er_buffer = QSigmaExperienceReplayBuffer(config=self.config, return_function=self.return_function)
+        self.er_buffer = OnPolicyQSigmaExperienceReplayBuffer(config=self.config, return_function=self.return_function)
 
         """ Neural Network """
         self.function_approximator = NeuralNetwork_wER_FA(optimizer=self.optimizer, target_network=self.target_network,
@@ -115,9 +103,9 @@ class ExperimentAgent:
                                                           tf_session=self.sess, config=self.config, summary=self.summary)
 
         """ RL Agent """
-        self.agent = QSigma(environment=self.env, function_approximator=self.function_approximator,
-                            target_policy=self.target_policy, behaviour_policy=self.behaviour_policy,
-                            config=self.config, summary=self.summary, er_buffer=self.er_buffer)
+        self.agent = ReplayBufferAgent(environment=self.env, function_approximator=self.function_approximator,
+                                       behaviour_policy=self.target_policy, config=self.config, summary=self.summary,
+                                       er_buffer=self.er_buffer)
 
         if experiment_arguments.restore_agent:
             saver = tf.train.Saver()
@@ -126,7 +114,7 @@ class ExperimentAgent:
             print("Model restored from file: %s" % sourcepath)
 
     def train(self):
-        self.agent.train(num_episodes=1)
+        self.agent.train()
         self.function_approximator.store_in_summary()
 
     def save_agent(self, dir_name):
@@ -154,20 +142,13 @@ class ExperimentAgent:
     def save_parameters(self, dir_name):
         txt_file_pathname = os.path.join(dir_name, "agent_parameters.txt")
         with open(txt_file_pathname, mode="w") as params_txt:
-            assert isinstance(self.return_function, QSigmaReturnFunction)
-            assert isinstance(self.agent, QSigma)
-            assert isinstance(self.target_policy, EpsilonGreedyPolicy)
-            assert isinstance(self.behaviour_policy, EpsilonGreedyPolicy)
             params_txt.write("# Agent #\n")
-            params_txt.write("\tn = " + str(self.agent.n) + "\n")
-            params_txt.write("\tgamma = " + str(self.agent.gamma) + "\n")
-            params_txt.write("\tsigma = " + str(self.agent.sigma) + "\n")
-            params_txt.write("\tbeta = " + str(self.agent.beta) + "\n")
+            params_txt.write("\tn = " + str(self.return_function.n) + "\n")
+            params_txt.write("\tgamma = " + str(self.return_function.gamma) + "\n")
+            params_txt.write("\tsigma = " + str(self.return_function.sigma) + "\n")
+            params_txt.write("\tbeta = " + str(self.return_function.sigma_decay) + "\n")
             params_txt.write("\trandom steps before training = " +
                              str(self.agent.initial_rand_steps) + "\n")
-            params_txt.write("\ttruncate rho = " + str(self.return_function.truncate_rho) + "\n")
-            params_txt.write("\tcompute behaviour policy's probabilities = " +
-                             str(self.return_function.compute_bprobabilities) + "\n")
             params_txt.write("\n")
 
             params_txt.write("# Target Policy #\n")
@@ -175,14 +156,7 @@ class ExperimentAgent:
             params_txt.write("\tfinal epsilon = " + str(self.target_policy.final_epsilon) + "\n")
             params_txt.write("\n")
 
-            params_txt.write("# Behaviour Policy #\n")
-            params_txt.write("\tinitial epsilon = " + str(self.behaviour_policy.initial_epsilon) + "\n")
-            params_txt.write("\tanneal epsilon = " + str(self.behaviour_policy.anneal_epsilon) + "\n")
-            params_txt.write("\tfinal epsilon = " + str(self.behaviour_policy.final_epsilon) + "\n")
-            params_txt.write("\tannealing period = " + str(self.behaviour_policy.annealing_period) + "\n")
-            params_txt.write("\n")
-
-            assert isinstance(self.er_buffer, QSigmaExperienceReplayBuffer)
+            assert isinstance(self.er_buffer, OnPolicyQSigmaExperienceReplayBuffer)
             assert isinstance(self.function_approximator, NeuralNetwork_wER_FA)
             assert isinstance(self.target_network, Model_nCPmFO)
             assert isinstance(self.update_network, Model_nCPmFO)
@@ -223,7 +197,7 @@ if __name__ == "__main__":
     parser.add_argument('-n', action='store', default=1, type=np.uint8)
     parser.add_argument('-frames', action='store', default=MAX_FRAMES - 1, type=np.uint32)
     parser.add_argument('-sigma', action='store', default=0.5, type=np.float64)
-    parser.add_argument('-beta', action='store', default=1, type=np.float64)
+    parser.add_argument('-sigma_decay', action='store', default=1, type=np.float64)
     parser.add_argument('-target_epsilon', action='store', default=0.1, type=np.float64)
     parser.add_argument('-quiet', action='store_true', default=False)
     parser.add_argument('-save_agent', action='store_true', default=False)
