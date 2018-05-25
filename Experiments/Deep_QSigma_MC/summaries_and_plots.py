@@ -113,9 +113,9 @@ if __name__ == "__main__":
     evaluation_frames = [60000, 120000, 250000, 500000]
     fa_windows = [10, 50, 100, 500, 1000, 2000, 3000]
     average_window = 10
-    omit_list = ['DecayingSigma_n5', 'DecayingSigma_n10']
+    omit_list = []
     results_summary_data(results_path, evaluation_frames, average_window, ci_error=0.05,
-                         max_agents=30, name="incomplete", fa_windows=fa_windows, omit_list=omit_list)
+                         max_agents=30, name="SampleSize30", fa_windows=fa_windows, omit_list=omit_list)
 
 
 

@@ -1,11 +1,9 @@
 import numpy as np
-import tensorflow as tf
-
 from Experiments_Engine.config import Config
 from Experiments_Engine.Util import check_attribute_else_default
 
 
-class QSigmaReturnFunction:
+class OffPolicyQSigmaReturnFunction:
 
     def __init__(self, tpolicy, config=None, bpolicy=None):
 
@@ -146,25 +144,3 @@ class QSigmaReturnFunction:
             estimated_Gt = neg_term_ind[:,i] * G_t + term_ind[:,i] * R_t
 
         return estimated_Gt
-
-class QSigma_Return_Graph:
-
-    def __init__(self, config, tpolicy, bpolicy):
-
-        self.num_actions = 18
-        self.n = 4
-        self.gamma = 0.99
-        self.tpolicy = tpolicy
-        self.bpolicy = bpolicy
-        self.batch_size = 32
-
-        self.rewards = tf.placeholder(tf.int32, shape=[self.batch_size, self.n])
-        self.actions = tf.placeholder(tf.int32, shape=[self.batch_size, self.n])
-        self.selected_qval = tf.placeholder(tf.float64, shape=[self.batch_size, self.n])
-        self.qvalues = tf.placeholder(tf.float64, shape=[self.batch_size, self.n, self.num_actions])
-        self.terminations = tf.cast(tf.placeholder(tf.bool, shape=[self.batch_size, self.n]), dtype=tf.int8)
-        self.tprobs = tf.placeholder(tf.float64, shape=[self.batch_size, self.n, self.num_actions])
-        self.selected_tprob = tf.placeholder(tf.float64, shape=[self.batch_size, self.n])
-        self.bprobs = tf.placeholder(tf.float64, shape=[self.batch_size, self.n, self.num_actions])
-        self.selected_bprob = tf.placeholder(tf.float64, shape=[self.batch_size, self.n, self.num_actions])
-        self.sigmas = tf.placeholder(tf.float32, shape=[self.batch_size, self.n])

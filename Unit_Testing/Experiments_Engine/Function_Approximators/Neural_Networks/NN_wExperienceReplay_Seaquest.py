@@ -3,8 +3,8 @@ import numpy as np
 import tensorflow as tf
 
 from Experiments_Engine.Environments import ALE_Environment
-from Experiments_Engine.Function_Approximators import NeuralNetwork_wER_FA, Model_nCPmFO, QSigmaExperienceReplayBuffer
-from Experiments_Engine.RL_Agents import QSigmaReturnFunction, QSigma
+from Experiments_Engine.Function_Approximators import NeuralNetwork_wER_FA, Model_nCPmFO, OffPolicyQSigmaExperienceReplayBuffer
+from Experiments_Engine.RL_Agents import OffPolicyQSigmaReturnFunction, QSigma
 from Experiments_Engine.Policies import EpsilonGreedyPolicy
 from Experiments_Engine.config import Config
 
@@ -87,10 +87,10 @@ class Test_NN_with_ExperienceReplay_Seaquest(unittest.TestCase):
         self.behavior_policy = EpsilonGreedyPolicy(config, behaviour_policy=True)
 
         """ Return Function """
-        return_function = QSigmaReturnFunction(config=config, tpolicy=self.target_policy)
+        return_function = OffPolicyQSigmaReturnFunction(config=config, tpolicy=self.target_policy)
 
         """ Experience Replay Buffer """
-        er_buffer = QSigmaExperienceReplayBuffer(config, return_function=return_function)
+        er_buffer = OffPolicyQSigmaExperienceReplayBuffer(config, return_function=return_function)
 
         """ Neural Network """
         alpha = 0.00025

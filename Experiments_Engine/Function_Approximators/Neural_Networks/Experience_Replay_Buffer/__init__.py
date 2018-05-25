@@ -1,2 +1,2 @@
-from .qsigma_erp import QSigmaExperienceReplayBuffer
-from .experience_replay_buffer import Experience_Replay_Buffer
+from .offpolicy_qsigma_erp import OffPolicyQSigmaExperienceReplayBuffer
+from .onpolicy_qsigma_erp import OnPolicyQSigmaExperienceReplayBuffer

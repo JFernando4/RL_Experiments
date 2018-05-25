@@ -6,9 +6,9 @@ import argparse
 import time
 
 from Experiments_Engine.Environments import MountainCar                                # Environment
-from Experiments_Engine.Function_Approximators import QSigmaExperienceReplayBuffer      # Replay Buffer
+from Experiments_Engine.Function_Approximators import OffPolicyQSigmaExperienceReplayBuffer      # Replay Buffer
 from Experiments_Engine.Function_Approximators import NeuralNetwork_wER_FA, Model_mFO   # Function Approximator and Model
-from Experiments_Engine.RL_Agents import QSigma, QSigmaReturnFunction               # RL Agent
+from Experiments_Engine.RL_Agents import QSigma, OffPolicyQSigmaReturnFunction               # RL Agent
 from Experiments_Engine.Policies import EpsilonGreedyPolicy                             # Policy
 from Experiments_Engine.config import Config                                            # Experiment configurations
 
@@ -101,11 +101,11 @@ class ExperimentAgent():
         self.behaviour_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=True)
 
         """ QSigma return function """
-        self.rl_return_fun = QSigmaReturnFunction(config=self.config, tpolicy=self.target_policy,
-                                                  bpolicy=self.behaviour_policy)
+        self.rl_return_fun = OffPolicyQSigmaReturnFunction(config=self.config, tpolicy=self.target_policy,
+                                                           bpolicy=self.behaviour_policy)
 
         """ QSigma replay buffer """
-        self.qsigma_erp = QSigmaExperienceReplayBuffer(config=self.config, return_function=self.rl_return_fun)
+        self.qsigma_erp = OffPolicyQSigmaExperienceReplayBuffer(config=self.config, return_function=self.rl_return_fun)
 
         """ Neural Network """
         self.function_approximator = NeuralNetwork_wER_FA(optimizer=self.optimizer, target_network=self.tnetwork,
@@ -157,7 +157,7 @@ class ExperimentAgent():
     def save_parameters(self, dir_name):
         txt_file_pathname = os.path.join(dir_name, "agent_parameters.txt")
         params_txt = open(txt_file_pathname, "w")
-        assert isinstance(self.rl_return_fun, QSigmaReturnFunction)
+        assert isinstance(self.rl_return_fun, OffPolicyQSigmaReturnFunction)
         params_txt.write("# Agent #\n")
         params_txt.write("\tn = " + str(self.config.n) + "\n")
         params_txt.write("\tgamma = " + str(self.config.gamma) + "\n")
@@ -184,7 +184,7 @@ class ExperimentAgent():
         params_txt.write("\tannealing period = " + str(self.config.behaviour_policy.annealing_period) + "\n")
         params_txt.write("\n")
 
-        assert isinstance(self.qsigma_erp, QSigmaExperienceReplayBuffer)
+        assert isinstance(self.qsigma_erp, OffPolicyQSigmaExperienceReplayBuffer)
         params_txt.write("# Function Approximator: Neural Network with Experience Replay #\n")
         params_txt.write("\talpha = " + str(self.config.alpha) + "\n")
         params_txt.write("\ttarget network update frequency = " + str(self.config.tnetwork_update_freq) + "\n")

@@ -5,7 +5,7 @@ from Experiments_Engine.Environments.MountainCar import MountainCar
 from Experiments_Engine.RL_Agents.qsigma import QSigma
 from Experiments_Engine.Function_Approximators.TileCoder.Tile_Coding_FA import TileCoderFA
 from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy
-from Experiments_Engine.RL_Agents.return_functions import QSigmaReturnFunction
+from Experiments_Engine.RL_Agents.offpolicy_qsigma_return import OffPolicyQSigmaReturnFunction
 from Experiments_Engine.config import Config
 
 
