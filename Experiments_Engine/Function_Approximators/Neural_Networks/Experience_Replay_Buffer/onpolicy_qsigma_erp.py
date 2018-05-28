@@ -67,7 +67,7 @@ class OnPolicyQSigmaExperienceReplayBuffer:
 
         assert hasattr(self.config, 'initial_rand_steps')
         assert hasattr(self.config, 'rand_steps_count')
-        if observation['terminate'] and self.config.rand_steps_count > self.config.initial_rand_steps:
+        if observation['terminate'] and self.config.rand_steps_count >= self.config.initial_rand_steps:
             self.return_function.adjust_sigma()
 
     def sample_indices(self):
