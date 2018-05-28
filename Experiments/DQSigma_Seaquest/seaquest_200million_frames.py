@@ -34,7 +34,7 @@ class ExperimentAgent:
             self.config.save_summary = True
 
             """ Environment Parameters """
-            self.config.display_screen = False
+            self.config.display_screen = True
             self.config.frame_skip = 5
             self.config.agent_render = False
             self.config.repeat_action_probability = 0.25
@@ -71,8 +71,8 @@ class ExperimentAgent:
             self.config.gamma = 0.99
             self.config.sigma_decay = experiment_arguments.sigma_decay
             self.config.sigma = experiment_arguments.sigma
-            self.config.use_er_buffer = True
             self.config.initial_rand_steps = 50000
+            self.config.use_buffer_sigma = True
 
             " Neural Network "
             self.config.alpha = 0.00025

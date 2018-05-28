@@ -111,7 +111,7 @@ if __name__ == "__main__":
     results_path = os.path.join(experiment_path, "Results")
 
     evaluation_frames = [60000, 120000, 250000, 500000]
-    fa_windows = [10, 50, 100, 500, 1000, 2000, 3000]
+    fa_windows = [10, 50, 100, 500, 1000]
     average_window = 10
     omit_list = []
     results_summary_data(results_path, evaluation_frames, average_window, ci_error=0.05,

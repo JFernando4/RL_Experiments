@@ -37,7 +37,7 @@ class ExperimentAgent():
         self.truncate_rho = experiment_parameters['truncate_rho']
         self.compute_bprobabilities = experiment_parameters['compute_bprobabilities']
         self.anneal_epsilon = experiment_parameters['anneal_epsilon']
-        self.fixed_buffer_sigma = experiment_parameters['fixed_buffer_sigma']
+        self.use_buffer_sigma = experiment_parameters['use_buffer_sigma']
 
         if restore:
             with open(os.path.join(restore_data_dir, 'experiment_config.p'), mode='rb') as experiment_config_file:
@@ -109,7 +109,7 @@ class ExperimentAgent():
         self.target_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=False)
         self.behaviour_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=True)
 
-        if not self.fixed_buffer_sigma:
+        if not self.use_buffer_sigma:
             """ QSigma return function """
             self.rl_return_fun = OffPolicyQSigmaReturnFunction(config=self.config, tpolicy=self.target_policy,
                                                                bpolicy=self.behaviour_policy)
@@ -118,6 +118,7 @@ class ExperimentAgent():
             self.qsigma_erp = OffPolicyQSigmaExperienceReplayBuffer(config=self.config, return_function=self.rl_return_fun)
 
         else:
+            self.config.use_buffer_sigma = False
             """ QSigma return function """
             self.rl_return_fun = OnPolicyQSigmaReturnFunction(config=self.config, tpolicy=self.target_policy)
 
@@ -211,7 +212,7 @@ class ExperimentAgent():
         params_txt.write("\tgate function = " + str(self.config.gate_fun) + "\n")
         params_txt.write("\n")
 
-        params_txt.write("\tfixed_buffer_sigma = " + str(self.fixed_buffer_sigma))
+        params_txt.write("\tuse_buffer_sigma = " + str(self.use_buffer_sigma))
 
         params_txt.close()
 
@@ -240,12 +241,12 @@ class Experiment:
             self.agent.train()
             if verbose:
                 return_per_episode, nn_loss = self.agent.get_train_data()
-                if len(return_per_episode) < 100:
+                if len(return_per_episode) < 10:
                     print("The average return is:", np.average(return_per_episode))
                     print("The average training loss is:", np.average(nn_loss))
                 else:
-                    print("The average return is:", np.average(return_per_episode[-100:]))
-                    print("The average training loss is:", np.average(nn_loss[-100:]))
+                    print("The average return is:", np.average(return_per_episode[-10:]))
+                    print("The average training loss is:", np.average(nn_loss[-10:]))
                 print("The return in the last episode was:", return_per_episode[-1])
                 print("The total number of steps is:", self.agent.get_number_of_frames())
         if self.save_agent:
@@ -267,10 +268,10 @@ if __name__ == "__main__":
     parser.add_argument('-dump_agent', action='store_false', default=True)
     parser.add_argument('-frames', action='store', default=500000, type=np.int32)
     parser.add_argument('-name', action='store', default='agent_1', type=str)
-    parser.add_argument('-fixed_buffer_sigma', action='store_true', default=False)
+    parser.add_argument('-use_buffer_sigma', action='store_true', default=False)
     """ Note:
-        If fixed_buffer_sigma, then sigma_t is not stored in the buffer, instead the same sigma is used for all 
-        the observations in the buffer.
+        If not use_buffer_sigma, then the sigma store in the buffer is not used, instead the current sigma of the 
+        return function is used for all the observations in the buffer.
     """
     args = vars(parser.parse_args())
 
