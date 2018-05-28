@@ -27,6 +27,8 @@ class OnPolicyQSigmaExperienceReplayBuffer:
         self.num_actions = check_attribute_else_default(config, 'num_actions', 2)
         self.obs_dtype = check_attribute_else_default(config, 'obs_dtype', np.uint8)
         self.reward_clipping = check_attribute_else_default(config, 'reward_clipping', False)
+        self.sigma = check_attribute_else_default(config, 'sigma', 0.5)
+        self.sigma_decay = check_attribute_else_default(config, 'sigma_decay', 1.0)
 
         """ Parameters for Return Function """
         assert isinstance(return_function, OnPolicyQSigmaReturnFunction)
@@ -42,9 +44,9 @@ class OnPolicyQSigmaExperienceReplayBuffer:
         self.action = CircularBuffer(self.buff_sz, shape=(), dtype=np.uint8)
         self.reward = CircularBuffer(self.buff_sz, shape=(), dtype=np.int32)
         self.terminate = CircularBuffer(self.buff_sz, shape=(), dtype=np.bool)
+        self.sigma = CircularBuffer(self.buff_sz, shape=(), dtype=np.float64)
 
     def store_observation(self, observation):
-        """ The only two keys that are required are 'state' """
         assert isinstance(observation, dict)
         assert all(akey in observation.keys() for akey in ["reward", "action", "state", "terminate"])
         reward = observation["reward"]
@@ -56,6 +58,7 @@ class OnPolicyQSigmaExperienceReplayBuffer:
         self.action.append(observation["action"])
         self.reward.append(reward)
         self.terminate.append(observation["terminate"])
+        self.sigma.append(self.return_function.sigma)
 
         self.current_index += 1
         if self.current_index >= self.buff_sz:
@@ -90,6 +93,7 @@ class OnPolicyQSigmaExperienceReplayBuffer:
         tjs_actions = np.zeros(self.batch_sz * self.n, np.uint8)
         tjs_rewards = np.zeros(self.batch_sz * self.n, np.int32)
         tjs_terminations = np.ones(self.batch_sz * self.n, np.bool)
+        tjs_sigmas = np.ones(self.batch_sz * self.n, np.float64)
 
         batch_idx = 0
         tj_start_idx = 0
@@ -118,6 +122,7 @@ class OnPolicyQSigmaExperienceReplayBuffer:
             tjs_actions[tj_slice] = self.action.take(tj_indices)
             tjs_rewards[tj_slice] = self.reward.take(tj_indices)
             tjs_terminations[tj_slice] = self.terminate.take(tj_indices)
+            tjs_sigmas[tj_slice] = self.sigma.take(tj_indices)
 
             # Stacks of states
             trj_state_stack_sz = self.frame_stack + right_terminal_stop
@@ -141,9 +146,11 @@ class OnPolicyQSigmaExperienceReplayBuffer:
         tjs_actions = tjs_actions.reshape([self.batch_sz, self.n])
         tjs_rewards = tjs_rewards.reshape([self.batch_sz, self.n])
         tjs_terminations = tjs_terminations.reshape([self.batch_sz, self.n])
+        tjs_sigmas = tjs_sigmas.reshape([self.batch_sz, self.n])
 
         estimated_returns = self.return_function.batch_iterative_return_function(tjs_rewards, tjs_actions, tjs_qvalues,
-                                                                                 tjs_terminations, self.batch_sz)
+                                                                                 tjs_terminations, tjs_sigmas,
+                                                                                 self.batch_sz)
         return sample_states, sample_actions, estimated_returns
 
     def ready_to_sample(self):
