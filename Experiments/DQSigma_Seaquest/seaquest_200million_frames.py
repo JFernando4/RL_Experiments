@@ -188,6 +188,7 @@ class Experiment:
                 print("The average loss per episode is:", np.average(model_loss[start_idx:]))
                 print("The current frame is:", environment_data[-1])
                 print('The current running time is:', time.time() - start)
+                print('sigma:', self.agent.return_function.sigma)
         self.agent.save_results(dir_name)
         if experiment_arguments.save_agent:
             self.agent.save_agent(dir_name)

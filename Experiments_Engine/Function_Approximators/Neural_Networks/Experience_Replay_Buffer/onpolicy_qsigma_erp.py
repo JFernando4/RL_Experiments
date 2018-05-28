@@ -19,7 +19,7 @@ class OnPolicyQSigmaExperienceReplayBuffer:
         obs_dtype           np.type         np.uint8            the data type of the observations
         reward_clipping     bool            False               clipping the reward , see Mnih et. al. (2015)
         """
-
+        self.config = config
         self.buff_sz = check_attribute_else_default(config, 'buff_sz', 10)
         self.batch_sz = check_attribute_else_default(config, 'batch_sz', 1)
         self.frame_stack = check_attribute_else_default(config, 'frame_stack', 4)
@@ -65,7 +65,9 @@ class OnPolicyQSigmaExperienceReplayBuffer:
             self.current_index = 0
             self.full_buffer = True
 
-        if observation['terminate']:
+        assert hasattr(self.config, 'initial_rand_steps')
+        assert hasattr(self.config, 'rand_steps_count')
+        if observation['terminate'] and self.config.rand_steps_count > self.config.initial_rand_steps:
             self.return_function.adjust_sigma()
 
     def sample_indices(self):
