@@ -66,7 +66,7 @@ class ExperimentAgent:
             self.config.env_state_dims = (84, 84)  # Dimensions of a frame
             self.config.reward_clipping = True
 
-            " QSigma Agent Parameters "
+            " QSigma Return Parameters "
             self.config.n = experiment_arguments.n
             self.config.gamma = 0.99
             self.config.sigma_decay = experiment_arguments.sigma_decay
