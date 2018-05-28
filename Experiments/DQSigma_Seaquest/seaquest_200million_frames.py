@@ -34,7 +34,7 @@ class ExperimentAgent:
             self.config.save_summary = True
 
             """ Environment Parameters """
-            self.config.display_screen = True
+            self.config.display_screen = False
             self.config.frame_skip = 5
             self.config.agent_render = False
             self.config.repeat_action_probability = 0.25
@@ -51,7 +51,7 @@ class ExperimentAgent:
             self.config.conv_layers = 3
             self.config.full_layers = 1
             self.config.max_pool = False
-            self.config.frames_format = "NHWC"  # NCHW doesn't work with cpu in tensorflow, but it's more efficient on a gpu
+            self.config.frames_format = "NCHW"  # NCHW doesn't work with cpu in tensorflow, but it's more efficient on a gpu
             self.config.norm_factor = 255.0
 
             " Policies Parameters "
@@ -175,6 +175,7 @@ class Experiment:
         self.agent.save_parameters(dir_name)
         assert experiment_arguments.frames < MAX_FRAMES
         episode_number = 0
+        start = time.time()
         while self.agent.get_number_of_frames() < experiment_arguments.frames:
             episode_number += 1
             self.agent.train()
@@ -186,6 +187,7 @@ class Experiment:
                 print("The return last episode was:", return_per_episode[-1])
                 print("The average loss per episode is:", np.average(model_loss[start_idx:]))
                 print("The current frame is:", environment_data[-1])
+                print('The current running time is:', time.time() - start)
         self.agent.save_results(dir_name)
         if experiment_arguments.save_agent:
             self.agent.save_agent(dir_name)
