@@ -158,5 +158,5 @@ class QSigma(RL_ALgorithmBase):
                 if tau == T-1: break
             # End of episode
             if self.save_summary: self.summary['return_per_episode'].append(episode_reward_sum)
-            self.adjust_sigma()
+            if self.config.rand_steps_count >= self.initial_rand_steps: self.adjust_sigma()
             self.env.reset()
