@@ -109,7 +109,7 @@ class ExperimentAgent():
         self.target_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=False)
         self.behaviour_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=True)
 
-        if not self.use_buffer_sigma:
+        if self.use_buffer_sigma:
             """ QSigma return function """
             self.rl_return_fun = OffPolicyQSigmaReturnFunction(config=self.config, tpolicy=self.target_policy,
                                                                bpolicy=self.behaviour_policy)
