@@ -11,7 +11,7 @@ from Experiments_Engine.RL_Agents import OnPolicyQSigmaReturnFunction, ReplayBuf
 from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy
 from Experiments_Engine.config import Config
 
-MAX_FRAMES = 40000001
+MAX_FRAMES = 200000001
 
 
 class ExperimentAgent:
