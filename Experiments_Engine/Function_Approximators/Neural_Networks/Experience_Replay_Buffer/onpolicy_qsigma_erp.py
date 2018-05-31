@@ -18,6 +18,8 @@ class OnPolicyQSigmaExperienceReplayBuffer:
         num_actions         int             2                   number of actions available to the agent
         obs_dtype           np.type         np.uint8            the data type of the observations
         reward_clipping     bool            False               clipping the reward , see Mnih et. al. (2015)
+        sigma               float           0.5                 Sigma parameter, see De Asis et. al (2018)
+        sigma_decay         float           1.0                 decay rate of sigma
         """
         self.config = config
         self.buff_sz = check_attribute_else_default(config, 'buff_sz', 10)

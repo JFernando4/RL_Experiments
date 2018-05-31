@@ -8,11 +8,12 @@ import time
 # Environment
 from Experiments_Engine.Environments import MountainCar
 # Replay Buffer
-from Experiments_Engine.Function_Approximators import OffPolicyQSigmaExperienceReplayBuffer, OnPolicyQSigmaExperienceReplayBuffer
+from Experiments_Engine.Function_Approximators import OffPolicyQSigmaExperienceReplayBuffer, OnPolicyQSigmaExperienceReplayBuffer, \
+    QSigmaExperienceReplayBuffer
 # Function Approximator and Model
 from Experiments_Engine.Function_Approximators import NeuralNetwork_wER_FA, Model_mFO
 # RL Agents and Return Fuctions
-from Experiments_Engine.RL_Agents import QSigma, OffPolicyQSigmaReturnFunction, OnPolicyQSigmaReturnFunction, ReplayBufferAgent
+from Experiments_Engine.RL_Agents import QSigma, QSigmaReturnFunction
 # Policy
 from Experiments_Engine.Policies import EpsilonGreedyPolicy
 # Experiment configurations
@@ -34,10 +35,9 @@ class ExperimentAgent():
         self.sigma = experiment_parameters["sigma"]
         self.beta = experiment_parameters["beta"]
         self.target_epsilon = experiment_parameters['target_epsilon']
-        self.truncate_rho = experiment_parameters['truncate_rho']
         self.compute_bprobabilities = experiment_parameters['compute_bprobabilities']
         self.anneal_epsilon = experiment_parameters['anneal_epsilon']
-        self.use_buffer_sigma = experiment_parameters['use_buffer_sigma']
+        self.store_sigma = experiment_parameters['store_sigma']
 
         if restore:
             with open(os.path.join(restore_data_dir, 'experiment_config.p'), mode='rb') as experiment_config_file:
@@ -70,6 +70,11 @@ class ExperimentAgent():
             self.config.frame_stack = 1
             self.config.env_state_dims = [2]    # Dimensions of the environment's states
             self.config.obs_dtype = np.float32
+            self.config.sigma_decay = self.beta
+            self.config.sigma = self.sigma
+            self.config.store_bprobs = not self.compute_bprobabilities
+            self.config.store_sigma = self.store_sigma
+            self.config.store_return = not self.anneal_epsilon
 
             " Policies Parameters "
             self.config.target_policy = Config()
@@ -89,14 +94,14 @@ class ExperimentAgent():
             " QSigma Agent "
             self.config.n = self.n
             self.config.gamma = 0.99
-            self.config.beta = self.beta
-            self.config.sigma = self.sigma
             self.config.use_er_buffer = True
             self.config.initial_rand_steps = 1000  # 0.05 * buffer_size
 
             " QSigma Return Function "
-            self.config.compute_bprobabilities = self.compute_bprobabilities
-            self.config.truncate_rho = self.truncate_rho
+            self.config.compute_bprobs = self.compute_bprobabilities
+            self.config.onpolicy = self.compute_bprobabilities and not self.anneal_epsilon
+
+        self.config.rand_steps_count = 0
 
         " Environment "
         self.env = MountainCar(config=self.config, summary=self.summary)
@@ -109,22 +114,12 @@ class ExperimentAgent():
         self.target_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=False)
         self.behaviour_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=True)
 
-        if self.use_buffer_sigma:
-            """ QSigma return function """
-            self.rl_return_fun = OffPolicyQSigmaReturnFunction(config=self.config, tpolicy=self.target_policy,
-                                                               bpolicy=self.behaviour_policy)
+        """ QSigma Return Function """
+        self.rl_return_fun = QSigmaReturnFunction(config=self.config, tpolicy=self.target_policy,
+                                                  bpolicy=self.behaviour_policy)
 
-            """ QSigma replay buffer """
-            self.qsigma_erp = OffPolicyQSigmaExperienceReplayBuffer(config=self.config, return_function=self.rl_return_fun)
-
-        else:
-            self.config.use_buffer_sigma = False
-            """ QSigma return function """
-            self.rl_return_fun = OnPolicyQSigmaReturnFunction(config=self.config, tpolicy=self.target_policy)
-
-            """ QSigma replay buffer """
-            self.qsigma_erp = OnPolicyQSigmaExperienceReplayBuffer(config=self.config,
-                                                                   return_function=self.rl_return_fun)
+        """ QSigma Replay Buffer """
+        self.qsigma_erp = QSigmaExperienceReplayBuffer(config=self.config, return_function=self.rl_return_fun)
 
         """ Neural Network """
         self.function_approximator = NeuralNetwork_wER_FA(optimizer=self.optimizer, target_network=self.tnetwork,
@@ -183,9 +178,8 @@ class ExperimentAgent():
         params_txt.write("\tbeta = " + str(self.config.beta) + "\n")
         params_txt.write("\trandom steps before training = " +
                          str(self.config.initial_rand_steps) + "\n")
-        params_txt.write("\ttruncate rho = " + str(self.config.truncate_rho) + "\n")
         params_txt.write("\tcompute behaviour policy's probabilities = " +
-                         str(self.config.compute_bprobabilities) + "\n")
+                         str(self.config.compute_bprobs) + "\n")
         params_txt.write("\n")
 
         assert isinstance(self.target_policy, EpsilonGreedyPolicy)
@@ -212,7 +206,7 @@ class ExperimentAgent():
         params_txt.write("\tgate function = " + str(self.config.gate_fun) + "\n")
         params_txt.write("\n")
 
-        params_txt.write("\tuse_buffer_sigma = " + str(self.use_buffer_sigma))
+        params_txt.write("\tstore_sigma = " + str(self.store_sigma))
 
         params_txt.close()
 
@@ -261,15 +255,15 @@ if __name__ == "__main__":
     parser.add_argument('-sigma', action='store', default=0.5, type=np.float64)
     parser.add_argument('-beta', action='store', default=1, type=np.float64)
     parser.add_argument('-target_epsilon', action='store', default=0.1, type=np.float64)
-    parser.add_argument('-truncate_rho', action='store_true', default=False)
     parser.add_argument('-compute_bprobabilities', action='store_true', default=False)
     parser.add_argument('-anneal_epsilon', action='store_true', default=False)
     parser.add_argument('-quiet', action='store_false', default=True)
     parser.add_argument('-dump_agent', action='store_false', default=True)
     parser.add_argument('-frames', action='store', default=500000, type=np.int32)
     parser.add_argument('-name', action='store', default='agent_1', type=str)
-    parser.add_argument('-use_buffer_sigma', action='store_true', default=False)
-    """ Note:
+    parser.add_argument('-store_sigma', action='store_true', default=False)
+    """ 
+    Note:
         If not use_buffer_sigma, then the sigma store in the buffer is not used, instead the current sigma of the 
         return function is used for all the observations in the buffer.
     """

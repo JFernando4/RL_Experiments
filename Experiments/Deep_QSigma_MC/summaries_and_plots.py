@@ -115,7 +115,7 @@ if __name__ == "__main__":
     average_window = 10
     omit_list = []
     results_summary_data(results_path, evaluation_frames, average_window, ci_error=0.05,
-                         max_agents=30, name="SampleSize30", fa_windows=fa_windows, omit_list=omit_list)
+                         max_agents=5, name="preliminary", fa_windows=fa_windows, omit_list=omit_list)
 
 
 
