@@ -62,11 +62,5 @@ class CircularBuffer:
 
         self.data[(self.start + self.length - 1) % self.maxlen] = v
 
-    def set_item(self, idx, item):
-        if isinstance(idx, int):
-            if idx < 0 or idx >= self.length:
-                raise KeyError()
-        self.data.itemset(idx, item)
-
     def take(self, idx):
-        return np.take(self.data, self.start + idx, mode='wrap', axis=0)
+        return self.data.take(self.start + idx, mode='wrap', axis=0)

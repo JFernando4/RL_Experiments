@@ -77,6 +77,7 @@ class NeuralNetwork_wER_FA(FunctionApproximatorBase):
             if self.config.update_count >= self.tnetwork_update_freq:
                 self.config.update_count = 0
                 self.update_target_network()
+                self.er_buffer.out_of_date()
 
     def update_target_network(self):
         update_network_vars = self.update_network.get_variables_as_tensor()
