@@ -7,7 +7,7 @@ import Experiments.Experiments_Utilities.dir_management_utilities as dir_managem
 from Experiments_Engine.Environments.MountainCar import MountainCar
 from Experiments_Engine.RL_Agents.qsigma import QSigma
 from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy
-from Experiments_Engine.Function_Approximators.Neural_Networks.Neural_Network import NeuralNetwork_FA
+from Experiments_Engine.Function_Approximators.Neural_Networks.Neural_Network_wPrioritizedTraining import NeuralNetwork_FA
 from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.models import Model_mFO
 
 
