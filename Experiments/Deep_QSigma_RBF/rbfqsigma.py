@@ -6,8 +6,8 @@ import os
 import time
 
 from Experiments_Engine.Environments import ALE_Environment
-from Experiments_Engine.Function_Approximators import NeuralNetwork_wER_FA, Model_nCPmFO, QSigmaExperienceReplayBuffer
-from Experiments_Engine.RL_Agents import QSigmaReturnFunction, ReplayBufferAgent
+from Experiments_Engine.Function_Approximators import SimpleNeuralNetwork, Model_nCPmFO_wRBFLayer
+from Experiments_Engine.RL_Agents import QSigma
 from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy
 from Experiments_Engine.config import Config
 
@@ -22,6 +22,7 @@ class ExperimentAgent:
         self.rom_name = "seaquest.bin"
 
         self.optimizer = lambda lr: tf.train.RMSPropOptimizer(lr, decay=0.95, momentum=0.95, epsilon=0.01, centered=True)
+        # self.optimizer = tf.train.GradientDescentOptimizer
         self.sess = tf.Session()
         if experiment_arguments.restore_agent:
             with open(os.path.join(dir_name, 'experiment_config.p'), mode='rb') as experiment_config_file:
@@ -57,60 +58,38 @@ class ExperimentAgent:
             " Policies Parameters "
             " Target Policy "
             self.config.target_policy = Config()
-            self.config.target_policy.initial_epsilon = 0.01
+            self.config.target_policy.initial_epsilon = 0.1
             self.config.target_policy.anneal_epsilon = False
 
-            " Experience Replay Buffer Parameters "
-            self.config.buff_sz = experiment_arguments.buffer_size
-            self.config.batch_sz = 32
-            self.config.env_state_dims = (84, 84)  # Dimensions of a frame
-            self.config.reward_clipping = True
-            self.config.obs_dtype = np.uint8
+            " QSigma Agent Parameters "
             self.config.sigma_decay = experiment_arguments.sigma_decay
             self.config.sigma = experiment_arguments.sigma
-            self.config.store_bprobs = False
-            self.config.store_sigma = True
-            self.config.store_return = True
-
-            " QSigma Return Parameters "
             self.config.n = experiment_arguments.n
             self.config.gamma = 0.99
-            self.config.initial_rand_steps = 50000
-            self.config.compute_bprobs = False
-            self.config.onpolicy = True
+            self.config.initial_rand_steps = 0
+            self.config.use_er_buffer = False
 
             " Neural Network "
             self.config.alpha = 0.00025
-            self.config.tnetwork_update_freq = 10000
-
-        self.config.rand_steps_count = 0
 
         " Environment "
         self.env = ALE_Environment(games_directory=self.games_directory, summary=self.summary,
                                    rom_filename=self.rom_name, config=self.config)
 
         " Models "
-        self.target_network = Model_nCPmFO(config=self.config, name='target')
-        self.update_network = Model_nCPmFO(config=self.config, name='update')
+        self.target_network = Model_nCPmFO_wRBFLayer(config=self.config, name='target')
 
         """ Policies """
         self.target_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=False)
 
-        """ Return Function """
-        self.return_function = QSigmaReturnFunction(config=self.config, tpolicy=self.target_policy)
-
-        """ Experience Replay Buffer """
-        self.er_buffer = QSigmaExperienceReplayBuffer(config=self.config, return_function=self.return_function)
-
         """ Neural Network """
-        self.function_approximator = NeuralNetwork_wER_FA(optimizer=self.optimizer, target_network=self.target_network,
-                                                          update_network=self.update_network, er_buffer=self.er_buffer,
+        self.function_approximator = SimpleNeuralNetwork(optimizer=self.optimizer, neural_network=self.target_network,
                                                           tf_session=self.sess, config=self.config, summary=self.summary)
 
         """ RL Agent """
-        self.agent = ReplayBufferAgent(environment=self.env, function_approximator=self.function_approximator,
-                                       behaviour_policy=self.target_policy, config=self.config, summary=self.summary,
-                                       er_buffer=self.er_buffer)
+        self.agent = QSigma(environment=self.env, function_approximator=self.function_approximator,
+                            target_policy=self.target_policy, behaviour_policy=self.target_policy, config=self.config,
+                            summary=self.summary)
 
         if experiment_arguments.restore_agent:
             saver = tf.train.Saver()
@@ -119,12 +98,10 @@ class ExperimentAgent:
             print("Model restored from file: %s" % sourcepath)
 
     def train(self):
-        self.agent.train()
+        self.agent.train(1)
         self.function_approximator.store_in_summary()
 
     def save_agent(self, dir_name):
-        # Note: The buffer is always dumped and reinitialized when restored. The agent again takes k initial random
-        # steps.
         with open(os.path.join(dir_name, 'experiment_config.p'), mode='wb') as experiment_config_file:
             pickle.dump(self.config, experiment_config_file)
         saver = tf.train.Saver()
@@ -144,56 +121,25 @@ class ExperimentAgent:
     def get_number_of_frames(self):
         return np.sum(self.summary['frames_per_episode'])
 
-    def save_parameters(self, dir_name):
-        txt_file_pathname = os.path.join(dir_name, "agent_parameters.txt")
-        with open(txt_file_pathname, mode="w") as params_txt:
-            params_txt.write("# Agent #\n")
-            params_txt.write("\tn = " + str(self.return_function.n) + "\n")
-            params_txt.write("\tgamma = " + str(self.return_function.gamma) + "\n")
-            params_txt.write("\tsigma = " + str(self.return_function.sigma) + "\n")
-            params_txt.write("\tbeta = " + str(self.return_function.sigma_decay) + "\n")
-            params_txt.write("\trandom steps before training = " +
-                             str(self.agent.initial_rand_steps) + "\n")
-            params_txt.write("\n")
-
-            params_txt.write("# Target Policy #\n")
-            params_txt.write("\tinitial epsilon = " + str(self.target_policy.initial_epsilon) + "\n")
-            params_txt.write("\tfinal epsilon = " + str(self.target_policy.final_epsilon) + "\n")
-            params_txt.write("\n")
-
-            assert isinstance(self.er_buffer, QSigmaExperienceReplayBuffer)
-            assert isinstance(self.function_approximator, NeuralNetwork_wER_FA)
-            assert isinstance(self.target_network, Model_nCPmFO)
-            assert isinstance(self.update_network, Model_nCPmFO)
-            params_txt.write("# Function Approximator: Neural Network with Experience Replay #\n")
-            params_txt.write("\talpha = " + str(self.function_approximator.alpha) + "\n")
-            params_txt.write("\ttarget network update frequency = " + str(self.function_approximator.tnetwork_update_freq) + "\n")
-            params_txt.write("\tbatch size = " + str(self.er_buffer.batch_sz) + "\n")
-            params_txt.write("\tbuffer size = " + str(self.er_buffer.buff_sz) + "\n")
-            params_txt.write("\n")
-
 
 class Experiment:
 
     def __init__(self, experiment_arguments, dir_name):
         self.agent = ExperimentAgent(experiment_arguments, dir_name)
-        self.agent.save_parameters(dir_name)
         assert experiment_arguments.frames < MAX_FRAMES
-        episode_number = 0
         start = time.time()
         while self.agent.get_number_of_frames() < experiment_arguments.frames:
-            episode_number += 1
             self.agent.train()
             if not args.quiet:
                 return_per_episode, environment_data, model_loss = self.agent.get_training_data()
-                print("\nResults of episode", str(episode_number) + "...")
-                start_idx = 0 if len(return_per_episode) < 100 else -100
+                print("\nResults of episode", str(len(return_per_episode)) + "...")
+                start_idx = 0 if len(return_per_episode) < 10 else -10
                 print("The average return per episode is:", np.average(return_per_episode[start_idx:]))
                 print("The return last episode was:", return_per_episode[-1])
                 print("The average loss per episode is:", np.average(model_loss[start_idx:]))
+                print("The loss last episode was:", model_loss[-1])
                 print("The current frame is:", environment_data[-1])
                 print('The current running time is:', time.time() - start)
-                print('sigma:', self.agent.return_function.sigma)
         self.agent.save_results(dir_name)
         if experiment_arguments.save_agent:
             self.agent.save_agent(dir_name)
@@ -212,7 +158,6 @@ if __name__ == "__main__":
     parser.add_argument('-restore_agent', action='store_true', default=False)
     parser.add_argument('-name', action='store', default='agent_1', type=str)
     parser.add_argument('-frame_format', action='store', default='NHWC', type=str)
-    parser.add_argument('-buffer_size', action='store', default=100000, type=np.int32)
     args = parser.parse_args()
 
     """ Directories """
@@ -226,7 +171,3 @@ if __name__ == "__main__":
     end = time.time()
 
     print('Total running time:', end-start)
-
-
-
-
