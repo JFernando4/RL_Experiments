@@ -29,6 +29,7 @@ class ExperimentAgent:
                 self.config = pickle.load(experiment_config_file)
             with open(os.path.join(dir_name, 'summary.p'), mode='rb') as summary_file:
                 self.summary = pickle.load(summary_file)
+            self.config.display_screen = False
         else:
             self.config = Config()
             self.summary = {'frames_per_episode': [], 'return_per_episode': [], 'cumulative_loss': [], 'training_steps': []}
