@@ -6,6 +6,7 @@ from Experiments_Engine.Plots_and_Summaries import compute_tdist_confidence_inte
 
 
 MAX_FRAMES = 500000
+MAX_EPISODES = 2000
 METHOD_RESULT_FILENAME = "method_results.p"
 
 
@@ -113,9 +114,9 @@ if __name__ == "__main__":
     evaluation_frames = [60000, 120000, 250000, 500000]
     fa_windows = [10, 50, 100, 500, 1000]
     average_window = 10
-    omit_list = []
+    omit_list = ["DecayingSigma2", "ExpectedSarsa2"]
     results_summary_data(results_path, evaluation_frames, average_window, ci_error=0.05,
-                         max_agents=5, name="preliminary", fa_windows=fa_windows, omit_list=omit_list)
+                         max_agents=25, name="preliminary", fa_windows=fa_windows, omit_list=omit_list)
 
 
 

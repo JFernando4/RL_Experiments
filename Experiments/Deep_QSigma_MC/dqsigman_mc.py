@@ -8,8 +8,7 @@ import time
 # Environment
 from Experiments_Engine.Environments import MountainCar
 # Replay Buffer
-from Experiments_Engine.Function_Approximators import OffPolicyQSigmaExperienceReplayBuffer, OnPolicyQSigmaExperienceReplayBuffer, \
-    QSigmaExperienceReplayBuffer
+from Experiments_Engine.Function_Approximators import QSigmaExperienceReplayBuffer
 # Function Approximator and Model
 from Experiments_Engine.Function_Approximators import NeuralNetwork_wER_FA, Model_mFO
 # RL Agents and Return Fuctions
@@ -21,6 +20,7 @@ from Experiments_Engine.config import Config
 
 
 MAX_TRAINING_FRAMES = 1000000
+MAX_EPISODES = 2000 + 1
 
 
 class ExperimentAgent():
@@ -51,7 +51,7 @@ class ExperimentAgent():
             self.config.save_summary = True
 
             " Environment Parameters  "
-            self.config.max_actions = 5000
+            self.config.max_actions = 1000
             self.config.num_actions = 3     # Number actions in Mountain Car
             self.config.obs_dims = [2]      # Dimensions of the observations experienced by the agent
 
@@ -261,6 +261,7 @@ if __name__ == "__main__":
     parser.add_argument('-dump_agent', action='store_false', default=True)
     parser.add_argument('-frames', action='store', default=500000, type=np.int32)
     parser.add_argument('-name', action='store', default='agent_1', type=str)
+    parser.add_argument('-episodes', action='store', default=MAX_EPISODES - 1, type=np.int32)
     parser.add_argument('-store_sigma', action='store_true', default=False)
     """ 
     Note:
