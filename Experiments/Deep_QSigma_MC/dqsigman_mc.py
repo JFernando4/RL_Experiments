@@ -20,7 +20,7 @@ from Experiments_Engine.config import Config
 
 
 MAX_TRAINING_FRAMES = 1000000
-MAX_EPISODES = 2000 + 1
+MAX_EPISODES = 500 + 1
 
 
 class ExperimentAgent():
@@ -51,12 +51,12 @@ class ExperimentAgent():
             self.config.save_summary = True
 
             " Environment Parameters  "
-            self.config.max_actions = 1000
+            self.config.max_actions = 5000
             self.config.num_actions = 3     # Number actions in Mountain Car
             self.config.obs_dims = [2]      # Dimensions of the observations experienced by the agent
 
             " Model Parameters "
-            self.config.dim_out = [100]
+            self.config.dim_out = [1000]
             self.config.gate_fun = tf.nn.relu
             self.config.full_layers = 1
 
@@ -93,7 +93,7 @@ class ExperimentAgent():
 
             " QSigma Agent "
             self.config.n = self.n
-            self.config.gamma = 0.99
+            self.config.gamma = 1
             self.config.use_er_buffer = True
             self.config.initial_rand_steps = 1000  # 0.05 * buffer_size
 
@@ -132,6 +132,11 @@ class ExperimentAgent():
                             behaviour_policy=self.behaviour_policy, environment=self.env,
                             er_buffer=self.qsigma_erp, config=self.config, summary=self.summary)
 
+        # number_of_parameters = 0
+        # for i in self.tnetwork.get_variables_as_list(self.tf_sess):
+        #     number_of_parameters += np.array(i).size
+        # print(number_of_parameters)
+
         if restore:
             saver = tf.train.Saver()
             sourcepath = os.path.join(restore_data_dir, "agent_graph.ckpt")
@@ -144,6 +149,9 @@ class ExperimentAgent():
 
     def get_number_of_frames(self):
         return np.sum(self.summary['steps_per_episode'])
+
+    def get_episode_number(self):
+        return len(self.summary['steps_per_episode'])
 
     def get_train_data(self):
         return_per_episode = self.summary['return_per_episode']
@@ -214,21 +222,21 @@ class ExperimentAgent():
 class Experiment:
 
     def __init__(self, experiment_parameters, results_dir=None, save_agent=False, restore_agent=False,
-                 max_number_of_frames=1000):
+                 max_number_of_episodes=2000):
         self.agent = ExperimentAgent(restore=restore_agent, restore_data_dir=results_dir,
                                      experiment_parameters=experiment_parameters)
         self.results_dir = results_dir
         self.restore_agent = restore_agent
         self.save_agent = save_agent
-        self.max_number_of_frames = max_number_of_frames
+        self.max_number_of_episodes = max_number_of_episodes
         self.agent.save_parameters(self.results_dir)
 
-        if max_number_of_frames > MAX_TRAINING_FRAMES:
+        if max_number_of_episodes > MAX_EPISODES:
             raise ValueError
 
     def run_experiment(self, verbose=True):
         episode_number = 0
-        while self.agent.get_number_of_frames() < self.max_number_of_frames:
+        while self.agent.get_episode_number() < self.max_number_of_episodes:
             episode_number += 1
             if verbose:
                 print("\nTraining episode", str(len(self.agent.get_train_data()[0]) + 1) + "...")
@@ -259,7 +267,6 @@ if __name__ == "__main__":
     parser.add_argument('-anneal_epsilon', action='store_true', default=False)
     parser.add_argument('-quiet', action='store_false', default=True)
     parser.add_argument('-dump_agent', action='store_false', default=True)
-    parser.add_argument('-frames', action='store', default=500000, type=np.int32)
     parser.add_argument('-name', action='store', default='agent_1', type=str)
     parser.add_argument('-episodes', action='store', default=MAX_EPISODES - 1, type=np.int32)
     parser.add_argument('-store_sigma', action='store_true', default=False)
@@ -278,7 +285,7 @@ if __name__ == "__main__":
 
     exp_params = args
     experiment = Experiment(results_dir=results_directory, save_agent=args['dump_agent'], restore_agent=False,
-                            max_number_of_frames=args['frames'], experiment_parameters=exp_params)
+                            max_number_of_episodes=args['episodes'], experiment_parameters=exp_params)
     start_time = time.time()
     experiment.run_experiment(verbose=args['quiet'])
     end_time = time.time()
