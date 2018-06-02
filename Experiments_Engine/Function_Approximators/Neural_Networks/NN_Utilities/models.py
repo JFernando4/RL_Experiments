@@ -281,7 +281,22 @@ class Model_nCPmFO_wRBFLayer(ModelBase):
         current_s_hat = self.x_frames
         if self.frames_format == "NHWC":
             current_s_hat = tf.transpose(current_s_hat, [0, 2, 3, 1])
-        for i in range(self.convolutional_layers):
+
+        centers = tf.constant(np.random.uniform(size=(self.dim_out[0],21,21)), dtype=np.float32)
+        stddev = tf.constant(tf.divide(1, self.dim_out[0]))
+        W, b, z_hat, r_hat = layers.convolution_2d_rbf(self.name, 'conv_rbf_1', current_s_hat, self.filter_dims[0],
+                                                       dim_in_conv[0], self.dim_out[0],
+                tf.random_normal_initializer(stddev=1.0/np.sqrt(self.filter_dims[0]**2 * dim_in_conv[0] +1), seed=SEED),
+                                                       stride=self.strides[0], center=centers, stddev=stddev,
+                                                       format=self.frames_format)
+        if self.max_pool:
+            s_hat = tf.nn.max_pool(r_hat, ksize=[1,1,2,2], strides=[1,1,2,2], padding='SAME')
+        else:
+            s_hat = r_hat
+        current_s_hat = s_hat
+        self.train_vars.extend([W,b])
+
+        for i in range(1, self.convolutional_layers):
             # layer n: convolutional
             W, b, z_hat, r_hat = layers.convolution_2d(
                 self.name, "conv_"+str(i+1), current_s_hat, self.filter_dims[i], dim_in_conv[i], self.dim_out[i],
@@ -304,7 +319,7 @@ class Model_nCPmFO_wRBFLayer(ModelBase):
         # shape[-3:] are the last 3 dimensions. Shape has 4 dimensions: dim 1 = None, dim 2 =
         dim_in_fully = [np.prod(shape[-3:])] + self.dim_out[self.convolutional_layers: total_layers-1]
         dim_out_fully = self.dim_out[self.convolutional_layers:]
-        for j in range(self.fully_connected_layers-1):
+        for j in range(self.fully_connected_layers):
             # layer n + m: fully connected
             W, b, z_hat, y_hat = layers.fully_connected(
                 self.name, "full_"+str(j+1), current_y_hat, dim_in_fully[j], dim_out_fully[j],
@@ -313,13 +328,13 @@ class Model_nCPmFO_wRBFLayer(ModelBase):
             current_y_hat = y_hat
             self.train_vars.extend([W, b])
 
-        centers = tf.constant(np.random.standard_normal(size=dim_out_fully[-1]), dtype=np.float32)
-        stddev = tf.constant(tf.divide(1, dim_out_fully[-1]))
-        W, b, z_hat, y_hat = layers.fully_connected_rbf(self.name, 'full_rbf', current_y_hat, dim_in_fully[-1],
-            dim_out_fully[-1], tf.random_normal_initializer(stddev=1.0 / np.sqrt(dim_in_fully[-1]), seed=SEED),
-            center=centers, stddev=stddev)
-        current_y_hat = y_hat
-        self.train_vars.extend([W,b])
+        # centers = tf.constant(np.random.standard_normal(size=dim_out_fully[-1]), dtype=np.float32)
+        # stddev = tf.constant(tf.divide(1, dim_out_fully[-1]))
+        # W, b, z_hat, y_hat = layers.fully_connected_rbf(self.name, 'full_rbf', current_y_hat, dim_in_fully[-1],
+        #     dim_out_fully[-1], tf.random_normal_initializer(stddev=1.0 / np.sqrt(dim_in_fully[-1]), seed=SEED),
+        #     center=centers, stddev=stddev)
+        # current_y_hat = y_hat
+        # self.train_vars.extend([W,b])
 
         """ Output layer """
         # output layer: fully connected
