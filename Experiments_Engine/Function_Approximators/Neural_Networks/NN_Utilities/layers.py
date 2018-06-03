@@ -50,7 +50,7 @@ def fully_connected_rbf(name, label, var_in, dim_in, dim_out, initializer, cente
 
     z_hat = tf.matmul(var_in, W)
     z_hat = tf.nn.bias_add(z_hat, b)
-    max_z_hat = tf.reduce_max(z_hat)
+    max_z_hat = tf.reduce_max(tf.abs(z_hat))
     z_hat = tf.divide(z_hat, max_z_hat)
     centered = tf.subtract(z_hat, center)
     y_hat = tf.exp(tf.multiply(tf.divide(tf.pow(centered,2), stddev), -1))
@@ -72,7 +72,7 @@ def convolution_2d_rbf(name, label, var_in, f, dim_in, dim_out, initializer, cen
         strides = [1,stride, stride, 1]
     z_hat = tf.nn.conv2d(var_in, W, strides=strides, padding="SAME", data_format=format)
     z_hat = tf.nn.bias_add(z_hat, b, data_format=format)
-    max_z_hat = tf.reduce_max(z_hat)
+    max_z_hat = tf.reduce_max(tf.abs(z_hat))
     z_hat = tf.divide(z_hat, max_z_hat)
     centered = tf.subtract(z_hat, center)
     y_hat = tf.exp(tf.multiply(tf.divide(tf.pow(centered,2), stddev), -1))

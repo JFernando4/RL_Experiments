@@ -79,8 +79,7 @@ class NeuralNetwork_FA(FunctionApproximatorBase):
         sample_action = np.column_stack((0, np.zeros(shape=[1,1], dtype=int) + action))
         abs_td_error = np.abs(self.get_td_error(sample_state, sample_action, value))
         self.percentile_estimator.add_to_record(abs_td_error)
-        # if abs_td_error >= self.percentile_estimator.get_percentile(self.train_percentile_index):
-        if np.random.rand() > self.train_p:
+        if abs_td_error >= self.percentile_estimator.get_percentile(self.train_percentile_index):
             buffer_entry = (sample_state,
                             np.zeros(shape=[1,1], dtype=int) + action,
                             value)
