@@ -74,7 +74,7 @@ class ExperimentAgent():
             self.config.sigma = self.sigma
             self.config.store_bprobs = not self.compute_bprobabilities
             self.config.store_sigma = self.store_sigma
-            self.config.store_return = False
+            self.config.store_return = not self.anneal_epsilon
 
             " Policies Parameters "
             self.config.target_policy = Config()
