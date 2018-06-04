@@ -66,7 +66,7 @@ class ExperimentAgent():
             self.config.tnetwork_update_freq = 1000     # 0.05 * buff_sz
 
             " Experience Replay Buffer Parameters "
-            self.config.buff_sz = 20000     # 0.02 * MAX_TRAINING_FRAMES
+            self.config.buff_sz = 20000
             self.config.frame_stack = 1
             self.config.env_state_dims = [2]    # Dimensions of the environment's states
             self.config.obs_dtype = np.float32
@@ -74,7 +74,7 @@ class ExperimentAgent():
             self.config.sigma = self.sigma
             self.config.store_bprobs = not self.compute_bprobabilities
             self.config.store_sigma = self.store_sigma
-            self.config.store_return = not self.anneal_epsilon
+            self.config.store_return = False
 
             " Policies Parameters "
             self.config.target_policy = Config()
@@ -85,11 +85,11 @@ class ExperimentAgent():
                 self.config.behaviour_policy.initial_epsilon = 1
                 self.config.behaviour_policy.final_epsilon = 0.1
                 self.config.behaviour_policy.anneal_epsilon = True
-                self.config.behaviour_policy.annealing_period = 20000   # 0.02 * MAX_TRAINING_FRAMES
+                self.config.behaviour_policy.annealing_period = 20000   # Buffer size
             else:
                 self.config.behaviour_policy.initial_epsilon = 0.1
                 self.config.behaviour_policy.anneal_epsilon = False
-                self.config.behaviour_policy.annealing_period = 20000  # 0.02 * MAX_TRAINING_FRAMES
+                self.config.behaviour_policy.annealing_period = 20000  # Buffer size
 
             " QSigma Agent "
             self.config.n = self.n
@@ -131,11 +131,6 @@ class ExperimentAgent():
         self.agent = QSigma(function_approximator=self.function_approximator, target_policy=self.target_policy,
                             behaviour_policy=self.behaviour_policy, environment=self.env,
                             er_buffer=self.qsigma_erp, config=self.config, summary=self.summary)
-
-        # number_of_parameters = 0
-        # for i in self.tnetwork.get_variables_as_list(self.tf_sess):
-        #     number_of_parameters += np.array(i).size
-        # print(number_of_parameters)
 
         if restore:
             saver = tf.train.Saver()
@@ -251,6 +246,7 @@ class Experiment:
                     print("The average training loss is:", np.average(nn_loss[-10:]))
                 print("The return in the last episode was:", return_per_episode[-1])
                 print("The total number of steps is:", self.agent.get_number_of_frames())
+                print("The total average return is:", np.average(return_per_episode))
         if self.save_agent:
             self.agent.save_agent(self.results_dir)
         self.agent.save_results(self.results_dir)
@@ -272,7 +268,7 @@ if __name__ == "__main__":
     parser.add_argument('-store_sigma', action='store_true', default=False)
     """ 
     Note:
-        If not use_buffer_sigma, then the sigma store in the buffer is not used, instead the current sigma of the 
+        If not use_buffer_sigma, then the sigma stored in the buffer is not used, instead the current sigma of the 
         return function is used for all the observations in the buffer.
     """
     args = vars(parser.parse_args())
