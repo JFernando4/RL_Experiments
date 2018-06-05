@@ -21,7 +21,7 @@ class ExperimentAgent:
         self.games_directory = homepath + "PycharmProjects/RL_Experiments/Experiments_Engine/Environments/Arcade_Learning_Environment/Supported_Roms/"
         self.rom_name = "seaquest.bin"
 
-        self.optimizer = lambda lr: tf.train.RMSPropOptimizer(lr, decay=0.95, momentum=0.95, epsilon=0.01, centered=True)
+        self.optimizer = lambda lr: tf.train.RMSPropOptimizer(lr, decay=0.95, momentum=0, epsilon=0.01, centered=True)
         # self.optimizer = tf.train.GradientDescentOptimizer
         self.sess = tf.Session()
         if experiment_arguments.restore_agent:
@@ -134,7 +134,7 @@ class Experiment:
             if not args.quiet:
                 return_per_episode, environment_data, model_loss = self.agent.get_training_data()
                 print("\nResults of episode", str(len(return_per_episode)) + "...")
-                start_idx = 0 if len(return_per_episode) < 10 else -10
+                start_idx = 0 if len(return_per_episode) < 100 else -100
                 print("The average return per episode is:", np.average(return_per_episode[start_idx:]))
                 print("The return last episode was:", return_per_episode[-1])
                 print("The average loss per episode is:", np.average(model_loss[start_idx:]))
