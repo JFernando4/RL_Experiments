@@ -8,7 +8,7 @@ from Demos.Demos_Utility.Saving_Restoring_NN_Util import NN_Agent_History, save_
 """ Agent, Environment, and Function Approximator """
 from Experiments_Engine.Environments.Arcade_Learning_Environment.ALE_Environment import ALE_Environment    # environment
 from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities import models
-from Experiments_Engine.Function_Approximators.Neural_Networks.Neural_Network_wPrioritizedTraining import NeuralNetwork_FA      # Function Approximator
+from Experiments_Engine.Function_Approximators.Neural_Networks.Neural_Network_wPrioritizedTraining import NeuralNetwork_wPrioritizedTraining      # Function Approximator
 from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy                                 # Policies
 from Experiments_Engine.RL_Agents.qsigma import QSigma                                                # RL ALgorithm
 from Experiments_Engine.config import Config
@@ -44,7 +44,7 @@ def main():
 
         env.set_environment_dictionary(env_dictionary)
         model = models.Model_nCPmFO(model_dictionary=model_dictionary)
-        fa = NeuralNetwork_FA(neural_network=model, optimizer=optimizer, fa_dictionary=fa_dictionary, tf_session=sess)
+        fa = NeuralNetwork_wPrioritizedTraining(neural_network=model, optimizer=optimizer, fa_dictionary=fa_dictionary, tf_session=sess)
         agent = QSigma(environment=env, function_approximator=fa, agent_dictionary=agent_dictionary)
         restore_graph(experiment_path, sess)
     else:
@@ -72,9 +72,9 @@ def main():
                                     num_actions=num_actions, gate_fun=gate_fun, convolutional_layers=conv_layers,
                                     filter_dims=filter_dims, fully_connected_layers=fully_connected_layers,
                                     strides=strides)
-        fa = NeuralNetwork_FA(neural_network=model, optimizer=optimizer, numActions=num_actions,
-                              batch_size=batch_size, alpha=alpha, tf_session=sess,
-                              observation_dimensions=observation_dimensions, number_of_percentiles=0)
+        fa = NeuralNetwork_wPrioritizedTraining(neural_network=model, optimizer=optimizer, numActions=num_actions,
+                                                batch_size=batch_size, alpha=alpha, tf_session=sess,
+                                                observation_dimensions=observation_dimensions, number_of_percentiles=0)
         agent = QSigma(n=n, gamma=gamma, beta=beta, sigma=sigma, environment=env, function_approximator=fa,
                        target_policy=tpolicy, behaviour_policy=bpolicy)
 

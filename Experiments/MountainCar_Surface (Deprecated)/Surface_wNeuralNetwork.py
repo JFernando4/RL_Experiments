@@ -7,7 +7,7 @@ import Experiments.Experiments_Utilities.dir_management_utilities as dir_managem
 from Experiments_Engine.Environments.MountainCar import MountainCar
 from Experiments_Engine.RL_Agents.qsigma import QSigma
 from Experiments_Engine.Policies.Epsilon_Greedy import EpsilonGreedyPolicy
-from Experiments_Engine.Function_Approximators.Neural_Networks.Neural_Network_wPrioritizedTraining import NeuralNetwork_FA
+from Experiments_Engine.Function_Approximators.Neural_Networks.Neural_Network_wPrioritizedTraining import NeuralNetwork_wPrioritizedTraining
 from Experiments_Engine.Function_Approximators.Neural_Networks.NN_Utilities.models import Model_mFO
 
 
@@ -33,11 +33,11 @@ class ExperimentAgent:
         number_of_percentiles = 0
         percentile_index = 0
         training_steps = 1
-        self.fa = NeuralNetwork_FA(model=self.model, optimizer=tf.train.GradientDescentOptimizer,
-                                   numActions=num_actions, batch_size=batch_size, alpha=alpha,
-                                   tf_session=self.tf_session, observation_dimensions=observation_dimensions,
-                                   layer_training_print_freq=5000000, number_of_percentiles=number_of_percentiles,
-                                   training_steps=training_steps,percentile_to_train_index=percentile_index)
+        self.fa = NeuralNetwork_wPrioritizedTraining(model=self.model, optimizer=tf.train.GradientDescentOptimizer,
+                                                     numActions=num_actions, batch_size=batch_size, alpha=alpha,
+                                                     tf_session=self.tf_session, observation_dimensions=observation_dimensions,
+                                                     layer_training_print_freq=5000000, number_of_percentiles=number_of_percentiles,
+                                                     training_steps=training_steps, percentile_to_train_index=percentile_index)
 
         " Agent Parameters "
         self.agent = QSigma(n=n, gamma=gamma, beta=beta, sigma=sigma, environment=self.env,

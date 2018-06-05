@@ -4,7 +4,7 @@ import os
 import pickle
 
 from Experiments_Engine.Environments import ALE_Environment     # Environment
-from Experiments_Engine import NeuralNetwork_FA                 # Function Approximator
+from Experiments_Engine import NeuralNetwork_wPrioritizedTraining                 # Function Approximator
 from Experiments_Engine import Model_nCPmFO                     # NN Models
 from Experiments_Engine import QSigma                           # RL Agent
 from Experiments_Engine import EpsilonGreedyPolicy              # Policy
@@ -87,9 +87,9 @@ class ExperimentAgent:
         self.behaviour_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=True)
 
         """ Neural Network """
-        self.function_approximator = NeuralNetwork_FA(optimizer=self.optimizer, neural_network=self.network,
-                                                      config=self.config, tf_session=self.tf_sess, summary=self.summary,
-                                                      restore=restore)
+        self.function_approximator = NeuralNetwork_wPrioritizedTraining(optimizer=self.optimizer, neural_network=self.network,
+                                                                        config=self.config, tf_session=self.tf_sess, summary=self.summary,
+                                                                        restore=restore)
 
         """ RL Agent """
         self.agent = QSigma(function_approximator=self.function_approximator, target_policy=self.target_policy,
