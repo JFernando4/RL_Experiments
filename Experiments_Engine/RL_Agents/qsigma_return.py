@@ -55,10 +55,10 @@ class QSigmaReturnFunction:
         tprobabilities = np.ones([batch_size, self.n, self.tpolicy.num_actions], dtype=np.float64)
         if not self.onpolicy:
             bprobs = bprobs if not self.compute_bprobs \
-                         else np.zeros([batch_size, self.n, self.tpolicy.num_actions], dtype=np.float64)
+                         else np.ones([batch_size, self.n, self.tpolicy.num_actions], dtype=np.float64)
 
         for i in range(self.n):
-            tprobabilities[:,i] = self.tpolicy.batch_probability_of_action(qvalues[:,i])
+            tprobabilities[:, i] = self.tpolicy.batch_probability_of_action(qvalues[:,i])
             if self.compute_bprobs:
                 bprobs[:, i] = self.bpolicy.batch_probability_of_action(qvalues[:,i])
 
@@ -68,7 +68,7 @@ class QSigmaReturnFunction:
         one_matrix = np.ones([batch_idxs.size, self.n], dtype=np.uint8)
         term_ind = terminations.astype(np.uint8)
         neg_term_ind = np.subtract(one_matrix, term_ind)
-        estimated_Gt = neg_term_ind[:,-1] * selected_qval[:,-1] + term_ind[:,-1] * rewards[:,-1]
+        estimated_Gt = neg_term_ind[:, -1] * selected_qval[:, -1] + term_ind[:, -1] * rewards[:, -1]
 
         for i in range(self.n-1, -1, -1):
             R_t = rewards[:, i]
@@ -76,7 +76,7 @@ class QSigmaReturnFunction:
             Q_t = qvalues[:, i, :]
             Sigma_t = sigmas[:, i]
             exec_q = Q_t[batch_idxs, A_t]       # The action-value of the executed actions
-            assert np.sum(exec_q == selected_qval[:,i]) == batch_size
+            assert np.sum(exec_q == selected_qval[:, i]) == batch_size
             tprob = tprobabilities[:, i, :]     # The probability of the executed actions under the target policy
             exec_tprob = tprob[batch_idxs, A_t]
             if not self.onpolicy:
@@ -89,6 +89,6 @@ class QSigmaReturnFunction:
 
             G_t = R_t + self.gamma * (rho * Sigma_t + (one_vector - Sigma_t) * exec_tprob) * estimated_Gt +\
                   self.gamma * (one_vector - Sigma_t) * (V_t - exec_tprob * exec_q)
-            estimated_Gt = neg_term_ind[:,i] * G_t + term_ind[:,i] * R_t
+            estimated_Gt = neg_term_ind[:, i] * G_t + term_ind[:, i] * R_t
 
         return estimated_Gt

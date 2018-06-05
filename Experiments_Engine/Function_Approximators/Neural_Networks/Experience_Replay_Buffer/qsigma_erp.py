@@ -137,7 +137,7 @@ class QSigmaExperienceReplayBuffer:
         tjs_rewards = np.zeros(self.batch_sz * self.n, np.int32)
         tjs_terminations = np.ones(self.batch_sz * self.n, np.bool)
         tjs_bprobabilities = np.ones([self.batch_sz * self.n, self.num_actions], np.float64)
-        tjs_sigmas = np.ones(self.batch_sz * self.n, dtype=np.float64)
+        tjs_sigmas = np.ones(self.batch_sz * self.n, dtype=np.float64) * self.sigma
 
         batch_idx = 0
         tj_start_idx = 0
