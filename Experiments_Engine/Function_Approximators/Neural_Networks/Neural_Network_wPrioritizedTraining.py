@@ -8,7 +8,7 @@ from Experiments_Engine.config import Config
 
 
 " Neural Network function approximator with the possibility of using several training steps and training priority "
-class NeuralNetwork_FA(FunctionApproximatorBase):
+class NeuralNetwork_wPrioritizedTraining(FunctionApproximatorBase):
 
     def __init__(self, optimizer, neural_network, config=None, tf_session=None, restore=False, summary=None):
         super().__init__()
