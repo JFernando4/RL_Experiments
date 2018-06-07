@@ -19,7 +19,7 @@ def sample_agents(max_agents, num_agents, agents_dir_list):
     return agents_idxs
 
 
-def results_summary_data(pathname, evaluation_frames, average_window, omit_list=[], ci_error=0.05, max_agents=5,
+def results_summary_data(pathname, evaluation_episodes, average_window, omit_list=[], ci_error=0.05, max_agents=5,
                          name="", fa_windows=[50,500]):
     addtofile = False
     for dir_name in os.listdir(pathname):
@@ -29,7 +29,7 @@ def results_summary_data(pathname, evaluation_frames, average_window, omit_list=
             dir_path = os.path.join(pathname, dir_name)
             print("Working on", dir_name + str("..."))
 
-            frame_interval_averages = []
+            moving_averages = []
             episode_interval_averages = []
             if os.path.isdir(dir_path):
                 agents_list = os.listdir(dir_path)
@@ -46,26 +46,26 @@ def results_summary_data(pathname, evaluation_frames, average_window, omit_list=
                     agent_data_path = os.path.join(agent_path, 'results.p')
                     with open(agent_data_path, mode='rb') as agent_data_file:
                         agent_data = pickle.load(agent_data_file)
-                    agents_results1 = get_data_for_frame_interval_average(agent_data, evaluation_frames, average_window)
-                    frame_interval_averages.append(agents_results1)
+                    agents_results1 = get_data_for_moving_average(agent_data, evaluation_episodes, average_window)
+                    moving_averages.append(agents_results1)
 
                     agent_results2 = get_data_for_episode_interval_average(agent_data, fa_windows)
                     episode_interval_averages.append(agent_results2)
 
-                " Frame Interval Averages txt File "
-                frame_interval_averages = np.array(frame_interval_averages)
+                " Moving Averages txt File "
+                moving_averages = np.array(moving_averages)
                 sample_size = max_agents
-                average = np.average(frame_interval_averages, axis=0)
-                ste = np.std(frame_interval_averages, axis=0, ddof=1)
+                average = np.average(moving_averages, axis=0)
+                ste = np.std(moving_averages, axis=0, ddof=1)
                 upper_bound, lower_bound, error_margin = compute_tdist_confidence_interval(average, ste, ci_error,
                                                                                            sample_size)
-                method_name = [dir_name] * len(evaluation_frames)
-                headers = ["Method Name", "Evaluation Frame", "Average", "Standard Error", "Lower C.I. Bound",
+                method_name = [dir_name] * len(evaluation_episodes)
+                headers = ["Method Name", "Evaluation Episode", "Average", "Standard Error", "Lower C.I. Bound",
                            "Upper C.I. Bound", "Margin of Error"]
-                columns = [method_name, evaluation_frames, np.round(average, 2), np.round(ste, 2),
+                columns = [method_name, evaluation_episodes, np.round(average, 2), np.round(ste, 2),
                            np.round(lower_bound, 2), np.round(upper_bound, 2), np.round(error_margin, 2)]
                 create_results_file(pathname, headers=headers, columns=columns, addtofile=addtofile,
-                                    results_name="results_frame_interval_averages_"+name)
+                                    results_name="results_moving_averages_"+name)
 
                 " Episode Interval Averages txt File "
                 episode_interval_averages = np.array(episode_interval_averages)
@@ -97,7 +97,18 @@ def get_data_for_frame_interval_average(agent_data, evaluation_frames, average_w
     return averages
 
 
-# Fixed average table
+# Moving Average Table
+def get_data_for_moving_average(agent_data, evaluation_episodes, average_window):
+    num_evaluation_points = len(evaluation_episodes)
+    averages = np.zeros(num_evaluation_points, dtype=np.float64)
+    idx = 0
+    for evaluation_point in evaluation_episodes:
+        averages[idx] = np.average(agent_data['return_per_episode'][evaluation_point-average_window:evaluation_point])
+        idx += 1
+    return averages
+
+
+# Episode Interval Averages
 def get_data_for_episode_interval_average(agent_data, average_windows):
     averages = np.zeros(len(average_windows))
     idx = 0
@@ -111,12 +122,12 @@ if __name__ == "__main__":
     experiment_path = os.getcwd()
     results_path = os.path.join(experiment_path, "Results")
 
-    evaluation_frames = [60000, 120000, 250000, 500000]
-    fa_windows = [10, 50, 100, 500, 1000]
-    average_window = 10
-    omit_list = ["DecayingSigma2", "ExpectedSarsa2"]
-    results_summary_data(results_path, evaluation_frames, average_window, ci_error=0.05,
-                         max_agents=25, name="preliminary", fa_windows=fa_windows, omit_list=omit_list)
+    fa_windows = [10, 50, 100, 250, 500]
+    evaluation_episodes = [50,100,250,500]
+    average_window = 50
+    omit_list = []
+    results_summary_data(results_path, evaluation_episodes, average_window, ci_error=0.05,
+                         max_agents=60, name="final", fa_windows=fa_windows, omit_list=omit_list)
 
 
 

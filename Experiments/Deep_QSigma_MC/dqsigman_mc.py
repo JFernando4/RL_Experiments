@@ -178,7 +178,7 @@ class ExperimentAgent():
         params_txt.write("\tn = " + str(self.config.n) + "\n")
         params_txt.write("\tgamma = " + str(self.config.gamma) + "\n")
         params_txt.write("\tsigma = " + str(self.config.sigma) + "\n")
-        params_txt.write("\tbeta = " + str(self.config.beta) + "\n")
+        params_txt.write("\tbeta = " + str(self.config.sigma_decay) + "\n")
         params_txt.write("\trandom steps before training = " +
                          str(self.config.initial_rand_steps) + "\n")
         params_txt.write("\tcompute behaviour policy's probabilities = " +
