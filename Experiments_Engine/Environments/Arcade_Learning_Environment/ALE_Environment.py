@@ -115,6 +115,7 @@ class ALE_Environment(EnvironmentBase):
         new_frame = self.fix_state()
         self.add_frame(new_frame)
         terminal = self.env.game_over()
+        self.previous_action = action
         # self.agent_state_display()    # For debugging purposes only
         return self.current_state, reward, terminal
 
