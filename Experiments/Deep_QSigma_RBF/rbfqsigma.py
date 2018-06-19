@@ -37,12 +37,13 @@ class ExperimentAgent:
 
             """ Environment Parameters """
             self.config.display_screen = False
-            self.config.frame_skip = 5
+            self.config.frame_skip = 4
             self.config.agent_render = False
             self.config.repeat_action_probability = 0.25
             self.config.frame_stack = 4
             self.config.num_actions = 18  # Number of actions in the ALE
             self.config.obs_dims = [4, 84, 84]  # [stack_size, height, width]
+            self.config.color_averaging = True
 
             " Models Parameters "
             self.config.dim_out = [32, 64, 64, 512]
@@ -59,8 +60,12 @@ class ExperimentAgent:
             " Policies Parameters "
             " Target Policy "
             self.config.target_policy = Config()
-            self.config.target_policy.initial_epsilon = 0.1
+            self.config.target_policy.initial_epsilon = experiment_arguments.target_epsilon
             self.config.target_policy.anneal_epsilon = False
+            " Behavior Policy "
+            self.config.behaviour_policy = Config()
+            self.config.behaviour_policy.initial_epsilon = 0.1
+            self.config.behaviour_policy.anneal_epsilon = False
 
             " QSigma Agent Parameters "
             self.config.sigma_decay = experiment_arguments.sigma_decay
@@ -71,7 +76,7 @@ class ExperimentAgent:
             self.config.use_er_buffer = False
 
             " Neural Network "
-            self.config.alpha = 0.00025
+            self.config.alpha = 0.0025
 
         " Environment "
         self.env = ALE_Environment(games_directory=self.games_directory, summary=self.summary,
@@ -82,6 +87,7 @@ class ExperimentAgent:
 
         """ Policies """
         self.target_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=False)
+        self.behaviour_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=True)
 
         """ Neural Network """
         self.function_approximator = SimpleNeuralNetwork(optimizer=self.optimizer, neural_network=self.target_network,
@@ -89,7 +95,7 @@ class ExperimentAgent:
 
         """ RL Agent """
         self.agent = QSigma(environment=self.env, function_approximator=self.function_approximator,
-                            target_policy=self.target_policy, behaviour_policy=self.target_policy, config=self.config,
+                            target_policy=self.target_policy, behaviour_policy=self.behaviour_policy, config=self.config,
                             summary=self.summary)
 
         if experiment_arguments.restore_agent:
