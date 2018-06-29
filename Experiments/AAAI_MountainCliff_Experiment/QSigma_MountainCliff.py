@@ -12,6 +12,7 @@ from Experiments_Engine.config import Config                                    
 
 NUMBER_OF_EPISODES = 500
 NUMBER_OF_AGENTS = 500
+NUMBER_OF_TILINGS = 32
 
 
 class ExperimentAgent():
@@ -21,7 +22,7 @@ class ExperimentAgent():
         self.n = args.n
         self.sigma = args.sigma
         self.beta = args.beta
-        self.alpha = np.float64(args.alpha) / 8
+        self.alpha = np.float64(args.alpha) / NUMBER_OF_TILINGS
 
         """ Experiment Configuration """
         self.config = Config()
@@ -34,7 +35,7 @@ class ExperimentAgent():
         self.config.obs_dims = [2]      # Dimensions of the observations experienced by the agent
 
         " TileCoder Parameters "
-        self.config.num_tilings = 32
+        self.config.num_tilings = NUMBER_OF_TILINGS
         self.config.tiling_side_length = 8
         self.config.num_dims = 2
         self.config.alpha = self.alpha
@@ -144,7 +145,12 @@ if __name__ == "__main__":
         agent_results = experiment.run_experiment()
         experiment_results.append(agent_results)
 
-    print("The aggregated average is:", np.average(np.array(experiment_results)))
+    aggregated_average = np.average(np.array(experiment_results))
+    print("The aggregated average is:", aggregated_average)
+
+    with open(os.path.join(results_directory, 'finalsummary.txt'), mode='w') as summary_file:
+        summary_file.write('The aggregated average is:\t')
+        summary_file.write(str(aggregated_average))
 
     with open(os.path.join(results_directory, 'results.p'), mode="wb") as results_file:
         pickle.dump(experiment_results, results_file)
