@@ -27,7 +27,7 @@ class TileCoderFA(FunctionApproximatorBase):
         self.num_dims = check_attribute_else_default(config, 'num_dims', 2)
         self.alpha = check_attribute_else_default(config, 'alpha', 0.1)
 
-        self.tiles_per_tiling = (self.tiling_side_length + 1) ** self.num_dims
+        self.tiles_per_tiling = self.tiling_side_length ** self.num_dims
         self.num_tiles = (self.num_tilings * self.tiles_per_tiling)
         self.theta = 0.001 * random(self.num_tiles * self.num_actions)
         self.iht = IHT(self.num_tiles)
