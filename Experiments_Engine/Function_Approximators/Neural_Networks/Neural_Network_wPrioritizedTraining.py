@@ -80,9 +80,7 @@ class NeuralNetwork_wPrioritizedTraining(FunctionApproximatorBase):
         abs_td_error = np.abs(self.get_td_error(sample_state, sample_action, value))
         self.percentile_estimator.add_to_record(abs_td_error)
         if abs_td_error >= self.percentile_estimator.get_percentile(self.train_percentile_index):
-            buffer_entry = (sample_state,
-                            np.zeros(shape=[1,1], dtype=int) + action,
-                            value)
+            buffer_entry = (sample_state, np.zeros(shape=[1,1], dtype=int) + action, value)
             self.buffer.add_to_buffer(buffer_entry)
             self.train(abs_td_error)
             # print(abs_td_error)

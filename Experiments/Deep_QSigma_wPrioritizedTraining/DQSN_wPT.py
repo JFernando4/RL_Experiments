@@ -5,7 +5,7 @@ import pickle
 
 from Experiments_Engine.Environments import ALE_Environment     # Environment
 from Experiments_Engine import NeuralNetwork_wPrioritizedTraining                 # Function Approximator
-from Experiments_Engine import Model_nCPmFO                     # NN Models
+from Experiments_Engine import Model_nCPmFO, Model_nCPmFO_wRBFLayer                     # NN Models
 from Experiments_Engine import QSigma                           # RL Agent
 from Experiments_Engine import EpsilonGreedyPolicy              # Policy
 from Experiments_Engine.config import Config
@@ -56,10 +56,10 @@ class ExperimentAgent:
             self.config.norm_factor = 255.0
 
             " Neural Network Parameters "
-            self.config.alpha = 0.00000001
+            self.config.alpha = 0.00025
             self.config.batch_sz = 1
             self.config.train_percentile_index = 0
-            self.config.num_percentiles = 10
+            self.config.num_percentiles = 5
             self.config.adjust_alpha = False
 
             " Policies Parameters "
@@ -80,7 +80,7 @@ class ExperimentAgent:
                                    summary=self.summary)
 
         " Models "
-        self.network = Model_nCPmFO(config=self.config, name="single")
+        self.network = Model_nCPmFO_wRBFLayer(config=self.config, name="single")
 
         """ Policies """
         self.target_policy = EpsilonGreedyPolicy(self.config, behaviour_policy=False)
@@ -166,6 +166,7 @@ class Experiment():
             print("The average training loss is:", np.average(train_data['cumulative_loss']))
             print("Number of updates:", np.sum(train_data['training_steps']))
             print("The current frame number is:", self.agent.get_number_of_frames())
+            print("The percentiles are:", self.agent.function_approximator.percentile_estimator._percentiles)
 
         if self.save_agent:
             self.agent.save_agent(self.results_dir)

@@ -228,7 +228,7 @@ f(x) = e^{(x-c)^2 / (1/(# of neurons)), where c is a uniform sample from [0,1] a
 """
 class Model_nCPmFO_wRBFLayer2(ModelBase):
 
-    def __init__(self, config=None, name="default", SEED=None):
+    def __init__(self, config=None, name="default", SEED=None, centers=None, stddevs=None):
         super().__init__()
 
         assert isinstance(config, Config)
@@ -378,7 +378,7 @@ x is normalized as norm(x_i) = x_i / abs(max(X)) where X is a matrix and the max
 """
 class Model_nCPmFO_wRBFLayer(ModelBase):
 
-    def __init__(self, config=None, name="default", SEED=None):
+    def __init__(self, config=None, name="default", SEED=None, centers=None, stddevs=None):
         super().__init__()
 
         assert isinstance(config, Config)
@@ -437,13 +437,18 @@ class Model_nCPmFO_wRBFLayer(ModelBase):
                 out_height = np.ceil(current_s_hat.shape[1]._value / self.strides[i])
                 out_width = np.ceil(current_s_hat.shape[2]._value / self.strides[i])
                 centers_shape = np.array((out_height, out_width, self.dim_out[i]), dtype=np.uint32)
-            else:
+                centers = np.zeros(shape=centers_shape, dtype=np.float32)
+                for k in range(self.dim_out[i]):
+                    centers[:, :, k] += (1 / self.dim_out[i]) * (k + 1)
+            else: # Format = "NCHW"
                 out_height = np.ceil(current_s_hat.shape[2]._value / self.strides[i])
                 out_width = np.ceil(current_s_hat.shape[3]._value /self.strides[i])
-                _, channels, height, width = current_s_hat.shape
                 centers_shape = np.array((self.dim_out[i], out_height, out_width), dtype=np.uint32)
-            centers = tf.constant(np.random.uniform(low=-1, high=1, size=centers_shape), dtype=np.float32)
-            stddev = tf.constant(tf.divide(1, np.prod(centers_shape)), dtype=np.float32)
+                centers = np.zeros(shape=centers_shape, dtype=np.float32)
+                for k in range(self.dim_out[i]):
+                    centers[k, :, :] += (1 / self.dim_out[i]) * (k + 1)
+            centers = tf.constant(centers, dtype=tf.float32)
+            stddev = tf.constant(1/self.dim_out[i], dtype=tf.float32)
             # layer n: convolutional
             W, b, z_hat, r_hat = layers.convolution_2d_rbf(
                 self.name, "conv_rbf_"+str(i+1), current_s_hat, self.filter_dims[i], dim_in_conv[i], self.dim_out[i],
@@ -468,8 +473,11 @@ class Model_nCPmFO_wRBFLayer(ModelBase):
         dim_out_fully = self.dim_out[self.convolutional_layers:]
         for j in range(self.fully_connected_layers):
             centers_shape = (dim_in_fully[j], dim_out_fully[j])
-            centers = tf.constant(np.random.uniform(low=-1, high=1, size=centers_shape), dtype=np.float32)
-            stddev = tf.constant(tf.divide(1, np.prod(centers_shape)), dtype=np.float32)
+            centers = np.zeros(shape=centers_shape, dtype=np.float32)
+            for k in range(dim_out_fully[j]):
+                centers[:, k] += (1/dim_out_fully[j]) * (k + 1)
+            centers = tf.constant(centers, dtype=tf.float32)
+            stddev = tf.constant(1/dim_out_fully[j], dtype=np.float32)
 
             # layer n + m: fully connected
             W, b, z_hat, y_hat = layers.fully_connected_rbf(

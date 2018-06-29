@@ -40,7 +40,7 @@ class ALE_Environment(EnvironmentBase):
         self.display_screen = check_attribute_else_default(config, 'display_screen', False)
         self.agent_render = check_attribute_else_default(config, 'agent_render', False)
         self.frame_skip = check_attribute_else_default(config, 'frame_skip', 4)
-        repeat_action_probability = check_attribute_else_default(config, 'repeat_action_probability', 0.25)
+        self.repeat_action_probability = check_attribute_else_default(config, 'repeat_action_probability', 0.25)
         max_num_frames = check_attribute_else_default(config, 'max_num_frames', 18000)
         self.color_averaging = check_attribute_else_default(config, 'color_averaging', True)
         if self.color_averaging:
@@ -58,8 +58,8 @@ class ALE_Environment(EnvironmentBase):
         self.env = ALEInterface()
         self.env.setInt(b'frame_skip', 1)
         self.env.setInt(b'random_seed', 0)
-        self.env.setFloat(b'repeat_action_probability', repeat_action_probability)
-        self.env.setInt(b"max_num_frames", max_num_frames)
+        self.env.setFloat(b'repeat_action_probability', 0)
+        self.env.setInt(b"max_num_frames_per_episode", max_num_frames)
         self.env.setBool(b"color_averaging", False)
         self.env.setBool(b'display_screen', self.display_screen)
         self.rom_file = str.encode(games_directory + rom_filename)
@@ -84,16 +84,18 @@ class ALE_Environment(EnvironmentBase):
         self.observations_dimensions = self.current_state.shape
         self.frame_dims = self.current_state[0].shape
         self.actions = self.env.getLegalActionSet()
+        self.previous_action = 0
 
     def reset(self):
         if self.save_summary and (self.frame_count != 0):
             self.summary['frames_per_episode'].append(self.frame_count)
         self.env.reset_game()
-        self.frame_count = 1
+        self.frame_count = 0
         original_frame = np.squeeze(self.env.getScreenGrayscale())
         self.history[-1] = original_frame
         fixed_state = self.fix_state()
         self.current_state[-1] = fixed_state
+        self.previous_action = 0
         # self.agent_state_display()    # For debugging purposes
 
     def add_frame(self, frame):
@@ -103,13 +105,17 @@ class ALE_Environment(EnvironmentBase):
     def update(self, action):
         reward = 0
         for _ in range(self.frame_skip):
-            reward += self.env.act(action)
-            self.history[:-1] = self.history[1:]
-            self.history[-1] = np.squeeze(self.env.getScreenGrayscale())
+            if not self.env.game_over():
+                p = np.random.rand()
+                current_action = self.previous_action if p <= self.repeat_action_probability else action
+                reward += self.env.act(current_action)
+                self.history[:-1] = self.history[1:]
+                self.history[-1] = np.squeeze(self.env.getScreenGrayscale())
+                self.frame_count += 1
         new_frame = self.fix_state()
         self.add_frame(new_frame)
         terminal = self.env.game_over()
-        self.frame_count += self.frame_skip
+        self.previous_action = action
         # self.agent_state_display()    # For debugging purposes only
         return self.current_state, reward, terminal
 

@@ -18,6 +18,7 @@ class SimpleNeuralNetwork(FunctionApproximatorBase):
         """
 
         assert isinstance(config, Config)
+        self.config = config
         """ 
         Parameters in config:
         Name:                       Type:           Default:            Description: (Omitted when self-explanatory)
@@ -25,9 +26,18 @@ class SimpleNeuralNetwork(FunctionApproximatorBase):
         obs_dims                    list            [4, 84, 84]         Observations presented to the agent
         save_summary                bool            False               Save the summary of the network 
         """
-        self.alpha = check_attribute_else_default(config, 'alpha', 0.001)
-        self.obs_dims = check_attribute_else_default(config, 'obs_dims', [4,84,84])
-        self.save_summary = check_attribute_else_default(config, 'save_summary', False)
+        self.alpha = check_attribute_else_default(self.config, 'alpha', 0.001)
+        self.obs_dims = check_attribute_else_default(self.config, 'obs_dims', [4,84,84])
+        self.save_summary = check_attribute_else_default(self.config, 'save_summary', False)
+
+        self.td_error_sqrd = np.random.rand() * 0.0001
+
+        self.number_of_percentiles = 100
+        self.percentiles = np.zeros(self.number_of_percentiles, dtype=np.float64)
+        self.initialized_percentiles = False
+        self.percentiles_record = np.zeros(self.number_of_percentiles, dtype=np.float64)
+        self.percentiles_count = 0
+
         if self.save_summary:
             assert isinstance(summary, dict)
             self.summary = summary
@@ -40,12 +50,15 @@ class SimpleNeuralNetwork(FunctionApproximatorBase):
         self.network = neural_network
 
         " Training and Learning Evaluation: Tensorflow and variables initializer "
-        self.optimizer = optimizer(self.alpha)
+        # self.optimizer = optimizer(self.alpha)
         self.sess = tf_session or tf.Session()
 
         " Train step "
-        self.train_step = self.optimizer.minimize(self.network.train_loss,
-                                                  var_list=self.network.train_vars[0])
+        # self.learning_rate = tf.placeholder(tf.float64, shape=[])
+        self.learning_rate = tf.placeholder(tf.float32, shape=None)
+        self.decay = tf.placeholder(tf.float32, shape=None)
+        self.train_step = optimizer(self.alpha).minimize(self.network.train_loss,
+                                                                 var_list=self.network.train_vars[0])
 
         # initializing variables in the graph
         if not restore:
@@ -61,6 +74,18 @@ class SimpleNeuralNetwork(FunctionApproximatorBase):
                            self.network.x_actions: sample_action,
                            self.network.y: nstep_return}
 
+        current_td_error = self.sess.run(self.network.td_error, feed_dict=feed_dictionary)[0]
+        # Percentile-based adaptive learning rate
+        self.percentiles_record[self.percentiles_count] += current_td_error**2
+        self.percentiles_count += 1
+        if self.percentiles_count == self.number_of_percentiles:
+            if self.initialized_percentiles:
+                self.percentiles += 0.0001 * (np.sort(self.percentiles_record) - self.percentiles)
+            else:
+                self.percentiles += np.sort(self.percentiles_record)
+                self.initialized_percentiles = True
+            self.percentiles_count = 0
+            self.percentiles_record *= 0
         train_loss, _ = self.sess.run((self.network.train_loss, self.train_step), feed_dict=feed_dictionary)
         if self.save_summary:
             self.cumulative_loss += train_loss
