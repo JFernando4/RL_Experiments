@@ -132,6 +132,11 @@ class ExperimentAgent():
                             behaviour_policy=self.behaviour_policy, environment=self.env,
                             er_buffer=self.qsigma_erp, config=self.config, summary=self.summary)
 
+        # number_of_parameters = 0
+        # for variable in self.tnetwork.get_variables_as_list(self.tf_sess):
+        #     number_of_parameters += np.array(variable).flatten().size
+        # print("The number of parameters in the network is:", number_of_parameters)  # Answer: 6003
+
         if restore:
             saver = tf.train.Saver()
             sourcepath = os.path.join(restore_data_dir, "agent_graph.ckpt")

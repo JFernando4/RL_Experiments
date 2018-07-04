@@ -129,6 +129,11 @@ if __name__ == "__main__":
     results_summary_data(results_path, evaluation_episodes, average_window, ci_error=0.05,
                          max_agents=60, name="final", fa_windows=fa_windows, omit_list=omit_list)
 
+    results_path = os.path.join(experiment_path, "Results_TileCoder")
+    omit_list = ["DecayingSigma_n1", "DecayingSigma_n3", "DecayingSigma_n5", "DecayingSigma_n10",
+                 "DecayingSigma_n20"]
+    results_summary_data(results_path, evaluation_episodes, average_window, ci_error=0.05,
+                         max_agents=60, name="final", fa_windows=fa_windows, omit_list=omit_list)
 
 
 
