@@ -81,6 +81,7 @@ class MountainCar(EnvironmentBase):
 
         if position < -1.2:
             position = -1.2
+            velocity = 0.0
         elif position > 0.5:
             position = 0.5
             terminate = True

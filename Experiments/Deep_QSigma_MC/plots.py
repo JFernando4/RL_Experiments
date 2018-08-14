@@ -137,13 +137,12 @@ def plot_interval_average(methods_data, ylim=(0,1), ytitle='ytitle', xtitle='xti
 
     for name in plot_data.keys():
         plt.errorbar(x, plot_data[name]['avg'], yerr=plot_data[name]['me'], color=methods_data[name]['color'])
-    plt.xlim([0, NUMBER_OF_EPISODES])
+    plt.xlim([0, NUMBER_OF_EPISODES+10])
     plt.ylim(ylim)
     plt.xlabel(xtitle)
     plt.ylabel(ytitle)
     plt.savefig('Plots/' + figure_name, dpi=200)
     plt.close()
-
 
 
 if __name__ == "__main__":
@@ -167,6 +166,7 @@ if __name__ == "__main__":
     results_path = os.path.join(experiment_path, "Results")
     sample_size = 150
     # std = standard deviation, avg = average, uci = upper confidence interval, lci = lower confidence interval
+    # me = margin of error
 
     ##########################################
     """ On-Policy vs Off-Policy Experiment """
@@ -176,8 +176,8 @@ if __name__ == "__main__":
         colors = ['#025D8C',    # Blue      - Off-Policy
                   '#FBB829']    # Yellow    - On-Policy
 
-        shade_colors = ['#b3cddb',  # Blue      - Off-Policy
-                        '#ffe7b1']  # Yellow    - On-Policy
+        shade_colors = ['#b3cddb',  # Light Blue      - Off-Policy
+                        '#ffe7b1']  # Light Yellow    - On-Policy
 
         # Sarsaparser.add_argument('-ESvsQL', action='store_true', default=False)
         method_names = ['Sarsa_OffPolicy', 'Sarsa_OnPolicy']
@@ -185,8 +185,9 @@ if __name__ == "__main__":
                        'Sarsa_OnPolicy': {}}
 
         compute_methods_statistics(results_path, method_names, method_data, colors, shade_colors)
-        plot_avg_return_per_episode(method_data, ylim=(-5000, 0), ytitle='Average Return per Episode',
-                                    xtitle='Episode Number', figure_name='Sarsa_OnPolicy_vs_OffPolicy')
+        if args.interval_avg:
+            plot_interval_average(method_data, ylim=(-3000, 0), ytitle='Average Return Over the Last 50 Episodes',
+                                  xtitle='Episode Number', figure_name='Sarsa_On_vs_Off')
 
         # Q(0.5)
         method_names = ['QSigma0.5_OffPolicy', 'QSigma0.5_OnPolicy']
@@ -194,8 +195,9 @@ if __name__ == "__main__":
                        'QSigma0.5_OnPolicy': {}}
 
         compute_methods_statistics(results_path, method_names, method_data, colors, shade_colors)
-        plot_avg_return_per_episode(method_data, ylim=(-3000, 0), ytitle='Average Return per Episode',
-                                    xtitle='Episode Number', figure_name='QSigma05_OnPolicy_vs_OffPolicy')
+        if args.interval_avg:
+            plot_interval_average(method_data, ylim=(-3000, 0), ytitle='Average Return Over the Last 50 Episodes',
+                                  xtitle='Episode Number', figure_name='QSigma05_On_vs_Off')
 
         # Decaying Sigma
         method_names = ['DecayingSigma_OffPolicy', 'DecayingSigma_OnPolicy']
@@ -203,8 +205,9 @@ if __name__ == "__main__":
                        'DecayingSigma_OnPolicy': {}}
 
         compute_methods_statistics(results_path, method_names, method_data, colors, shade_colors)
-        plot_avg_return_per_episode(method_data, ylim=(-3000, 0), ytitle='Average Return per Episode',
-                                    xtitle='Episode Number', figure_name='DecayingSigma_OnPolicy_vs_OffPolicy')
+        if args.interval_avg:
+            plot_interval_average(method_data, ylim=(-1000, 0), ytitle='Average Return Over the Last 50 Episodes',
+                                  xtitle='Episode Number', figure_name='DecayingSigma_On_vs_Off')
 
     #################################
     """ Annealing vs No Annealing """
@@ -222,8 +225,9 @@ if __name__ == "__main__":
         method_data = {'Sarsa_wAnnealingEpsilon_wOnlineBprobabilities':{},
                        'Sarsa_OnPolicy': {}}
         compute_methods_statistics(results_path, method_names, method_data, colors, shade_colors)
-        plot_avg_return_per_episode(method_data, ylim=(-1000, 0), ytitle='Average Return per Episode',
-                                    xtitle='Episode Number', figure_name='Sarsa_Annealing_vs_NoAnnealing')
+        if args.interval_avg:
+            plot_interval_average(method_data, ylim=(-1000, 0), ytitle='Average Return Over the Last 50 Episodes',
+                                  xtitle='Episode Number', figure_name='Sarsa_Annealing_vs_NoAnnealing')
 
 
         # Q(0.5)
@@ -231,32 +235,36 @@ if __name__ == "__main__":
         method_data = {'QSigma0.5_wAnnealingEpsilon_wOnlineBprobabilities': {},
                        'QSigma0.5_OnPolicy': {}}
         compute_methods_statistics(results_path, method_names, method_data, colors, shade_colors)
-        plot_avg_return_per_episode(method_data, ylim=(-1000, 0), ytitle='Average Return per Episode',
-                                    xtitle='Episode Number', figure_name='QSigma05_Annealing_vs_NoAnnealing')
+        if args.interval_avg:
+            plot_interval_average(method_data, ylim=(-1000, 0), ytitle='Average Return Over the Last 50 Episodes',
+                                  xtitle='Episode Number', figure_name='QSigma05_Annealing_vs_NoAnnealing')
 
         # Expected Sarsa
         method_names = ['ExpectedSarsa_wAnnealingEpsilon', 'ExpectedSarsa']
         method_data = {'ExpectedSarsa_wAnnealingEpsilon': {},
                        'ExpectedSarsa': {}}
         compute_methods_statistics(results_path, method_names, method_data, colors, shade_colors)
-        plot_avg_return_per_episode(method_data, ylim=(-1000, 0), ytitle='Average Return per Episode',
-                                    xtitle='Episode Number', figure_name='ExpectedSarsa_Annealing_vs_NoAnnealing')
+        if args.interval_avg:
+            plot_interval_average(method_data, ylim=(-1000, 0), ytitle='Average Return Over the Last 50 Episodes',
+                                  xtitle='Episode Number', figure_name='ExpectedSarsa_Annealing_vs_NoAnnealing')
 
         # QLearning
         method_names = ['QLearning_wAnnealingEpsilon', 'QLearning']
         method_data = {'QLearning_wAnnealingEpsilon': {},
                        'QLearning': {}}
         compute_methods_statistics(results_path, method_names, method_data, colors, shade_colors)
-        plot_avg_return_per_episode(method_data, ylim=(-1000, 0), ytitle='Average Return per Episode',
-                                    xtitle='Episode Number', figure_name='QLearning_Annealing_vs_NoAnnealing')
+        if args.interval_avg:
+            plot_interval_average(method_data, ylim=(-1000, 0), ytitle='Average Return Over the Last 50 Episodes',
+                                  xtitle='Episode Number', figure_name='QLearning_Annealing_vs_NoAnnealing')
 
         # Decaying Sigma
         method_names = ['DecayingSigma_wAnnealingEpsilon_wOnlineBprobabilities', 'DecayingSigma_OnPolicy']
         method_data = {'DecayingSigma_wAnnealingEpsilon_wOnlineBprobabilities': {},
                        'DecayingSigma_OnPolicy': {}}
         compute_methods_statistics(results_path, method_names, method_data, colors, shade_colors)
-        plot_avg_return_per_episode(method_data, ylim=(-1000, 0), ytitle='Average Return per Episode', xtitle='Episode Number',
-                                    figure_name='DecayingSigma_Annealing_vs_NoAnnealing')
+        if args.interval_avg:
+            plot_interval_average(method_data, ylim=(-1000, 0), ytitle='Average Return Over the Last 50 Episodes',
+                                  xtitle='Episode Number', figure_name='DecayingSigma_Annealing_vs_NoAnnealing')
 
     ##########################################
     """ Extra: QLearning vs Expected Sarsa """
@@ -273,26 +281,26 @@ if __name__ == "__main__":
         method_data = {'ExpectedSarsa': {},
                        'QLearning': {}}
         compute_methods_statistics(results_path, method_names, method_data, colors, shade_colors)
-        plot_avg_return_per_episode(method_data, ylim=(-1000, 0), ytitle='Average Return per Episode', xtitle='Episode Number',
-                                    figure_name='ExpectedSarsa_vs_QLearning')
+        if args.interval_avg:
+            plot_interval_average(methods_data=method_data, ylim=(-600, -100),
+                                  ytitle='Average Return Over the Last 50 Episodes',
+                                  xtitle='Episode Number', figure_name='ExpectedSarsa_vs_QLearning',
+                                  interval_size=50)
 
     ##########################
     """ n-Step Experiments """
     ##########################
     if args.nstep:
-        """ Experiment Colors """
-        colors = ['#490A3D',    # Purple-ish    - n = 1
-                  '#BD1550',    # Red-ish       - n = 3
-                  '#E97F02',    # Orange-ish    - n = 5
-                  '#F8CA00',    # Yellow-ish    - n = 10
-                  '#8A9B0F']    # Green-ish      - n = 20
+        """ Colors """
+        colors = ['#CAE8A2',    # Green     - n = 1
+                  '#F0D878',    # Yellow    - n = 3
+                  '#FBB829',    # Orange    - n = 5
+                  '#FE4365',    # Pink      - n = 10
+                  '#A40802']    # Red       - n = 20
 
-        shade_colors = ['#c9bac6',    # Purple-ish    - n = 1
-                        '#eab8ca',    # Red-ish       - n = 3
-                        '#f8d8b3',    # Orange-ish    - n = 5
-                        '#f4e8b9',    # Yellow-ish    - n = 10
-                        '#dde2b8']    # Green-ish      - n = 20
+        shade_colors = ['#', '#', '#', '#', '#']
 
+        # Sarsa #
         method_names = ['Sarsa_OnPolicy', 'Sarsa_n3', 'Sarsa_n5', 'Sarsa_n10', 'Sarsa_n20']
         method_data = {'Sarsa_OnPolicy': {},
                        'Sarsa_n3': {},
@@ -300,8 +308,70 @@ if __name__ == "__main__":
                        'Sarsa_n10': {},
                        'Sarsa_n20': {}}
         compute_methods_statistics(results_path, method_names, method_data, colors, shade_colors)
-        plot_avg_return_per_episode(method_data, ylim=(-1000, 0), ytitle='Average Return per Episode', xtitle='Episode Number',
-                                    figure_name='nstep_Sarsa')
+        if args.interval_avg:
+            plot_interval_average(methods_data=method_data, ylim=(-1500, -100),
+                                  ytitle='Average Return Over the Last 50 Episodes',
+                                  xtitle='Episode Number', figure_name='nStep_Sarsa',
+                                  interval_size=50)
+
+        # QSigma0.5 #
+        method_names = ['QSigma0.5_OnPolicy', 'QSigma0.5_n3', 'QSigma0.5_n5', 'QSigma0.5_n10', 'QSigma0.5_n20']
+        method_data = {'QSigma0.5_OnPolicy': {},
+                       'QSigma0.5_n3': {},
+                       'QSigma0.5_n5': {},
+                       'QSigma0.5_n10': {},
+                       'QSigma0.5_n20': {}}
+        compute_methods_statistics(results_path, method_names, method_data, colors, shade_colors)
+        if args.interval_avg:
+            plot_interval_average(methods_data=method_data, ylim=(-1500, -100),
+                                  ytitle='Average Return Over the Previous 50 Episodes',
+                                  xtitle='Episode Number', figure_name='nStep_QSigma05',
+                                  interval_size=50)
+
+        # TreeBackup #
+        method_names = ['ExpectedSarsa', 'TreeBackup_n3', 'TreeBackup_n5', 'TreeBackup_n10', 'TreeBackup_n20']
+        method_data = {'ExpectedSarsa': {},
+                       'TreeBackup_n3': {},
+                       'TreeBackup_n5': {},
+                       'TreeBackup_n10': {},
+                       'TreeBackup_n20': {}}
+        compute_methods_statistics(results_path, method_names, method_data, colors, shade_colors)
+        if args.interval_avg:
+            plot_interval_average(methods_data=method_data, ylim=(-1500, -100),
+                                  ytitle='Average Return Over the Last 50 Episodes',
+                                  xtitle='Episode Number', figure_name='nStep_TreeBackup',
+                                  interval_size=50)
+
+        # Decaying Sigma #
+        method_names = ['DecayingSigma_OnPolicy', 'DecayingSigma_n3', 'DecayingSigma_n5', 'DecayingSigma_n10',
+                        'DecayingSigma_n20']
+        method_data = {'DecayingSigma_OnPolicy': {},
+                       'DecayingSigma_n3': {},
+                       'DecayingSigma_n5': {},
+                       'DecayingSigma_n10': {},
+                       'DecayingSigma_n20': {}}
+        compute_methods_statistics(results_path, method_names, method_data, colors, shade_colors)
+        if args.interval_avg:
+            plot_interval_average(methods_data=method_data, ylim=(-1500, -100),
+                                  ytitle='Average Return Over the Last 50 Episodes',
+                                  xtitle='Episode Number', figure_name='nStep_DecayingSigma',
+                                  interval_size=50)
+
+        # Decaying Sigma HP SD#
+        method_names = ['DecayingSigma_n1_sd0.99723126', 'DecayingSigma_n3_sd0.99723126',
+                        'DecayingSigma_n5_sd0.99723126', 'DecayingSigma_n10_sd0.99723126',
+                        'DecayingSigma_n20_sd0.99723126']
+        method_data = {'DecayingSigma_n1_sd0.99723126': {},
+                       'DecayingSigma_n3_sd0.99723126': {},
+                       'DecayingSigma_n5_sd0.99723126': {},
+                       'DecayingSigma_n10_sd0.99723126': {},
+                       'DecayingSigma_n20_sd0.99723126': {}}
+        compute_methods_statistics(results_path, method_names, method_data, colors, shade_colors)
+        if args.interval_avg:
+            plot_interval_average(methods_data=method_data, ylim=(-1500, -100),
+                                  ytitle='Average Return Over the Last 50 Episodes',
+                                  xtitle='Episode Number', figure_name='nStep_DecayingSigma_HP',
+                                  interval_size=50)
 
     ##########################
     """ Best n-Step Methods """
@@ -312,24 +382,22 @@ if __name__ == "__main__":
                   '#BD1550',  # Red-ish         - QSigma 0.5 n20
                   '#E97F02',  # Orange-ish      - TreeBackup n20
                   '#F8CA00',  # Yellow-ish      - DecayingSigma n20
-                  '#8A9B0F',  # Green-ish       - DecayingSigma Hand Picked SD n10
+                  #'#8A9B0F',  # Green-ish       - DecayingSigma Hand Picked SD n10
                   '#C0ADDB']  # Violet-ish      - QLearning
 
         shade_colors = ['#c9bac6',  # Purple-ish        - Sarsa n10
                         '#eab8ca',  # Red-ish           - QSigma 0.5 n20
                         '#f8d8b3',  # Orange-ish        - TreeBackup n20
                         '#f4e8b9',  # Yellow-ish        - DecayingSigma n20
-                        '#dde2b8',  # Green-ish         - DecayingSigma HP SD n10
+                        #'#dde2b8',  # Green-ish         - DecayingSigma HP SD n10
                         "#e8e0f2"   # Violet-ish        - QLearning
                         ]
 
-        method_names = ['Sarsa_n10', 'QSigma0.5_n20', 'TreeBackup_n20', 'DecayingSigma_n20',
-                        'DecayingSigma_n10_sd0.99723126', "QLearning"]
+        method_names = ['Sarsa_n10', 'QSigma0.5_n20', 'TreeBackup_n20', 'DecayingSigma_n20', "QLearning"]
         method_data = {'Sarsa_n10': {},
                        'QSigma0.5_n20': {},
                        'TreeBackup_n20': {},
                        'DecayingSigma_n20': {},
-                        'DecayingSigma_n10_sd0.99723126': {},
                        'QLearning': {}}
 
         compute_methods_statistics(results_path, method_names, method_data, colors, shade_colors)
@@ -343,6 +411,37 @@ if __name__ == "__main__":
             plot_moving_average(method_data, ylim=(-500,-100), ytitle='Cumulative Average Return', xtitle='Episode Number',
                                 figure_name='Best_nStep_Methods_Moving_Avg', window=50)
         if args.interval_avg:
-            plot_interval_average(methods_data=method_data, ylim=(-1000,0), ytitle='Return per Episode',
-                                  xtitle='Episode Number', figure_name='Best_nStep_Methods_Interval_Avg',
+            plot_interval_average(methods_data=method_data, ylim=(-500,-100),
+                                  ytitle='Average Return Over the Last 50 Episodes',
+                                  xtitle='Episode Number', figure_name='Best_nStep_Methods_Interval_Avg1',
+                                  interval_size=50)
+
+        """ Experiment Colors """
+        colors = ['#490A3D',  # Purple-ish      - Sarsa n10
+                  '#BD1550',  # Red-ish         - QSigma 0.5 n20
+                  '#E97F02',  # Orange-ish      - TreeBackup n20
+                  # '#F8CA00',  # Yellow-ish      - DecayingSigma n20
+                  '#8A9B0F',  # Green-ish       - DecayingSigma Hand Picked SD n10
+                  '#C0ADDB']  # Violet-ish      - QLearning
+
+        shade_colors = ['#c9bac6',  # Purple-ish        - Sarsa n10
+                        '#eab8ca',  # Red-ish           - QSigma 0.5 n20
+                        '#f8d8b3',  # Orange-ish        - TreeBackup n20
+                        # '#f4e8b9',  # Yellow-ish        - DecayingSigma n20
+                        '#dde2b8',  # Green-ish         - DecayingSigma HP SD n10
+                        "#e8e0f2"   # Violet-ish        - QLearning
+                        ]
+
+        method_names = ['Sarsa_n10', 'QSigma0.5_n20', 'TreeBackup_n20', 'DecayingSigma_n10_sd0.99723126', "QLearning"]
+        method_data = {'Sarsa_n10': {},
+                       'QSigma0.5_n20': {},
+                       'TreeBackup_n20': {},
+                       'DecayingSigma_n10_sd0.99723126': {},
+                       'QLearning': {}}
+
+        compute_methods_statistics(results_path, method_names, method_data, colors, shade_colors)
+        if args.interval_avg:
+            plot_interval_average(methods_data=method_data, ylim=(-500,-100),
+                                  ytitle='Average Return Over the Last 50 Episodes',
+                                  xtitle='Episode Number', figure_name='Best_nStep_Methods_Interval_Avg2',
                                   interval_size=50)
