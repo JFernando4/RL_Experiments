@@ -127,8 +127,11 @@ if __name__ == "__main__":
     average_window = 50
     omit_list = []
     results_summary_data(results_path, evaluation_episodes, average_window, ci_error=0.05,
-                         max_agents=60, name="final", fa_windows=fa_windows, omit_list=omit_list)
-
+                         max_agents=150, name="final", fa_windows=fa_windows, omit_list=omit_list)
+    #
+    # results_path = os.path.join(experiment_path, "Results_TileCoder")
+    # results_summary_data(results_path, evaluation_episodes, average_window, ci_error=0.05,
+    #                      max_agents=60, name="final", fa_windows=fa_windows, omit_list=omit_list)
 
 
 

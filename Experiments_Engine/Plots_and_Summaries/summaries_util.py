@@ -9,8 +9,6 @@ import os
 def compute_tdist_confidence_interval(sample_mean, sample_std, proportion, sample_size):
     if sample_size <= 1:
         return None, None, None
-    assert isinstance(sample_mean, np.ndarray)
-    assert isinstance(sample_std, np.ndarray)
 
     dof = sample_size - 1
     t_dist = t(df=dof)  # from scipy.stats
