@@ -9,6 +9,7 @@ from Experiments_Engine.Function_Approximators import TileCoderFA               
 from Experiments_Engine.RL_Agents import QSigma                                 # RL Agent
 from Experiments_Engine.Policies import EpsilonGreedyPolicy                     # Policy
 from Experiments_Engine.config import Config                                    # Experiment configurations
+from Experiments_Engine.Plots_and_Summaries import compute_tdist_confidence_interval
 
 NUMBER_OF_EPISODES = 500
 NUMBER_OF_AGENTS = 500
@@ -136,7 +137,12 @@ if __name__ == "__main__":
         os.makedirs(results_directory)
 
     exp_params = args
-    experiment_results = []
+    if os.path.isfile(os.path.join(results_directory, 'results.p')):
+        with open(os.path.join(results_directory, 'results.p'), mode='rb') as results_file:
+            experiment_results = pickle.load(results_file)
+    else:
+        experiment_results = []
+
     for i in range(args.runs):
         print("Training agent", str(i+1) + "...")
         experiment = Experiment(experiment_parameters=args)
@@ -145,8 +151,13 @@ if __name__ == "__main__":
         agent_results = experiment.run_experiment()
         experiment_results.append(agent_results)
 
+    sample_size = len(experiment_results)
     aggregated_average = np.average(np.array(experiment_results))
-    print("The aggregated average is:", aggregated_average)
+    aggregated_std = np.std(np.average(np.array(experiment_results), axis=1), ddof=1)
+    aggregated_ste = aggregated_std / np.sqrt(args.runs)
+
+    upper_ci, lower_ci, margin = compute_tdist_confidence_interval(aggregated_average, aggregated_std, 0.05,
+                                                                   sample_size)
 
     with open(os.path.join(results_directory, 'finalsummary.txt'), mode='w') as summary_file:
         summary_file.write('The aggregated average is:\t')
@@ -155,3 +166,10 @@ if __name__ == "__main__":
     with open(os.path.join(results_directory, 'results.p'), mode="wb") as results_file:
         pickle.dump(experiment_results, results_file)
 
+    print("##########  Summary ##########")
+    print('The sample size is:', sample_size)
+    print("The aggregated average is:", np.round(aggregated_average, 4))
+    print("The aggregated standard error is:", aggregated_ste)
+    print("The lower bound of the 95% C.I. is:", np.round(lower_ci, 4))
+    print("The upper bound of the 95% C.I. is:", np.round(upper_ci, 4))
+    print("##############################")
