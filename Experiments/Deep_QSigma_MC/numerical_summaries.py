@@ -1,13 +1,13 @@
 import os
 import pickle
 import numpy as np
+import argparse
 
 from Experiments_Engine.Plots_and_Summaries import compute_tdist_confidence_interval, create_results_file
 
 
 MAX_FRAMES = 500000
 MAX_EPISODES = 2000
-METHOD_RESULT_FILENAME = "method_results.p"
 
 
 def sample_agents(max_agents, num_agents, agents_dir_list):
@@ -20,7 +20,7 @@ def sample_agents(max_agents, num_agents, agents_dir_list):
 
 
 def results_summary_data(pathname, evaluation_episodes, average_window, omit_list=[], ci_error=0.05, max_agents=5,
-                         name="", fa_windows=[50,500]):
+                         name="", fa_windows=[50,500], drop_k=0):
     addtofile = False
     for dir_name in os.listdir(pathname):
         if dir_name in omit_list:
@@ -33,16 +33,10 @@ def results_summary_data(pathname, evaluation_episodes, average_window, omit_lis
             episode_interval_averages = []
             if os.path.isdir(dir_path):
                 agents_list = os.listdir(dir_path)
-                num_agents = len(agents_list)
+                top_agents_names = drop_bottom_k(agents_list, drop_k, method_path=dir_path)
 
-                if max_agents == num_agents:
-                    agents_idxs = np.arange(max_agents)
-                elif 0 < max_agents < num_agents:
-                    agents_idxs = sample_agents(max_agents, num_agents, agents_dir_list=agents_list)
-                else: raise ValueError
-
-                for i in agents_idxs:
-                    agent_path = os.path.join(dir_path, agents_list[i])
+                for i in top_agents_names:
+                    agent_path = os.path.join(dir_path, 'agent_'+str(i))
                     agent_data_path = os.path.join(agent_path, 'results.p')
                     with open(agent_data_path, mode='rb') as agent_data_file:
                         agent_data = pickle.load(agent_data_file)
@@ -54,7 +48,7 @@ def results_summary_data(pathname, evaluation_episodes, average_window, omit_lis
 
                 " Moving Averages txt File "
                 moving_averages = np.array(moving_averages)
-                sample_size = max_agents
+                sample_size = max_agents - drop_k
                 average = np.average(moving_averages, axis=0)
                 ste = np.std(moving_averages, axis=0, ddof=1)
                 upper_bound, lower_bound, error_margin = compute_tdist_confidence_interval(average, ste, ci_error,
@@ -118,7 +112,30 @@ def get_data_for_episode_interval_average(agent_data, average_windows):
     return averages
 
 
+# Drops the bottom k agents
+def drop_bottom_k(agents_list, drop_k, method_path):
+    averages = []
+    names = []
+    for i in range(len(agents_list)):
+        agent_folder = os.path.join(method_path, 'agent_' + str(i + 1))
+        agent_results_filepath = os.path.join(agent_folder, 'results.p')
+        with open(agent_results_filepath, mode='rb') as results_file:
+            agent_data = pickle.load(results_file)
+            agent_return_data = agent_data['return_per_episode']
+        averages.append(np.average(agent_return_data))
+        names.append(i+1)
+    names = np.array(names, dtype=np.int32)
+    return names[np.argsort(averages)[drop_k:]]
+
+
 if __name__ == "__main__":
+
+    """ Parser """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-drop_k', action='store', default=0, type=int)
+    parser.add_argument('-threshold', action='store', default=-4900)
+    args = parser.parse_args()
+
     experiment_path = os.getcwd()
     results_path = os.path.join(experiment_path, "Results")
 
@@ -127,11 +144,5 @@ if __name__ == "__main__":
     average_window = 50
     omit_list = []
     results_summary_data(results_path, evaluation_episodes, average_window, ci_error=0.05,
-                         max_agents=150, name="final", fa_windows=fa_windows, omit_list=omit_list)
-    #
-    # results_path = os.path.join(experiment_path, "Results_TileCoder")
-    # results_summary_data(results_path, evaluation_episodes, average_window, ci_error=0.05,
-    #                      max_agents=60, name="final", fa_windows=fa_windows, omit_list=omit_list)
-
-
-
+                         max_agents=150, name="dropped_"+str(args.drop_k), fa_windows=fa_windows, omit_list=omit_list,
+                         drop_k=args.drop_k)
